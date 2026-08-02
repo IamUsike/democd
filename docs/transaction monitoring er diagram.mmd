@@ -35,6 +35,7 @@ erDiagram
     RULE {
         string rule_id PK
         string name
+        string description
         string rule_type
         string severity
         boolean is_active
@@ -53,17 +54,18 @@ erDiagram
         string alert_id PK
         string rule_id FK
         string account_id FK
-        string severity
         string status
         datetime created_at
         datetime acknowledged_at
+        datetime investigating_at
+        datetime dismissed_at
         datetime closed_at
         string resolution_notes
     }
 
     ALERT_TRANSACTION {
-        string alert_id FK
-        string transaction_id FK
+        string alert_id PK, FK
+        string transaction_id PK, FK
     }
 
     ALERT_STATUS_HISTORY {
