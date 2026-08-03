@@ -73,5 +73,6 @@ See `.cursor/rules/general.mdc` for the modular monolith decision and
 build-order rationale. Schema: `docs/DATABASE_DESIGN.md` +
 `docs/transaction monitoring er diagram.mmd` — no Account/Payee master
 tables; `account_id` / `payee_id` live on transactions; MVP tables are
-`transactions`, `alerts`, `alert_transactions`. HLD/LLD diagrams live
+`transactions`, `alerts`, `alert_transactions`. Three-person ownership:
+[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). HLD/LLD diagrams live
 wherever the team has put them (Miro/Figma/Drive link — *add link here*).
