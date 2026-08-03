@@ -4,10 +4,9 @@ Update this file as milestones complete. Cursor agents read this before
 starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
-**Phase:** Not started / MVP in progress *(edit me)*
-**Last updated:** *(edit me)*
-**Currently working on:** *(edit me — e.g. "Transaction service + amount
-threshold rule")*
+**Phase:** Phase 1 — MVP in progress
+**Last updated:** 03 August 2026
+**Currently working on:** Next — Transaction entity + repository
 
 ---
 
@@ -16,7 +15,7 @@ threshold rule")*
 Build in this order. Don't start an item until the one above it works and
 is tested.
 
-- [ ] Project skeleton — Spring Boot app, package structure per
+- [x] Project skeleton — Spring Boot app, package structure per
       `backend-java.mdc`, migration tool configured, git repo pushed
 - [ ] Transaction entity + repository (fields: id, account_id, payee_id,
       amount, currency, type, timestamp, description, status)
