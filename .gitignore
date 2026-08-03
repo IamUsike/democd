@@ -1,37 +1,67 @@
-HELP.md
+# --- Build / Maven ---
 target/
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+replay_pid*
 
-### STS ###
+# --- Frontend (Vite / React) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Accidental npm at repo root (package.json lives under frontend/)
+/node_modules/
+/package-lock.json
+/package.json
+
+# --- Env & secrets (never commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+
+# --- Logs & runtime ---
+*.log
+logs/
+*.pid
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- IDEs ---
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.swp
+*~
+
+# Eclipse / STS
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
-.vscode/
-
-### Frontend (Vite / React) ###
-frontend/node_modules/
-frontend/dist/
+# --- Misc ---
+HELP.md
