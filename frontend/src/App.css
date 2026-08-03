@@ -1,0 +1,21 @@
+.app {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.app h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.app p {
+  margin: 0 0 0.75rem;
+  color: #444;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #666;
+}
