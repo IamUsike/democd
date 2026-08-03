@@ -2,13 +2,13 @@
 
 ## API Endpoint Documentation
 
-**Version:** 1.0
+**Version:** 1.1
 
 **Project:** Transaction Monitoring & Alert Dashboard
 
 **Prepared By:** <Your Name>
 
-**Date:** 02 August 2026
+**Date:** 03 August 2026
 
 
 
@@ -172,8 +172,8 @@ Creates a new transaction and starts the transaction monitoring process.
 
 ```json
 {
-  "senderAccountNumber": "ACC1001",
-  "receiverAccountNumber": "ACC2001",
+  "accountId": "ACC1001",
+  "payeeId": "PAYEE-2001",
   "amount": 25000,
   "currency": "INR",
   "transactionType": "TRANSFER",
@@ -184,8 +184,8 @@ Creates a new transaction and starts the transaction monitoring process.
 
 | Field | Validation |
 |---------|-------------|
-| senderAccountNumber | Required |
-| receiverAccountNumber | Required |
+| accountId | Required |
+| payeeId | Required |
 | amount | Must be greater than 0 |
 | currency | Required |
 | transactionType | Required |
@@ -212,15 +212,6 @@ Creates a new transaction and starts the transaction monitoring process.
 {
   "success": false,
   "message": "Amount must be greater than zero."
-}
-```
-
-#### 404 Not Found
-
-```json
-{
-  "success": false,
-  "message": "Sender account not found."
 }
 ```
 
@@ -296,8 +287,8 @@ HTTP Status: 200 OK
   "data": [
     {
       "transactionId": 101,
-      "senderAccountNumber": "ACC1001",
-      "receiverAccountNumber": "ACC2002",
+      "accountId": "ACC1001",
+      "payeeId": "PAYEE-2002",
       "amount": 25000,
       "currency": "INR",
       "transactionType": "TRANSFER",
@@ -358,8 +349,8 @@ HTTP Status: 200 OK
   "message": "Transaction retrieved successfully.",
   "data": {
       "transactionId":101,
-      "senderAccountNumber":"ACC1001",
-      "receiverAccountNumber":"ACC2002",
+      "accountId":"ACC1001",
+      "payeeId":"PAYEE-2002",
       "amount":25000,
       "currency":"INR",
       "transactionType":"TRANSFER",
@@ -826,6 +817,8 @@ Example
 ## Assumptions
 
 - Transactions are received through REST APIs.
+- `accountId` and `payeeId` are opaque identifiers on the transaction;
+  there are no Account/Payee master resources in the MVP API.
 - Monitoring rules are evaluated immediately after transaction creation.
 - Alerts are generated automatically when a monitoring rule is triggered.
 - Rule configuration is hardcoded for the MVP release.

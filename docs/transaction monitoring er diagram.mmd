@@ -1,29 +1,11 @@
 erDiagram
-    ACCOUNT ||--o{ TRANSACTION : "makes"
-    PAYEE ||--o{ TRANSACTION : "receives"
-    ACCOUNT ||--o{ ALERT : "triggers"
-    RULE ||--o{ ALERT : "generates"
-    RULE ||--o{ RULE_PARAMETER : "configured by"
     ALERT ||--o{ ALERT_TRANSACTION : "includes"
     TRANSACTION ||--o{ ALERT_TRANSACTION : "flagged in"
-    ALERT ||--o{ ALERT_STATUS_HISTORY : "has"
-
-    ACCOUNT {
-        string account_id PK
-        string account_name
-        datetime created_at
-    }
-
-    PAYEE {
-        string payee_id PK
-        string name
-        datetime created_at
-    }
 
     TRANSACTION {
-        string transaction_id PK
-        string account_id FK
-        string payee_id FK
+        bigint transaction_id PK
+        string account_id "monitored party — not an FK"
+        string payee_id "counterparty — not an FK"
         decimal amount
         string currency
         string type
@@ -32,29 +14,12 @@ erDiagram
         string status
     }
 
-    RULE {
-        string rule_id PK
-        string name
-        string description
-        string rule_type
-        string severity
-        boolean is_active
-        datetime created_at
-        datetime updated_at
-    }
-
-    RULE_PARAMETER {
-        string parameter_id PK
-        string rule_id FK
-        string param_key
-        string param_value
-    }
-
     ALERT {
-        string alert_id PK
-        string rule_id FK
-        string account_id FK
+        bigint alert_id PK
+        string rule_type "e.g. AMOUNT_THRESHOLD — no rules table in MVP"
+        string account_id "denormalized from triggering txn(s)"
         string status
+        string severity
         datetime created_at
         datetime acknowledged_at
         datetime investigating_at
@@ -64,15 +29,6 @@ erDiagram
     }
 
     ALERT_TRANSACTION {
-        string alert_id PK, FK
-        string transaction_id PK, FK
-    }
-
-    ALERT_STATUS_HISTORY {
-        string history_id PK
-        string alert_id FK
-        string previous_status
-        string new_status
-        datetime changed_at
-        string notes
+        bigint alert_id PK, FK
+        bigint transaction_id PK, FK
     }

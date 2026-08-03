@@ -2,13 +2,13 @@
 
 # Database Design Document
 
-**Version:** 1.0
+**Version:** 1.1
 
 **Project:** Transaction Monitoring & Alert Dashboard
 
 **Prepared By:** <Your Name>
 
-**Date:** 02 August 2026
+**Date:** 03 August 2026
 
 ---
 
@@ -16,31 +16,51 @@
 
 ## Purpose
 
-This document describes the database design for the Transaction Monitoring System.
+This document describes the database design for the Transaction Monitoring
+System: schema, tables, relationships, keys, constraints, and indexes.
 
-The objective is to define the database schema, tables, relationships, keys, and constraints required to support the application.
+The system uses a relational database (MySQL for MVP). Schema changes go
+through Flyway/Liquibase migrations — not `ddl-auto: update`.
 
-The system uses MySQL as the relational database for the MVP (Minimum Viable Product).
+The ER diagram lives at
+[`docs/transaction monitoring er diagram.mmd`](./transaction%20monitoring%20er%20diagram.mmd).
 
 ---
 
 # 2. Database Overview
 
-The Transaction Monitoring System stores transaction information, monitoring rules, and generated alerts.
+## Design decisions (locked)
 
-The MVP consists of the following tables:
+1. **No `accounts` or `payees` master tables.** This system records
+   transactions and evaluates rules; it does not create or manage
+   accounts/payees. `account_id` and `payee_id` are opaque string
+   identifiers stored on each transaction row. Phase 2 rules (Velocity,
+   New Payee, Daily Limit) query those columns directly — the same
+   pattern as the project brief SQL examples.
+2. **No `rules` / `rule_parameters` tables in MVP.** The Amount Threshold
+   rule is hardcoded in the rule engine. Alerts store a `rule_type`
+   string (e.g. `AMOUNT_THRESHOLD`) so the UI can show which rule fired.
+   A configurable rules table is a later enhancement.
+3. **Alerts link to transactions via a junction table.** Amount Threshold
+   attaches one transaction; Velocity (Phase 2) can attach many. Use
+   `alert_transactions` from day one so the model does not need a
+   breaking change later.
 
-1. Transactions
-2. Alerts
-3. Rules
+## MVP tables
 
-Whenever a transaction is recorded, the Rule Engine evaluates it against all active monitoring rules. If a rule is triggered, an alert is created and stored.
+1. `transactions`
+2. `alerts`
+3. `alert_transactions`
+
+Whenever a transaction is recorded, the rule engine evaluates it
+synchronously. If a rule triggers, an alert is created and linked to the
+relevant transaction(s).
 
 ---
 
 # 3. Database Tables
 
-## 3.1 Transactions Table
+## 3.1 Transactions
 
 ### Purpose
 
@@ -56,41 +76,39 @@ transactions
 
 | Column | Data Type | Constraints | Description |
 |----------|-----------|-------------|-------------|
-| transaction_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique Transaction Identifier |
-| reference_number | VARCHAR(50) | UNIQUE, NOT NULL | External Transaction Reference |
-| sender_account_number | VARCHAR(30) | NOT NULL | Sender Account Number |
-| receiver_account_number | VARCHAR(30) | NOT NULL | Receiver Account Number |
-| amount | DECIMAL(15,2) | NOT NULL | Transaction Amount |
-| currency | VARCHAR(5) | NOT NULL | Currency Code (INR, USD, etc.) |
-| transaction_type | VARCHAR(30) | NOT NULL | TRANSFER, UPI, IMPS, NEFT, RTGS |
-| description | VARCHAR(255) | NULL | Transaction Description |
-| status | VARCHAR(20) | NOT NULL | SUCCESS / FAILED |
-| transaction_datetime | DATETIME | NOT NULL | Date and Time of Transaction |
+| transaction_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique transaction identifier |
+| account_id | VARCHAR(64) | NOT NULL | Monitored party (opaque ID — not an FK) |
+| payee_id | VARCHAR(64) | NOT NULL | Counterparty / payee (opaque ID — not an FK) |
+| amount | DECIMAL(15,2) | NOT NULL | Transaction amount |
+| currency | VARCHAR(3) | NOT NULL | Currency code (e.g. USD, INR) |
+| type | VARCHAR(30) | NOT NULL | e.g. DEBIT, CREDIT, TRANSFER |
+| timestamp | DATETIME | NOT NULL | When the transaction occurred |
+| description | VARCHAR(255) | NULL | Optional description |
+| status | VARCHAR(20) | NOT NULL | e.g. COMPLETED, FAILED |
+
+### Constraints
+
+- `amount` must be greater than zero.
+- `account_id` and `payee_id` are mandatory (non-blank).
+
+### Indexes (scalability)
+
+| Index | Columns | Why |
+|-------|---------|-----|
+| PK | `transaction_id` | Lookup by id |
+| `idx_txn_account_timestamp` | `(account_id, timestamp)` | Velocity / Daily Limit / account filters |
+| `idx_txn_account_payee` | `(account_id, payee_id)` | New Payee checks |
+
+These indexes matter more for scale than introducing Account/Payee tables.
 
 ---
 
-## Primary Key
-
-```
-transaction_id
-```
-
----
-
-## Constraints
-
-- Amount must be greater than zero.
-- Sender account number is mandatory.
-- Receiver account number is mandatory.
-- Reference number must be unique.
-
----
-
-## 3.2 Alerts Table
+## 3.2 Alerts
 
 ### Purpose
 
-Stores alerts generated by the Rule Engine whenever a transaction violates one or more monitoring rules.
+Stores alerts generated when a rule fires. Lifecycle status is enforced
+in the alert service (not only by a DB check constraint).
 
 ### Table Name
 
@@ -102,185 +120,108 @@ alerts
 
 | Column | Data Type | Constraints | Description |
 |----------|-----------|-------------|-------------|
-| alert_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique Alert Identifier |
-| transaction_id | BIGINT | FOREIGN KEY | Related Transaction |
-| rule_id | BIGINT | FOREIGN KEY | Triggered Rule |
-| severity | VARCHAR(20) | NOT NULL | LOW / MEDIUM / HIGH |
+| alert_id | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique alert identifier |
+| rule_type | VARCHAR(64) | NOT NULL | e.g. `AMOUNT_THRESHOLD` (no FK to a rules table in MVP) |
+| account_id | VARCHAR(64) | NOT NULL | Denormalized from triggering transaction(s) for list/filter |
 | status | VARCHAR(30) | NOT NULL | OPEN / ACKNOWLEDGED / INVESTIGATING / CLOSED / DISMISSED |
-| reason | VARCHAR(255) | NOT NULL | Reason for Alert |
-| created_at | DATETIME | NOT NULL | Alert Creation Time |
-| updated_at | DATETIME | NOT NULL | Last Status Update |
+| severity | VARCHAR(20) | NOT NULL | LOW / MEDIUM / HIGH |
+| created_at | DATETIME | NOT NULL | Alert creation time |
+| acknowledged_at | DATETIME | NULL | When acknowledged |
+| investigating_at | DATETIME | NULL | When investigation started |
+| dismissed_at | DATETIME | NULL | When dismissed |
+| closed_at | DATETIME | NULL | When closed |
+| resolution_notes | VARCHAR(1000) | NULL | Notes on close/dismiss |
 
----
-
-## Primary Key
+### Valid status transitions (enforced in service)
 
 ```
-alert_id
+OPEN → ACKNOWLEDGED → INVESTIGATING → CLOSED
+ACKNOWLEDGED → DISMISSED
+INVESTIGATING → DISMISSED
 ```
 
----
+### Indexes
 
-## Foreign Keys
-
-| Column | References |
-|----------|------------|
-| transaction_id | transactions(transaction_id) |
-| rule_id | rules(rule_id) |
-
----
-
-## Constraints
-
-- Every alert must belong to an existing transaction.
-- Every alert must be generated by an existing rule.
-- Status must be one of:
-    - OPEN
-    - ACKNOWLEDGED
-    - INVESTIGATING
-    - CLOSED
-    - DISMISSED
+| Index | Columns | Why |
+|-------|---------|-----|
+| PK | `alert_id` | Lookup by id |
+| `idx_alert_status` | `(status)` | Active alerts list |
+| `idx_alert_account` | `(account_id)` | Filter by account |
+| `idx_alert_created` | `(created_at)` | History / ordering |
 
 ---
 
-## 3.3 Rules Table
+## 3.3 Alert Transactions
 
 ### Purpose
 
-Stores monitoring rules used by the Rule Engine.
-
-For the MVP release, rules are pre-configured by the administrator.
+Many-to-many link between alerts and the transaction(s) that contributed
+to the alert. MVP Amount Threshold uses one row; Velocity uses several.
 
 ### Table Name
 
 ```
-rules
+alert_transactions
 ```
 
 ### Columns
 
 | Column | Data Type | Constraints | Description |
 |----------|-----------|-------------|-------------|
-| rule_id | BIGINT | PRIMARY KEY | Unique Rule Identifier |
-| rule_name | VARCHAR(100) | UNIQUE, NOT NULL | Monitoring Rule Name |
-| threshold_amount | DECIMAL(15,2) | NOT NULL | Threshold Amount |
-| severity | VARCHAR(20) | NOT NULL | LOW / MEDIUM / HIGH |
-| status | VARCHAR(20) | NOT NULL | ACTIVE / INACTIVE |
+| alert_id | BIGINT | PK, FK → alerts(alert_id) | Alert |
+| transaction_id | BIGINT | PK, FK → transactions(transaction_id) | Linked transaction |
 
----
+### Primary Key
 
-## Primary Key
-
-```
-rule_id
-```
-
----
-
-## Constraints
-
-- Rule name must be unique.
-- Threshold amount must be greater than zero.
-- Only ACTIVE rules are evaluated by the Rule Engine.
+Composite: `(alert_id, transaction_id)`
 
 ---
 
 # 4. Entity Relationships
 
-The following relationships exist between the database tables.
+| Parent | Child | Relationship |
+|--------|-------|--------------|
+| alerts | alert_transactions | One-to-Many |
+| transactions | alert_transactions | One-to-Many |
 
-## Relationship 1
-
-One Transaction can generate zero or many Alerts.
-
-```
-Transactions (1)
-        |
-        |------< Alerts (Many)
-```
-
----
-
-## Relationship 2
-
-One Rule can generate many Alerts.
+`account_id` / `payee_id` on `transactions` (and `account_id` on
+`alerts`) are **not** foreign keys to master tables.
 
 ```
-Rules (1)
-     |
-     |------< Alerts (Many)
+transactions (1) ----< alert_transactions >---- (1) alerts
 ```
 
 ---
 
-# 5. Entity Relationship Summary
+# 5. Explicitly out of MVP schema
 
-| Parent Table | Child Table | Relationship |
-|---------------|-------------|--------------|
-| Transactions | Alerts | One-to-Many |
-| Rules | Alerts | One-to-Many |
+Do **not** add these unless a milestone says so:
 
----
-
-# 6. Database Constraints
-
-## Transactions
-
-- Amount must be greater than zero.
-- Sender account cannot be empty.
-- Receiver account cannot be empty.
-- Reference number must be unique.
+| Table / idea | When |
+|--------------|------|
+| `accounts`, `payees` | Only if the product starts managing account/payee master data |
+| `rules`, `rule_parameters` | Configurable / DB-driven rules (post-MVP enhancement) |
+| `alert_status_history` | Phase 4 audit trail (who/what/when per transition) |
+| users / auth tables | Out of scope — single operator, no auth |
 
 ---
 
-## Alerts
+# 6. Assumptions
 
-- Alert must reference a valid transaction.
-- Alert must reference a valid rule.
-- Status must be a valid investigation status.
-
----
-
-## Rules
-
-- Rule name must be unique.
-- Threshold amount must be positive.
-- Only ACTIVE rules are evaluated.
+- Transactions arrive via REST API; the system does not onboard accounts.
+- Rule evaluation is synchronous in MVP (no queue yet).
+- Amount Threshold threshold value is hardcoded in the rule constructor.
+- Authentication is outside MVP scope.
 
 ---
 
-# 7. Future Enhancements
-
-The following tables may be added in future releases.
-
-- users
-- investigators
-- roles
-- permissions
-- notifications
-- audit_logs
-- investigation_notes
-- rule_execution_history
-
----
-
-# 8. Assumptions
-
-- Transactions are received through REST APIs.
-- Rules are evaluated immediately after transaction creation.
-- Alerts are automatically generated by the Rule Engine.
-- Rules are pre-configured for the MVP release.
-- Authentication and authorization are outside the scope of Version 1.
-
----
-
-# 9. Document Information
+# 7. Document Information
 
 | Item | Value |
 |------|-------|
 | Document Name | Database Design Document |
 | Project | Transaction Monitoring System |
-| Version | 1.0 |
-| Database | MySQL |
-| Status | Draft |
-| Last Updated | 02 August 2026 |
+| Version | 1.1 |
+| Database | MySQL (MVP) |
+| Status | Aligned with ERD + backend schema decisions |
+| Last Updated | 03 August 2026 |

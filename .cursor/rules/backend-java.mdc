@@ -54,6 +54,24 @@ alert. If/when the rule engine is extracted into its own deployable
 shape stable and separate from the public alert-lifecycle endpoints the
 UI uses, even while everything is still in one process.
 
+## Schema decisions
+Canonical docs: `docs/DATABASE_DESIGN.md` and
+`docs/transaction monitoring er diagram.mmd`.
+
+- MVP tables only: `transactions`, `alerts`, `alert_transactions`.
+- Store `account_id` and `payee_id` as opaque strings on the transaction
+  row. Do **not** introduce `Account` / `Payee` entities or tables —
+  this system records transactions; it does not manage account/payee
+  master data. Phase 2 rules query those columns directly.
+- Alerts store `rule_type` as a string (e.g. `AMOUNT_THRESHOLD`). Do not
+  add a `rules` / `rule_parameters` table unless that milestone is active
+  (see also `rule-engine.mdc`).
+- Link alerts to transactions via `alert_transactions` from day one
+  (supports multi-transaction alerts later without a schema break).
+- Index `(account_id, timestamp)` and `(account_id, payee_id)` early —
+  that is the scalability lever for Velocity / New Payee / Daily Limit,
+  not more normalized tables.
+
 ## Migrations
 Use a migration tool (Flyway or Liquibase) from the start, not
 `ddl-auto: update`. Every schema change is a new migration file, checked
