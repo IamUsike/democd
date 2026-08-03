@@ -1,0 +1,53 @@
+---
+description: Rule engine design constraints — strategy pattern, adding new rule types
+globs: src/main/java/**/rule/**/*.java
+alwaysApply: false
+---
+
+# Rule engine
+
+## The contract
+Every rule type implements the same interface:
+
+```java
+public interface Rule {
+    List<Alert> evaluate(Transaction txn, RuleEvaluationContext context);
+}
+```
+
+`RuleEngine` holds a list of active `Rule` instances and iterates them
+per transaction. It does not know about specific rule types.
+
+## Adding a new rule type (Velocity, New Payee, Daily Limit — phase 2)
+Adding a rule type means: one new class implementing `Rule`, registered
+into the active rule list. It does **not** mean modifying `RuleEngine`,
+the `Rule` interface, or any existing rule class. If you find yourself
+wanting to change `RuleEngine` to add a rule type, stop — that's a sign
+the interface is missing something the new rule needs, and that's worth
+flagging rather than special-casing around.
+
+## RuleEvaluationContext
+This is where rules that need more than the single transaction get their
+data — e.g. "count of transactions for this account in the last 10
+minutes" for Velocity, or "sum of today's transactions for this account"
+for Daily Limit. Keep this lookup logic in the context/repository layer,
+not inlined in each rule — multiple rules will need overlapping queries
+(recent transaction counts, daily sums), so a rule should ask the context
+for what it needs rather than querying the database directly.
+
+## MVP scope
+Only `AmountThresholdRule` exists for MVP. It's fine — expected, even —
+for the interface to feel like overkill for a single implementation.
+That's the point: the cost of the abstraction is paid once, up front,
+specifically so Velocity/New Payee/Daily Limit are additive later.
+
+## Configurability
+MVP hardcodes the threshold value in the rule's constructor. Do not build
+a `rules` database table or config-driven rule loading unless it's
+explicitly the current milestone in `Project_milestones.md` — this is a
+named phase-2 enhancement, not something to add speculatively.
+
+## Testing
+Every rule implementation needs unit tests covering: the triggering case,
+the non-triggering case, and at least one boundary case (e.g. amount
+exactly equal to the threshold). See `testing.mdc`.

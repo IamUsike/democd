@@ -1,0 +1,57 @@
+---
+description: Project-wide context and architecture decisions for the Transaction Monitoring & Alerts system
+globs:
+alwaysApply: true
+---
+
+# Transaction Monitoring & Alerts Dashboard
+
+## What this is
+A REST API + dashboard that records transactions, evaluates them against
+configurable rules, and manages alerts through a lifecycle
+(OPEN → ACKNOWLEDGED → INVESTIGATING → CLOSED / DISMISSED).
+
+Stack: Java + Spring Boot (backend), React (frontend), single relational
+database. No authentication — single operator assumed.
+
+## Before you do anything
+Read `Project_milestones.md` at the repo root before starting or resuming
+work. It tracks what's done, what's in progress, and what's next. Update it
+when you complete a milestone — don't leave it stale.
+
+## Architecture: modular monolith
+The API layer, transaction service, and alert service run as **one Spring
+Boot application** — one deployable, one JVM. Treat them as separate
+packages/modules with clean boundaries (see `backend-java.mdc`), not as
+separate services. Do not introduce separate deployables, service mesh,
+or inter-service HTTP calls between these three — that defeats the point
+of the monolith.
+
+The **rule engine** is the one piece designed to be pulled out and scaled
+independently later (see `rule-engine.mdc`). Keep it decoupled behind a
+clear interface even while it lives in the same process for MVP, so
+extracting it later is a deployment change, not a rewrite.
+
+## Build order — MVP first, always
+Do not build phase-2 items before the MVP path works end to end:
+
+1. REST API layer (transactions + rules read endpoints)
+2. Transaction service (record + query)
+3. Rule engine — **Amount Threshold rule only**, called synchronously
+   (no queue yet)
+4. Alert service — full lifecycle, not just creation
+5. React UI — transaction list, alert list, alert detail, lifecycle actions
+
+Phase 2 (do not start until the above works and is tested): Velocity /
+New Payee / Daily Limit rules, async queue + horizontally scaled rule
+engine workers, caching for count lookups, read replica, TLS/encryption
+hardening beyond defaults.
+
+## Development approach
+Test-driven, agile. See `testing.mdc` — do not write implementation code
+before a failing test exists for it, especially for rule engine logic.
+
+## When planning a non-trivial feature
+Before implementing anything more than a small fix, produce a short plan
+and save it to `.cursor/plans/` (see that folder's README) before writing
+code.

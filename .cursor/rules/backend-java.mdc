@@ -1,0 +1,60 @@
+---
+description: Spring Boot backend conventions
+globs: src/main/java/**/*.java
+alwaysApply: false
+---
+
+# Backend conventions (Java / Spring Boot)
+
+## Package structure
+Organize by module, not by layer-at-the-top:
+
+```
+com.<team>.txnmonitor
+├── api            # controllers + request/response DTOs only
+├── transaction     # transaction service, repository, entity
+├── rule            # rule engine — see rule-engine.mdc
+├── alert           # alert service, repository, entity, lifecycle logic
+└── common          # shared config, exceptions, utilities
+```
+
+Each module (`transaction`, `rule`, `alert`) should be usable on its own
+terms — controllers call services, services call repositories, and
+modules talk to each other through service interfaces, never by reaching
+into another module's repository or entity directly.
+
+## Layering rules
+- Controllers: request validation and mapping to/from DTOs only. No
+  business logic, no direct repository access.
+- Services: business logic lives here. Services are where rule
+  evaluation gets triggered, where alert lifecycle transitions get
+  validated, etc.
+- Repositories: Spring Data JPA interfaces. No query logic beyond what
+  derived queries or `@Query` annotations express.
+- Entities are not DTOs. Don't return JPA entities directly from
+  controllers — map to a response DTO, even if it feels redundant early
+  on.
+
+## Dependency injection
+Constructor injection only. No `@Autowired` on fields. This also makes
+unit tests straightforward to write without a Spring context.
+
+## Alert lifecycle
+The valid transitions are OPEN → ACKNOWLEDGED → INVESTIGATING → CLOSED,
+with DISMISSED reachable from ACKNOWLEDGED or INVESTIGATING. Enforce
+this in the alert service, not in the controller and not in the
+database — invalid transitions should be a clear exception with a
+message naming the current and attempted status, not a silent no-op.
+
+## Internal vs public endpoints
+The rule engine calls back into the alert module to record a created
+alert. If/when the rule engine is extracted into its own deployable
+(phase 2), this becomes a real HTTP call to an internal-only endpoint
+(e.g. `POST /internal/alerts`) — keep that endpoint's request/response
+shape stable and separate from the public alert-lifecycle endpoints the
+UI uses, even while everything is still in one process.
+
+## Migrations
+Use a migration tool (Flyway or Liquibase) from the start, not
+`ddl-auto: update`. Every schema change is a new migration file, checked
+into git.

@@ -1,0 +1,41 @@
+---
+description: React frontend conventions
+globs: frontend/src/**/*.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+
+# Frontend conventions (React)
+
+## Keep it minimal and functional
+This is a dashboard for a single operator, not a consumer product. Default
+to the simplest thing that works:
+- Functional components + hooks. No class components.
+- Local component state (`useState`) and prop drilling for a UI this
+  size are fine. Don't reach for a global state library (Redux, Zustand,
+  etc.) unless a specific piece of state is genuinely needed in three or
+  more unrelated places — and even then, prefer React Context first.
+- Fetch data with a small typed API client wrapping `fetch`, not a heavy
+  data-fetching library, unless caching/refetching behavior actually
+  becomes a pain point.
+- No CSS-in-JS framework decisions up front — plain CSS modules or
+  Tailwind utility classes are both fine; pick one and stay consistent.
+
+## Priority order (build in this order, matching the backend's priority list)
+1. Transaction list (with filtering/search)
+2. Active alerts list
+3. Alert detail + triggering transactions
+4. Acknowledge / close / dismiss actions
+5. Alert history
+6. Rules view (read-only first, edit later if there's time)
+
+## API client
+One typed client module per backend module (`transactionApi.ts`,
+`alertApi.ts`), mirroring the backend's module boundaries. Response
+types should mirror the backend DTOs — if a field is renamed or added on
+the backend, it should be a one-line change here, not a hunt through
+scattered `fetch` calls.
+
+## Don't build ahead of the backend
+If an endpoint doesn't exist yet, don't mock a fake one and wire the UI
+to it speculatively — check `Project_milestones.md` for what's actually
+available before building a screen against it.

@@ -1,0 +1,41 @@
+---
+description: Test-driven development workflow and testing conventions
+globs: src/test/java/**/*.java
+alwaysApply: false
+---
+
+# Testing (TDD)
+
+## Workflow
+For any new behavior — a rule type, a lifecycle transition, an endpoint —
+write the failing test first, confirm it fails for the right reason, then
+write the minimum implementation to pass it. Don't write the
+implementation and backfill tests afterward. This applies especially to
+the rule engine, where the whole point is that each rule's behavior is
+precisely specified by its test cases.
+
+## Tools
+JUnit 5 + Mockito. Use `@ExtendWith(MockitoExtension.class)` for unit
+tests that don't need a Spring context — most service and rule-engine
+tests should not need `@SpringBootTest`. Reserve `@SpringBootTest` /
+`@WebMvcTest` for the thinner set of integration tests that actually need
+the context wired up (controller request/response shape, repository
+queries against a real or embedded database).
+
+## Naming
+`methodName_condition_expectedOutcome` — e.g.
+`evaluate_amountAboveThreshold_returnsAlert`,
+`transition_closeWithoutAcknowledge_throwsInvalidTransition`.
+
+## What needs coverage
+- Every `Rule` implementation: triggering case, non-triggering case,
+  boundary case.
+- Every alert lifecycle transition, including the invalid ones (e.g.
+  closing an OPEN alert without acknowledging first — decide if that's
+  allowed and test the decision either way).
+- Controller layer: request validation failures (bad input →
+  4xx), not just the happy path.
+
+## One behavior per test
+If a test needs "and" in its description to explain what it checks, it's
+probably two tests.
