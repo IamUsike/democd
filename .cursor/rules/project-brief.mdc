@@ -1,0 +1,15 @@
+---
+description: The original, verbatim project brief from the instructors — full requirements, all appendices (SQL examples, UI mockup ideas, advanced feature list, testing scenarios, architecture suggestions). Read this when you need the exact original wording, an appendix example, or to check whether something is in scope per the instructor's spec rather than the team's own milestone doc.
+globs:
+alwaysApply: false
+---
+
+The full brief lives at `docs/project-brief.md`. It is long (all
+appendices included) and deliberately not loaded by default — read it
+with the file tool when a task genuinely needs the original wording or
+an appendix detail.
+
+For day-to-day work, `Project_milestones.md` and `AGENTS.md` /
+`general.mdc` already capture the team's translation of this brief into
+current scope and build order. Only reach for the original when those
+are ambiguous or you need to check exact instructor wording.

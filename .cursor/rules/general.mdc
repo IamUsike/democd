@@ -19,6 +19,12 @@ Read `Project_milestones.md` at the repo root before starting or resuming
 work. It tracks what's done, what's in progress, and what's next. Update it
 when you complete a milestone — don't leave it stale.
 
+The original, verbatim instructor brief is at `docs/project-brief.md`
+(see `project-brief.mdc`). It's not loaded by default — pull it in only
+when you need exact original wording or an appendix detail (SQL
+examples, UI mockups, advanced feature list). Day-to-day, this file and
+`Project_milestones.md` are enough.
+
 ## Architecture: modular monolith
 The API layer, transaction service, and alert service run as **one Spring
 Boot application** — one deployable, one JVM. Treat them as separate

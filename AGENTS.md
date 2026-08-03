@@ -1,7 +1,11 @@
 # AGENTS.md — Transaction Monitoring & Alerts Dashboard
 
 Read this before starting or resuming work. See `Project_milestones.md`
-for current status — keep it updated as milestones complete.
+for current status — keep it updated as milestones complete. The
+original, verbatim instructor brief (full requirements + appendices) is
+at `docs/project-brief.md` — check it only when you need exact original
+wording or an appendix detail; this file and the milestones doc are
+enough for day-to-day work.
 
 ## What this is
 REST API + dashboard recording transactions, evaluating them against
