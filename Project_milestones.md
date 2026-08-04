@@ -6,8 +6,8 @@ starting work — keep "Current status" honest and current, not aspirational.
 ## Current status
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
-**Currently working on:** Next — Transaction entity + repository
-(enriched multi-source fields)
+**Currently working on:** Transaction entity + repository (Person A);
+next for Person B — wire record→evaluate + alert create path
 
 ---
 
@@ -29,7 +29,7 @@ evaluate-on-record.
 - [ ] `POST /transactions`, `GET /transactions` (list + filter/search by
       source and account) — **public simulate/ingest** for bank & merchant
       sims uses this same contract
-- [ ] Rule engine skeleton — `Rule` interface, `RuleEngine`,
+- [x] Rule engine skeleton — `Rule` interface, `RuleEngine`,
       `AmountThresholdRule` (single hardcoded threshold)
 - [ ] Wire transaction recording → synchronous rule evaluation
 - [ ] Alert entity + repository (status, severity, rule reference,
