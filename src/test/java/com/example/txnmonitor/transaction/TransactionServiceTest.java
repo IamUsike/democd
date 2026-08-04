@@ -3,6 +3,8 @@ package com.example.txnmonitor.transaction;
 import com.example.txnmonitor.api.TransactionRequest;
 import com.example.txnmonitor.api.TransactionResponse;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
+import com.example.txnmonitor.rule.NoOpRuleEvaluationContext;
+import com.example.txnmonitor.rule.RuleEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -26,12 +28,14 @@ class TransactionServiceTest {
 
     @Mock
     private TransactionRepository transactionRepository;
-
     private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
-        transactionService = new TransactionService(transactionRepository);
+        transactionService = new TransactionService(
+                transactionRepository,
+                new RuleEngine(List.of()),
+                new NoOpRuleEvaluationContext());
     }
 
     @Test

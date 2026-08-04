@@ -3,6 +3,9 @@ package com.example.txnmonitor.transaction;
 import com.example.txnmonitor.api.TransactionRequest;
 import com.example.txnmonitor.api.TransactionResponse;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
+import com.example.txnmonitor.rule.RuleEngine;
+import com.example.txnmonitor.rule.RuleEvaluationContext;
+import com.example.txnmonitor.rule.TransactionSnapshot;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,13 +15,23 @@ import java.util.Objects;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
+    private final RuleEngine ruleEngine;
+    private final RuleEvaluationContext ruleEvaluationContext;
 
-    public TransactionService(TransactionRepository transactionRepository) {
+    public TransactionService(
+            TransactionRepository transactionRepository,
+            RuleEngine ruleEngine,
+            RuleEvaluationContext ruleEvaluationContext) {
         this.transactionRepository = transactionRepository;
+        this.ruleEngine = ruleEngine;
+        this.ruleEvaluationContext = ruleEvaluationContext;
     }
 
     public TransactionResponse saveTransaction(TransactionRequest request) {
         Transaction savedTransaction = transactionRepository.save(toEntity(request));
+        ruleEngine.evaluate(
+                new TransactionSnapshot(savedTransaction.getTransactionId(), savedTransaction.getAmount()),
+                ruleEvaluationContext);
         return toResponse(savedTransaction);
     }
 
