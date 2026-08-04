@@ -1,10 +1,13 @@
 package com.example.txnmonitor.transaction;
 
+import com.example.txnmonitor.alert.AlertService;
+import com.example.txnmonitor.api.AlertResponse;
 import com.example.txnmonitor.api.TransactionRequest;
 import com.example.txnmonitor.api.TransactionResponse;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
 import com.example.txnmonitor.rule.NoOpRuleEvaluationContext;
 import com.example.txnmonitor.rule.RuleEngine;
+import com.example.txnmonitor.rule.RuleMatch;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -28,14 +32,18 @@ class TransactionServiceTest {
 
     @Mock
     private TransactionRepository transactionRepository;
+
+    private RecordingAlertService alertService;
     private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
+        alertService = new RecordingAlertService();
         transactionService = new TransactionService(
                 transactionRepository,
                 new RuleEngine(List.of()),
-                new NoOpRuleEvaluationContext());
+                new NoOpRuleEvaluationContext(),
+                alertService);
     }
 
     @Test
@@ -103,6 +111,8 @@ class TransactionServiceTest {
         assertEquals("BANK", result.getSourceType());
         assertEquals("HSBC-UK", result.getSourceId());
         assertEquals("ACC-1", result.getAccountId());
+        assertSame(savedTransaction, alertService.lastTransaction);
+        assertEquals(0, alertService.lastMatches.size());
     }
 
     @Test
@@ -176,6 +186,23 @@ class TransactionServiceTest {
         verify(transactionRepository).findByAccountId("ACC-1");
         verify(transactionRepository).findByStatus("NEW");
         verify(transactionRepository).findByType("TRANSFER");
+    }
+
+    private static final class RecordingAlertService extends AlertService {
+
+        private Transaction lastTransaction;
+        private List<RuleMatch> lastMatches = List.of();
+
+        private RecordingAlertService() {
+            super(null, null);
+        }
+
+        @Override
+        public List<AlertResponse> createFromMatches(Transaction transaction, List<RuleMatch> matches) {
+            this.lastTransaction = transaction;
+            this.lastMatches = matches;
+            return List.of();
+        }
     }
 }
 

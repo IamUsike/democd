@@ -234,7 +234,7 @@ class TransactionControllerTest {
         private boolean throwUnexpectedError;
 
         private RecordingTransactionService() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         @Override
