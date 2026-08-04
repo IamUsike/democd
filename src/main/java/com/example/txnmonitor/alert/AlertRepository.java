@@ -18,4 +18,8 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 			String status);
 
 	List<Alert> findAllByOrderByCreatedAtDesc();
+
+	long countByStatus(String status);
+
+	long countBySeverity(String severity);
 }
