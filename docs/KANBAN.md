@@ -14,7 +14,7 @@ Commit message when updating: `chore: kanban update [date]`
 | Skeleton (Spring Boot + Flyway + React placeholder) | ALL | |
 | ER diagram + database design docs | Rameez + shreya | |
 | DFD, storyline, team split docs | IamUsike | |
-| [C-1] AGIL-ish bluish UI shell + left nav routing | C | Dashboard / Transactions / Alerts pages |
+| [C-1] AGIL-ish Dark Obsidian UI shell + left nav routing (zero horizontal scroll) | C | Dashboard / Transactions / Alerts pages |
 | [C-2] Transaction list UI (filter by source) | C | |
 | [C-3] Alert list + detail + lifecycle actions UI | C | |
 | [C-4] KPI strip (counts by source, open alerts) | C | |

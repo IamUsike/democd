@@ -10,7 +10,9 @@ starting work — keep "Current status" honest and current, not aspirational.
 **Currently working on:** Backend convergence for MVP:
 transaction API and sync rule-evaluation wiring are merged in `dev`;
 next is alert persistence/lifecycle APIs, then remove frontend sample-data
-fallback and run end-to-end demo flow.
+fallback and run end-to-end demo flow. Frontend MVP UI is fully implemented
+with a Dark Obsidian & Slate theme, zero horizontal scroll, separate
+Dashboard / Transactions / Alerts pages, typed API clients, and sample-data fallback.
 
 ---
 
@@ -43,7 +45,7 @@ evaluate-on-record.
   dismiss — with transition validation
 - [ ] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
       filter by source)
-- [x] React UI: bluish theme; transaction list (filter/search by source)
+- [x] React UI: Dark Obsidian theme; zero horizontal scroll; transaction list (filter/search by source)
 - [x] React UI: alert list + alert detail + lifecycle action buttons
 - [x] Basic dashboard KPI strip (txn counts by source, open alerts —
       aggregations, not stored columns)
