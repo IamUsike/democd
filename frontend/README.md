@@ -41,4 +41,22 @@ Override with Vite env variable:
 VITE_API_BASE_URL=http://localhost:8081
 ```
 
-For MVP demo flow, if backend endpoints are not available yet, the UI falls back to sample data and shows a warning banner.
+For Docker / Jenkins (production static build + nginx), see the root README
+“Docker / Jenkins VM deploy” section. Build arg / `.env`:
+
+```bash
+VITE_API_BASE_URL=http://<VM_IP>:8081
+```
+
+UI then: `http://<VM_IP>/` · API: `http://<VM_IP>:8081`
+
+## Docker image
+
+```bash
+# from repo root
+docker compose build frontend
+docker compose up -d frontend
+```
+
+`frontend/Dockerfile` multi-stage: `npm run build` → `nginx:alpine` on port 80.
+SPA routes fall back via `frontend/nginx.conf`.
