@@ -24,6 +24,18 @@ public class Transaction {
     @Column(name = "transaction_id")
     private Long transactionId;
 
+    @Column(name = "source_type", nullable = false, length = 20)
+    @NotBlank(message = "Source type is required")
+    private String sourceType;
+
+    @Column(name = "source_id", nullable = false, length = 64)
+    @NotBlank(message = "Source ID is required")
+    private String sourceId;
+
+    @Column(name = "source_name", nullable = false, length = 128)
+    @NotBlank(message = "Source name is required")
+    private String sourceName;
+
     @Column(name = "account_id", nullable = false, length = 64)
     @NotBlank(message = "Account ID is required")
     private String accountId;
@@ -31,6 +43,9 @@ public class Transaction {
     @Column(name = "payee_id", nullable = false, length = 64)
     @NotBlank(message = "Payee ID is required")
     private String payeeId;
+
+    @Column(name = "payee_name", length = 128)
+    private String payeeName;
 
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     @NotNull(message = "Amount is required")
@@ -50,6 +65,15 @@ public class Transaction {
     @NotNull(message = "Timestamp is required")
     private LocalDateTime timestamp;
 
+    @Column(name = "location", length = 255)
+    private String location;
+
+    @Column(name = "latitude", precision = 10, scale = 7)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", precision = 10, scale = 7)
+    private BigDecimal longitude;
+
     @Column(name = "description", length = 255)
     private String description;
 
@@ -60,17 +84,32 @@ public class Transaction {
     public Transaction() {
     }
 
-    public Transaction(Long transactionId, String accountId, String payeeId, BigDecimal amount, String currency,
-                       String type, LocalDateTime timestamp, String description, String status) {
+    public Transaction(Long transactionId, String sourceType, String sourceId, String sourceName,
+                       String accountId, String payeeId, String payeeName, BigDecimal amount, String currency,
+                       String type, LocalDateTime timestamp, String location, BigDecimal latitude,
+                       BigDecimal longitude, String description, String status) {
         this.transactionId = transactionId;
+        this.sourceType = sourceType;
+        this.sourceId = sourceId;
+        this.sourceName = sourceName;
         this.accountId = accountId;
         this.payeeId = payeeId;
+        this.payeeName = payeeName;
         this.amount = amount;
         this.currency = currency;
         this.type = type;
         this.timestamp = timestamp;
+        this.location = location;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.description = description;
         this.status = status;
+    }
+
+    public Transaction(Long transactionId, String accountId, String payeeId, BigDecimal amount, String currency,
+                       String type, LocalDateTime timestamp, String description, String status) {
+        this(transactionId, null, null, null, accountId, payeeId, null, amount, currency, type, timestamp,
+                null, null, null, description, status);
     }
 
     public Long getTransactionId() {
@@ -79,6 +118,30 @@ public class Transaction {
 
     public void setTransactionId(Long transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public String getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(String sourceId) {
+        this.sourceId = sourceId;
+    }
+
+    public String getSourceName() {
+        return sourceName;
+    }
+
+    public void setSourceName(String sourceName) {
+        this.sourceName = sourceName;
     }
 
     public String getAccountId() {
@@ -95,6 +158,14 @@ public class Transaction {
 
     public void setPayeeId(String payeeId) {
         this.payeeId = payeeId;
+    }
+
+    public String getPayeeName() {
+        return payeeName;
+    }
+
+    public void setPayeeName(String payeeName) {
+        this.payeeName = payeeName;
     }
 
     public BigDecimal getAmount() {
@@ -127,6 +198,30 @@ public class Transaction {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(BigDecimal longitude) {
+        this.longitude = longitude;
     }
 
     public String getDescription() {
@@ -166,12 +261,19 @@ public class Transaction {
     public String toString() {
         return "Transaction{" +
                 "transactionId=" + transactionId +
+                ", sourceType='" + sourceType + '\'' +
+                ", sourceId='" + sourceId + '\'' +
+                ", sourceName='" + sourceName + '\'' +
                 ", accountId='" + accountId + '\'' +
                 ", payeeId='" + payeeId + '\'' +
+                ", payeeName='" + payeeName + '\'' +
                 ", amount=" + amount +
                 ", currency='" + currency + '\'' +
                 ", type='" + type + '\'' +
                 ", timestamp=" + timestamp +
+                ", location='" + location + '\'' +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
                 ", description='" + description + '\'' +
                 ", status='" + status + '\'' +
                 '}';

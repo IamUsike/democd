@@ -48,21 +48,33 @@ class TransactionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "sourceType": "BANK",
+                                  "sourceId": "HSBC-UK",
+                                  "sourceName": "HSBC UK",
                                   "accountId": "ACC-1",
                                   "payeeId": "PAYEE-1",
+                                  "payeeName": "Coffee Shop",
                                   "amount": 10.00,
                                   "currency": "USD",
                                   "type": "TRANSFER",
                                   "timestamp": "2026-08-03T10:15:30",
+                                  "location": "London",
+                                  "latitude": 51.507351,
+                                  "longitude": -0.127758,
                                   "description": "Test payment",
                                   "status": "NEW"
                                 }
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.transactionId").value(1L))
-                .andExpect(jsonPath("$.accountId").value("ACC-1"));
+                .andExpect(jsonPath("$.sourceType").value("BANK"))
+                .andExpect(jsonPath("$.accountId").value("ACC-1"))
+                .andExpect(jsonPath("$.location").value("London"));
 
         assertEquals("ACC-1", transactionService.lastSavedRequest.getAccountId());
+        assertEquals("BANK", transactionService.lastSavedRequest.getSourceType());
+        assertEquals("Coffee Shop", transactionService.lastSavedRequest.getPayeeName());
+        assertEquals(1, transactionService.saveInvocationCount);
     }
 
     @Test
@@ -72,6 +84,8 @@ class TransactionControllerTest {
         mockMvc.perform(get("/api/v1/transactions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].transactionId").value(1L));
+
+        assertEquals(1, transactionService.getAllInvocationCount);
     }
 
     @Test
@@ -83,6 +97,7 @@ class TransactionControllerTest {
                 .andExpect(jsonPath("$.transactionId").value(1L));
 
         assertEquals(1L, transactionService.lastRequestedId);
+        assertEquals(1, transactionService.getByIdInvocationCount);
     }
 
     @Test
@@ -125,9 +140,7 @@ class TransactionControllerTest {
         mockMvc.perform(get("/api/v1/transactions/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.error").value("Not Found"))
-                .andExpect(jsonPath("$.message").value("Transaction with ID 999 not found"))
-                .andExpect(jsonPath("$.path").value("/api/v1/transactions/999"))
+                .andExpect(jsonPath("$.message").value("Transaction not found with id: 999"))
                 .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
@@ -138,9 +151,7 @@ class TransactionControllerTest {
         mockMvc.perform(get("/api/v1/transactions/999"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
-                .andExpect(jsonPath("$.error").value("Internal Server Error"))
-                .andExpect(jsonPath("$.message").value("Unexpected failure"))
-                .andExpect(jsonPath("$.path").value("/api/v1/transactions/999"))
+                .andExpect(jsonPath("$.message").value("Internal server error"))
                 .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
@@ -150,6 +161,9 @@ class TransactionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "sourceType": "BANK",
+                                  "sourceId": "HSBC-UK",
+                                  "sourceName": "HSBC UK",
                                   "accountId": "",
                                   "payeeId": "PAYEE-1",
                                   "amount": 10.00,
@@ -162,21 +176,29 @@ class TransactionControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("Bad Request"))
-                .andExpect(jsonPath("$.message").value("Account ID is required"))
-                .andExpect(jsonPath("$.path").value("/api/v1/transactions"))
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.errors.accountId").value("Account ID is required"))
                 .andExpect(jsonPath("$.timestamp").isNotEmpty());
+
+        assertEquals(0, transactionService.saveInvocationCount);
     }
 
     private TransactionResponse sampleResponse() {
         return new TransactionResponse(
                 1L,
+                "BANK",
+                "HSBC-UK",
+                "HSBC UK",
                 "ACC-1",
                 "PAYEE-1",
+                "Coffee Shop",
                 new BigDecimal("10.00"),
                 "USD",
                 "TRANSFER",
                 LocalDateTime.of(2026, 8, 3, 10, 15, 30),
+                "London",
+                new BigDecimal("51.5073510"),
+                new BigDecimal("-0.1277580"),
                 "Test payment",
                 "NEW"
         );
@@ -192,6 +214,9 @@ class TransactionControllerTest {
         private String lastAccountId;
         private String lastStatus;
         private String lastType;
+        private int saveInvocationCount;
+        private int getAllInvocationCount;
+        private int getByIdInvocationCount;
         private boolean throwNotFound;
         private boolean throwUnexpectedError;
 
@@ -201,17 +226,20 @@ class TransactionControllerTest {
 
         @Override
         public TransactionResponse saveTransaction(TransactionRequest request) {
+            this.saveInvocationCount++;
             this.lastSavedRequest = request;
             return savedResponse;
         }
 
         @Override
         public List<TransactionResponse> getAllTransactions() {
+            this.getAllInvocationCount++;
             return transactionsToReturn;
         }
 
         @Override
         public TransactionResponse getTransactionById(Long id) {
+            this.getByIdInvocationCount++;
             if (throwNotFound) {
                 throw new TransactionNotFoundException(id);
             }

@@ -29,7 +29,7 @@ public class TransactionController {
     @PostMapping
     @Operation(
             summary = "Create a transaction",
-            description = "Creates a new transaction record and returns the saved transaction details."
+            description = "Records an inbound transaction event from a bank or merchant source and returns the persisted transaction payload."
     )
     public ResponseEntity<TransactionResponse> createTransaction(@Valid @RequestBody TransactionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(transactionService.saveTransaction(request));
@@ -38,7 +38,7 @@ public class TransactionController {
     @GetMapping
     @Operation(
             summary = "Get all transactions",
-            description = "Returns all recorded transactions."
+            description = "Returns all recorded transactions for dashboard listing and operator review."
     )
     public ResponseEntity<List<TransactionResponse>> getAllTransactions() {
         return ResponseEntity.ok(transactionService.getAllTransactions());
@@ -47,7 +47,7 @@ public class TransactionController {
     @GetMapping("/{id}")
     @Operation(
             summary = "Get transaction by ID",
-            description = "Returns a single transaction for the provided transaction ID."
+            description = "Returns one transaction by its transaction ID."
     )
     public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable Long id) {
         return ResponseEntity.ok(transactionService.getTransactionById(id));
@@ -56,7 +56,7 @@ public class TransactionController {
     @GetMapping("/account/{accountId}")
     @Operation(
             summary = "Get transactions by account ID",
-            description = "Returns all transactions that belong to the provided account ID."
+            description = "Returns transactions for the specified account identifier."
     )
     public ResponseEntity<List<TransactionResponse>> getTransactionsByAccountId(@PathVariable String accountId) {
         return ResponseEntity.ok(transactionService.searchByAccountId(accountId));
@@ -65,7 +65,7 @@ public class TransactionController {
     @GetMapping("/status/{status}")
     @Operation(
             summary = "Get transactions by status",
-            description = "Returns all transactions with the provided status value."
+            description = "Returns transactions filtered by lifecycle status."
     )
     public ResponseEntity<List<TransactionResponse>> getTransactionsByStatus(@PathVariable String status) {
         return ResponseEntity.ok(transactionService.searchByStatus(status));
@@ -74,7 +74,7 @@ public class TransactionController {
     @GetMapping("/type/{type}")
     @Operation(
             summary = "Get transactions by type",
-            description = "Returns all transactions of the provided transaction type."
+            description = "Returns transactions filtered by transaction type."
     )
     public ResponseEntity<List<TransactionResponse>> getTransactionsByType(@PathVariable String type) {
         return ResponseEntity.ok(transactionService.searchByType(type));
