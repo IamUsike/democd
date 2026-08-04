@@ -6,6 +6,7 @@ import com.example.txnmonitor.common.exception.TransactionNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class TransactionService {
@@ -25,6 +26,24 @@ public class TransactionService {
         return transactionRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public List<TransactionResponse> getTransactions(String sourceType, String sourceId, String accountId) {
+        if (hasText(sourceType) && hasText(sourceId) && hasText(accountId)) {
+            return transactionRepository.findBySourceTypeAndSourceIdAndAccountId(sourceType, sourceId, accountId)
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+        if (hasText(sourceType) && hasText(sourceId)) {
+            return transactionRepository.findBySourceTypeAndSourceId(sourceType, sourceId).stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+        if (hasText(accountId)) {
+            return searchByAccountId(accountId);
+        }
+        return getAllTransactions();
     }
 
     public TransactionResponse getTransactionById(Long id) {
@@ -90,6 +109,10 @@ public class TransactionService {
                 transaction.getDescription(),
                 transaction.getStatus()
         );
+    }
+
+    private boolean hasText(String value) {
+        return Objects.nonNull(value) && !value.isBlank();
     }
 }
 

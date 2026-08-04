@@ -155,13 +155,20 @@ class TransactionServiceTest {
     void searchMethodsDelegateToRepository() {
         List<Transaction> transactions = List.of(new Transaction());
         when(transactionRepository.findByAccountId("ACC-1")).thenReturn(transactions);
+        when(transactionRepository.findBySourceTypeAndSourceId("BANK", "HSBC-UK")).thenReturn(transactions);
+        when(transactionRepository.findBySourceTypeAndSourceIdAndAccountId("BANK", "HSBC-UK", "ACC-1"))
+                .thenReturn(transactions);
         when(transactionRepository.findByStatus("NEW")).thenReturn(transactions);
         when(transactionRepository.findByType("TRANSFER")).thenReturn(transactions);
 
+        assertEquals(1, transactionService.getTransactions("BANK", "HSBC-UK", null).size());
+        assertEquals(1, transactionService.getTransactions("BANK", "HSBC-UK", "ACC-1").size());
         assertEquals(1, transactionService.searchByAccountId("ACC-1").size());
         assertEquals(1, transactionService.searchByStatus("NEW").size());
         assertEquals(1, transactionService.searchByType("TRANSFER").size());
 
+        verify(transactionRepository).findBySourceTypeAndSourceId("BANK", "HSBC-UK");
+        verify(transactionRepository).findBySourceTypeAndSourceIdAndAccountId("BANK", "HSBC-UK", "ACC-1");
         verify(transactionRepository).findByAccountId("ACC-1");
         verify(transactionRepository).findByStatus("NEW");
         verify(transactionRepository).findByType("TRANSFER");

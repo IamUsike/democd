@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,10 +39,13 @@ public class TransactionController {
     @GetMapping
     @Operation(
             summary = "Get all transactions",
-            description = "Returns all recorded transactions."
+            description = "Returns all transactions, with optional source/account filters."
     )
-    public ResponseEntity<List<TransactionResponse>> getAllTransactions() {
-        return ResponseEntity.ok(transactionService.getAllTransactions());
+    public ResponseEntity<List<TransactionResponse>> getTransactions(
+            @RequestParam(required = false) String sourceType,
+            @RequestParam(required = false) String sourceId,
+            @RequestParam(required = false) String accountId) {
+        return ResponseEntity.ok(transactionService.getTransactions(sourceType, sourceId, accountId));
     }
 
     @GetMapping("/{id}")

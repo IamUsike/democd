@@ -10,6 +10,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByAccountId(String accountId);
 
+    List<Transaction> findBySourceTypeAndSourceId(String sourceType, String sourceId);
+
+    List<Transaction> findBySourceTypeAndSourceIdAndAccountId(String sourceType, String sourceId, String accountId);
+
     List<Transaction> findByStatus(String status);
 
     List<Transaction> findByType(String type);

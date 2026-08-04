@@ -83,6 +83,23 @@ class TransactionControllerTest {
     }
 
     @Test
+    void getTransactionsWithSourceFiltersReturnsOk() throws Exception {
+        transactionService.transactionsToReturn = List.of(sampleResponse());
+
+        mockMvc.perform(get("/api/v1/transactions")
+                        .param("sourceType", "BANK")
+                        .param("sourceId", "HSBC-UK")
+                        .param("accountId", "ACC-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sourceType").value("BANK"))
+                .andExpect(jsonPath("$[0].sourceId").value("HSBC-UK"));
+
+        assertEquals("BANK", transactionService.lastSourceType);
+        assertEquals("HSBC-UK", transactionService.lastSourceId);
+        assertEquals("ACC-1", transactionService.lastFilterAccountId);
+    }
+
+    @Test
     void getTransactionByIdReturnsOk() throws Exception {
         transactionService.transactionToReturn = sampleResponse();
 
@@ -210,6 +227,9 @@ class TransactionControllerTest {
         private String lastAccountId;
         private String lastStatus;
         private String lastType;
+        private String lastSourceType;
+        private String lastSourceId;
+        private String lastFilterAccountId;
         private boolean throwNotFound;
         private boolean throwUnexpectedError;
 
@@ -225,6 +245,14 @@ class TransactionControllerTest {
 
         @Override
         public List<TransactionResponse> getAllTransactions() {
+            return transactionsToReturn;
+        }
+
+        @Override
+        public List<TransactionResponse> getTransactions(String sourceType, String sourceId, String accountId) {
+            this.lastSourceType = sourceType;
+            this.lastSourceId = sourceId;
+            this.lastFilterAccountId = accountId;
             return transactionsToReturn;
         }
 
