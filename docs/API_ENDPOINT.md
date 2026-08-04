@@ -2,13 +2,13 @@
 
 ## API Endpoint Documentation
 
-**Version:** 1.1
+**Version:** 1.2
 
 **Project:** Transaction Monitoring & Alert Dashboard
 
 **Prepared By:** <Your Name>
 
-**Date:** 03 August 2026
+**Date:** 04 August 2026
 
 
 
@@ -38,6 +38,12 @@ This document defines the REST API endpoints for the Transaction Monitoring Syst
 The purpose of this document is to provide a clear contract between the frontend application, backend services, and other internal services. It describes each API endpoint, its purpose, request format, response format, HTTP methods, validation rules, and possible status codes.
 
 This document is based on the current MVP (Minimum Viable Product) architecture.
+
+Transactions are ingested from **banks** and **merchants**. In MVP those
+feeds are **simulated** by clients calling the same public ingest API
+(`POST /api/v1/transactions`) with `sourceType`, `sourceId`, and
+`sourceName`. There is one ingest contract — not a separate schema per
+simulator.
 
 
 
@@ -152,11 +158,15 @@ POST
 
 ### Called By
 
-Web UI
+- Bank / merchant simulators (public ingest)
+- Web UI (manual or demo posts)
+- Test / seed scripts
 
 ### Description
 
-Creates a new transaction and starts the transaction monitoring process.
+Creates a new transaction from a bank or merchant source and starts
+synchronous monitoring (rule evaluation in the same request — MVP MTTD
+goal).
 
 
 
@@ -172,23 +182,42 @@ Creates a new transaction and starts the transaction monitoring process.
 
 ```json
 {
+  "sourceType": "BANK",
+  "sourceId": "HSBC-UK",
+  "sourceName": "HSBC United Kingdom",
   "accountId": "ACC1001",
   "payeeId": "PAYEE-2001",
+  "payeeName": "Acme Vendors Ltd",
   "amount": 25000,
   "currency": "INR",
   "transactionType": "TRANSFER",
-  "description": "Vendor Payment"
+  "timestamp": "2026-08-04T10:15:00",
+  "location": "London, UK",
+  "latitude": 51.5074,
+  "longitude": -0.1278,
+  "description": "Vendor Payment",
+  "status": "COMPLETED"
 }
 ```
+
+Use `"sourceType": "MERCHANT"` with a merchant `sourceId` / `sourceName`
+for merchant sims. `latitude` / `longitude` / `payeeName` / `location`
+may be omitted when the simulator does not supply geo or display names.
+
 ### Validation Rules
 
 | Field | Validation |
 |---------|-------------|
+| sourceType | Required — `BANK` or `MERCHANT` |
+| sourceId | Required |
+| sourceName | Required |
 | accountId | Required |
 | payeeId | Required |
 | amount | Must be greater than 0 |
 | currency | Required |
 | transactionType | Required |
+| timestamp | Required |
+| status | Required |
 
 ### Success Response
 
@@ -200,10 +229,18 @@ Creates a new transaction and starts the transaction monitoring process.
   "message": "Transaction recorded successfully.",
   "data": {
     "transactionId": 101,
-    "status": "SUCCESS"
+    "sourceType": "BANK",
+    "sourceId": "HSBC-UK",
+    "sourceName": "HSBC United Kingdom",
+    "status": "COMPLETED",
+    "alert": null
   }
 }
 ```
+
+When Amount Threshold fires, `alert` is an alert summary object (or the
+client can poll `GET /alerts`). Prefer returning the created alert inline
+for a simpler demo.
 ### Error Responses
 
 #### 400 Bad Request
@@ -242,6 +279,10 @@ Creates a new transaction and starts the transaction monitoring process.
 - Every transaction is evaluated by the Rule Engine immediately after it is saved.
 - If a monitoring rule is triggered, an alert is automatically created.
 - A transaction is successfully recorded even if an alert is generated.
+- **Public simulate path:** bank/merchant simulators and seed scripts use
+  this same `POST /api/v1/transactions` contract (one ingest schema).
+  Optional bulk helpers may wrap repeated POSTs; they must not invent a
+  second payload shape.
 
 
 
@@ -249,9 +290,8 @@ Creates a new transaction and starts the transaction monitoring process.
 
 ### Purpose
 
-Retrieves a list of all recorded transactions available in the system.
-
-This endpoint is primarily used by the Web UI to display transaction history and support transaction search and investigation.
+Retrieves recorded transactions for the operator UI (history, search,
+investigation). Supports filtering by source and account.
 
 ### Endpoint
 
@@ -272,9 +312,14 @@ GET
 |----------|----------|---------|
 | Content-Type | Yes | application/json |
 
-### Request Parameters
+### Query Parameters
 
-None
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| sourceType | No | `BANK` or `MERCHANT` |
+| sourceId | No | Filter to one source |
+| accountId | No | Filter by account |
+| from / to | No | Timestamp range (optional) |
 
 ### Success Response
 
@@ -287,12 +332,18 @@ HTTP Status: 200 OK
   "data": [
     {
       "transactionId": 101,
+      "sourceType": "BANK",
+      "sourceId": "HSBC-UK",
+      "sourceName": "HSBC United Kingdom",
       "accountId": "ACC1001",
       "payeeId": "PAYEE-2002",
+      "payeeName": "Acme Vendors Ltd",
       "amount": 25000,
       "currency": "INR",
       "transactionType": "TRANSFER",
-      "status": "SUCCESS"
+      "timestamp": "2026-08-04T10:15:00",
+      "location": "London, UK",
+      "status": "COMPLETED"
     }
   ]
 }
@@ -309,12 +360,10 @@ HTTP Status: 200 OK
 }
 ```
 
-
-
 ### Notes
 
-- Returns all transactions currently available in the system.
-- Pagination and filtering are not supported in Version 1.
+- Filter/search by source and account is in scope for MVP.
+- Pagination can follow if list size becomes an issue.
 ---
 
 
@@ -348,14 +397,22 @@ HTTP Status: 200 OK
   "success": true,
   "message": "Transaction retrieved successfully.",
   "data": {
-      "transactionId":101,
-      "accountId":"ACC1001",
-      "payeeId":"PAYEE-2002",
-      "amount":25000,
-      "currency":"INR",
-      "transactionType":"TRANSFER",
-      "status":"SUCCESS",
-      "transactionDateTime":"2026-08-02T10:15:00"
+      "transactionId": 101,
+      "sourceType": "BANK",
+      "sourceId": "HSBC-UK",
+      "sourceName": "HSBC United Kingdom",
+      "accountId": "ACC1001",
+      "payeeId": "PAYEE-2002",
+      "payeeName": "Acme Vendors Ltd",
+      "amount": 25000,
+      "currency": "INR",
+      "transactionType": "TRANSFER",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-04T10:15:00",
+      "location": "London, UK",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "description": "Vendor Payment"
   }
 }
 ```
@@ -372,11 +429,7 @@ HTTP Status: 200 OK
 ```
 ### Notes
 
-- Returns all alerts generated by the Rule Engine.
-- Includes both active and historical alerts.
-
-
----
+- Returns full transaction detail including source and optional geo fields.
 
 
 
@@ -816,22 +869,30 @@ Example
 
 ## Assumptions
 
-- Transactions are received through REST APIs.
-- `accountId` and `payeeId` are opaque identifiers on the transaction;
-  there are no Account/Payee master resources in the MVP API.
-- Monitoring rules are evaluated immediately after transaction creation.
+- Transactions are received through the public REST ingest API.
+- Bank and merchant feeds are simulated in MVP using the same
+  `POST /api/v1/transactions` contract with `sourceType` /
+  `sourceId` / `sourceName`.
+- `accountId` and `payeeId` are opaque identifiers; there are no
+  Account/Payee/Source master resources in the MVP API.
+- Monitoring rules are evaluated immediately after transaction creation
+  (sync MTTD path).
 - Alerts are generated automatically when a monitoring rule is triggered.
-- Rule configuration is hardcoded for the MVP release.
+- Rule configuration is hardcoded for the MVP release (user-defined rules
+  are Phase 2).
 - Authentication and authorization are outside the scope of Version 1.
+- Phase 4 adds encryption at rest and masking of sensitive fields in
+  API/UI responses where practical.
 
 ## Future Enhancements
 
 - JWT-based authentication
 - User and role management
-- Dynamic rule configuration
+- Dynamic / user-configurable rule configuration
 - Alert assignment to investigators
 - Investigation notes
 - Audit trail
 - Notification service (Email/SMS)
-- Advanced dashboard analytics
+- Advanced dashboard KPI analytics
+- Field masking and stronger encryption controls
 

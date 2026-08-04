@@ -8,9 +8,12 @@ wording or an appendix detail; this file and the milestones doc are
 enough for day-to-day work.
 
 ## What this is
-REST API + dashboard recording transactions, evaluating them against
-rules, and managing alerts through a lifecycle:
+REST API + dashboard ingesting transactions from banks and merchants
+(simulated via public API in MVP), evaluating them against rules, and
+managing alerts through a lifecycle:
 OPEN → ACKNOWLEDGED → INVESTIGATING → CLOSED / DISMISSED.
+
+Soft tenancy: one DB; rows carry `source_type`, `source_id`, `source_name`.
 
 Stack: Java + Spring Boot (backend), React (frontend), one relational
 database. No auth — single operator assumed.

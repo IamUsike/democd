@@ -3,42 +3,44 @@
 ## Short answer
 
 **Yes.** In MVP, **every** successfully recorded transaction is passed to the
-rule engine **synchronously** (same request, no queue). The engine runs all
-active rules (today: Amount Threshold only). If a rule fires, an alert is
-created and linked to that transaction before the API responds.
+rule engine **synchronously** (same request, no queue). Sources are banks or
+merchants (usually **simulated** via the public ingest API). The engine runs
+all active rules (today: Amount Threshold only). If a rule fires, an alert is
+created and linked before the API responds.
 
 Phase 3 changes *when* evaluation happens (via a queue), not *whether* each
-transaction is evaluated.
+transaction is evaluated. Soft tenancy: one DB; rows carry `source_type`,
+`source_id`, and `source_name`.
 
 ---
 
 ## Level 0 — Context
 
-External actors talk to one system; the database is the sink/source of
-persisted state.
-
 ```mermaid
 flowchart LR
   Operator[Operator]
-  Client[API Client / Test Generator]
+  BankSim[Bank simulator]
+  MerchSim[Merchant simulator]
   System[Transaction Monitoring System]
-  DB[(MySQL)]
+  DB[(MySQL soft tenancy)]
 
-  Operator -->|"view txns / alerts, lifecycle actions"| System
-  Client -->|"POST /transactions, GET ..."| System
+  Operator -->|"view txns / alerts / KPIs, lifecycle"| System
+  BankSim -->|"POST ingest source_type BANK"| System
+  MerchSim -->|"POST ingest source_type MERCHANT"| System
   System <-->|"read / write"| DB
 ```
+
+Bank and merchant “feeds” in MVP are public API clients that POST the same
+ingest contract (`POST /api/v1/transactions`) with different `source_*`
+fields — not separate integration stacks.
 
 ---
 
 ## Level 1 — Record transaction & evaluate rules (happy path)
 
-This is the path that answers “does each transaction go through the rule
-engine?”
-
 ```mermaid
 flowchart TB
-  Client[API Client]
+  Sim[Bank or Merchant simulator]
   API[API Layer]
   TxnSvc[Transaction Service]
   Engine[Rule Engine]
@@ -46,7 +48,7 @@ flowchart TB
   AlertSvc[Alert Service]
   DB[(MySQL)]
 
-  Client -->|"1. POST transaction"| API
+  Sim -->|"1. POST txn + source_type id name"| API
   API -->|"2. record request"| TxnSvc
   TxnSvc -->|"3. INSERT transaction"| DB
   TxnSvc -->|"4. evaluate saved txn"| Engine
@@ -55,7 +57,7 @@ flowchart TB
   Engine -->|"7. if any alerts"| AlertSvc
   AlertSvc -->|"8. INSERT alert + alert_transactions"| DB
   TxnSvc -->|"9. response txn + optional alert"| API
-  API -->|"10. 201 Created"| Client
+  API -->|"10. 201 Created"| Sim
 ```
 
 ### Data stores (logical)
@@ -81,9 +83,6 @@ So: **every persisted transaction** is evaluated; not every HTTP request.
 
 ## Level 1 — Operator alert lifecycle (separate flow)
 
-Alerts are created by the engine; the operator moves them through status
-via the alert service (not the rule engine).
-
 ```mermaid
 flowchart LR
   Operator[Operator / UI]
@@ -91,7 +90,7 @@ flowchart LR
   AlertSvc[Alert Service]
   DB[(MySQL)]
 
-  Operator -->|"GET /alerts, GET /alerts/id"| API
+  Operator -->|"GET /alerts filter by source"| API
   Operator -->|"acknowledge / investigate / close / dismiss"| API
   API --> AlertSvc
   AlertSvc <-->|"read / update status"| DB
@@ -99,7 +98,7 @@ flowchart LR
 
 ---
 
-## Level 1 — Query transactions (no rule engine)
+## Level 1 — Query transactions & KPIs (no rule engine)
 
 ```mermaid
 flowchart LR
@@ -108,21 +107,19 @@ flowchart LR
   TxnSvc[Transaction Service]
   DB[(MySQL)]
 
-  Client -->|"GET /transactions filters"| API
+  Client -->|"GET /transactions filters by source"| API
+  Client -->|"GET dashboard KPI aggregates"| API
   API --> TxnSvc
-  TxnSvc -->|"SELECT"| DB
+  TxnSvc -->|"SELECT / COUNT GROUP BY"| DB
   TxnSvc --> API
   API --> Client
 ```
 
-List/search does **not** re-run the rule engine.
+List/search and KPI aggregations do **not** re-run the rule engine.
 
 ---
 
 ## Phase 3 contrast (not MVP)
-
-When the queue is introduced, each transaction is still evaluated, but
-asynchronously:
 
 ```mermaid
 flowchart LR
@@ -139,8 +136,8 @@ flowchart LR
   AlertSvc --> DB
 ```
 
-MVP deliberately skips the queue so demos stay simple: POST → maybe alert
-in the same response (or immediately visible on `GET /alerts`).
+MVP skips the queue so MTTD stays as low as a single request allows:
+POST → maybe alert in the same response (or immediately on `GET /alerts`).
 
 ---
 
@@ -156,4 +153,5 @@ in the same response (or immediately visible on `GET /alerts`).
 
 ---
 
-*Aligned with `AGENTS.md`, `rule-engine.mdc`, and Phase 1 of `Project_milestones.md`.*
+*Aligned with soft multi-source tenancy (1A), lean MVP (2A), `AGENTS.md`,
+`rule-engine.mdc`, and Phase 1 of `Project_milestones.md`.*

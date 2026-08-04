@@ -58,21 +58,23 @@ UI uses, even while everything is still in one process.
 Canonical docs: `docs/DATABASE_DESIGN.md` and
 `docs/transaction monitoring er diagram.mmd`.
 
+- Soft multi-source tenancy: one DB; every transaction has `source_type`
+  (`BANK`|`MERCHANT`), `source_id`, and `source_name`. Do **not** add a
+  `sources` / Account / Payee master table in MVP — denormalize display
+  fields on the row (`source_name`, `payee_name`, optional `location` /
+  lat/long).
 - MVP tables only: `transactions`, `alerts`, `alert_transactions`.
 - Store `account_id` and `payee_id` as opaque strings on the transaction
-  row. Do **not** introduce `Account` / `Payee` entities or tables —
-  this system records transactions; it does not manage account/payee
-  master data. Phase 2 rules query those columns directly.
-- Alerts store `rule_type` as a string (e.g. `AMOUNT_THRESHOLD`). Do not
-  add a `rules` / `rule_parameters` table unless that milestone is active
-  (see also `rule-engine.mdc`).
-- Link alerts to transactions via `alert_transactions` from day one
-  (supports multi-transaction alerts later without a schema break).
-- Index `(account_id, timestamp)` and `(account_id, payee_id)` early —
-  that is the scalability lever for Velocity / New Payee / Daily Limit,
-  not more normalized tables.
+  row. Phase 2 rules query those columns directly.
+- Alerts store `rule_type` as a string and denormalize `source_*` +
+  `account_id` for filters. Do not add a `rules` / `rule_parameters` table
+  unless that Phase 2 milestone is active (see also `rule-engine.mdc`).
+- Link alerts to transactions via `alert_transactions` from day one.
+- Index `(account_id, timestamp)`, `(account_id, payee_id)`, and
+  `(source_type, source_id, timestamp)` early.
 
 ## Migrations
 Use a migration tool (Flyway or Liquibase) from the start, not
 `ddl-auto: update`. Every schema change is a new migration file, checked
-into git.
+into git. If `V1` is rewritten after a local apply, recreate the
+`txnmonitor` DB / Docker volume so Flyway checksums stay valid.

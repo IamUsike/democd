@@ -4,12 +4,19 @@ erDiagram
 
     TRANSACTION {
         bigint transaction_id PK
+        string source_type "BANK or MERCHANT"
+        string source_id "opaque source code — not an FK"
+        string source_name "display name for sims/UI"
         string account_id "monitored party — not an FK"
         string payee_id "counterparty — not an FK"
+        string payee_name "optional display"
         decimal amount
         string currency
         string type
         datetime timestamp
+        string location "optional"
+        decimal latitude "optional"
+        decimal longitude "optional"
         string description
         string status
     }
@@ -18,6 +25,9 @@ erDiagram
         bigint alert_id PK
         string rule_type "e.g. AMOUNT_THRESHOLD — no rules table in MVP"
         string account_id "denormalized from triggering txn(s)"
+        string source_type "denormalized"
+        string source_id "denormalized"
+        string source_name "denormalized"
         string status
         string severity
         datetime created_at
