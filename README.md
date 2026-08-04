@@ -33,5 +33,6 @@ UI: http://localhost:5173 · API: http://localhost:8081
 
 - [`Project_milestones.md`](Project_milestones.md) — build order and status
 - [`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md) — how three people split ownership
+- [`docs/DFD-MVP.md`](docs/DFD-MVP.md) — data flows (every txn → rule engine in MVP)
 - [`docs/DATABASE_DESIGN.md`](docs/DATABASE_DESIGN.md) — schema
 - [`AGENTS.md`](AGENTS.md) — conventions for contributors / agents
