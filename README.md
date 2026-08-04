@@ -36,10 +36,10 @@ npm run dev
 
 UI: `http://localhost:5173` · API default: `http://localhost:8081`
 
-Implemented MVP frontend scope:
+Implements MVP frontend scope:
 - AGIL-ish left-nav app shell (PWA-style layout)
 - Separate pages for Dashboard, Transactions, and Alerts
-- Bluish Huddle-style theme kept across pages
+- Dark Obsidian & Slate theme with multi-color accents & zero horizontal scroll layout
 - KPI strip (`GET /api/v1/dashboard`)
 - Transaction list with source filters (`GET /api/v1/transactions`)
 - Active alerts list + detail (`GET /api/v1/alerts`, `GET /api/v1/alerts/{id}`)

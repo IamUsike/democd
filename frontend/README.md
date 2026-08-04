@@ -6,7 +6,8 @@ React + TypeScript operator dashboard for Phase 1 MVP.
 
 - AGIL-ish PWA-style shell with left navigation
 - Separate routes: Dashboard, Transactions, Alerts
-- Huddle-inspired bluish visual theme across all pages
+- Dark Obsidian & Slate theme with multi-color accents (Indigo, Cyan, Emerald, Amber, Rose/Crimson)
+- Zero horizontal scroll layout with responsive data tables
 - KPI strip (`GET /api/v1/dashboard`)
 - Transactions list with source/account filters (`GET /api/v1/transactions`)
 - Active alerts list (`GET /api/v1/alerts`)

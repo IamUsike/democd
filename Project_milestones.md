@@ -7,9 +7,9 @@ starting work — keep "Current status" honest and current, not aspirational.
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
 **Currently working on:** Next — merge `transaction-api` into `dev` and implement
-rule engine + alerts backend wiring. Frontend MVP UI is implemented as an
-AGIL-ish app shell with separate Dashboard / Transactions / Alerts pages,
-typed API clients, and sample-data fallback until backend endpoints are live.
+rule engine + alerts backend wiring. Frontend MVP UI is fully implemented with
+a sleek Dark Obsidian & Slate theme, multi-color accents, zero horizontal scroll,
+separate Dashboard / Transactions / Alerts pages, typed API clients, and sample-data fallback.
 
 ---
 
@@ -42,7 +42,7 @@ evaluate-on-record.
       dismiss — with transition validation
 - [ ] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
       filter by source)
-- [x] React UI: bluish theme; transaction list (filter/search by source)
+- [x] React UI: Dark Obsidian theme; zero horizontal scroll; transaction list (filter/search by source)
 - [x] React UI: alert list + alert detail + lifecycle action buttons
 - [x] Basic dashboard KPI strip (txn counts by source, open alerts —
       aggregations, not stored columns)
