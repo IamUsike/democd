@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { getTransactions } from '../api/transactionsClient';
-import { demoTransactions } from '../data/demoData';
 import type { Transaction, TransactionFilters } from '../types/transaction';
 
 export function useTransactions(filters: TransactionFilters) {
@@ -16,20 +15,8 @@ export function useTransactions(filters: TransactionFilters) {
         const items = await getTransactions(filters);
         setTransactions(items);
       } catch {
-        const filtered = demoTransactions.filter((txn) => {
-          if (filters.sourceType && txn.sourceType !== filters.sourceType) {
-            return false;
-          }
-          if (filters.sourceId && !txn.sourceId.includes(filters.sourceId)) {
-            return false;
-          }
-          if (filters.accountId && !txn.accountId.includes(filters.accountId)) {
-            return false;
-          }
-          return true;
-        });
-        setTransactions(filtered);
-        setWarning('Using sample transaction data until backend APIs are available.');
+        setTransactions([]);
+        setWarning('Unable to load transactions from the API.');
       } finally {
         setLoading(false);
       }
@@ -40,4 +27,3 @@ export function useTransactions(filters: TransactionFilters) {
 
   return { transactions, loading, warning };
 }
-

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAlertById, getAlerts, updateAlertStatus } from '../api/alertsClient';
-import { demoAlerts } from '../data/demoData';
 import type { Alert, AlertStatus } from '../types/alert';
 
 function withUpdatedStatus(alert: Alert, nextStatus: AlertStatus, notes?: string): Alert {
@@ -33,9 +32,9 @@ export function useAlerts() {
         setAlerts(items);
         setSelectedAlertId(items[0]?.alertId ?? null);
       } catch {
-        setAlerts(demoAlerts);
-        setSelectedAlertId(demoAlerts[0]?.alertId ?? null);
-        setWarning('Using sample alerts until backend APIs are available.');
+        setAlerts([]);
+        setSelectedAlertId(null);
+        setWarning('Unable to load alerts from the API.');
       } finally {
         setLoading(false);
       }
@@ -57,23 +56,24 @@ export function useAlerts() {
         prev.map((alert) => (alert.alertId === alertId ? { ...alert, ...detail } : alert)),
       );
     } catch {
-      // Ignore detail fetch errors because list data is enough for MVP UI.
+      setWarning('Unable to load alert detail from the API.');
     }
   }, []);
 
   const changeStatus = useCallback(
     async (alertId: number, nextStatus: AlertStatus, notes?: string) => {
       setUpdating(true);
+      setWarning(null);
       try {
         await updateAlertStatus(alertId, { status: nextStatus, notes });
-      } catch {
-        setWarning('Status update queued in UI only because backend endpoint is unavailable.');
-      } finally {
         setAlerts((prev) =>
           prev.map((alert) =>
             alert.alertId === alertId ? withUpdatedStatus(alert, nextStatus, notes) : alert,
           ),
         );
+      } catch {
+        setWarning('Unable to update alert status via the API.');
+      } finally {
         setUpdating(false);
       }
     },
@@ -91,4 +91,3 @@ export function useAlerts() {
     changeStatus,
   };
 }
-
