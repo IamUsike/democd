@@ -7,12 +7,10 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
-**Currently working on:** Backend convergence for MVP:
-transaction API and sync rule-evaluation wiring are merged in `dev`;
-next is alert persistence/lifecycle APIs, then remove frontend sample-data
-fallback and run end-to-end demo flow. Frontend MVP UI is fully implemented
-with a Dark Obsidian & Slate theme, zero horizontal scroll, separate
-Dashboard / Transactions / Alerts pages, typed API clients, and sample-data fallback.
+**Currently working on:** Alert backend is complete on `dev`
+(create-from-rule-match, GET alerts, lifecycle PATCH). Next: remove
+frontend sample-data fallback against live APIs, seed/simulate script,
+and end-to-end demo dry-run.
 
 ---
 
@@ -37,13 +35,13 @@ evaluate-on-record.
 - [x] Rule engine skeleton — `Rule` interface, `RuleEngine`,
   `AmountThresholdRule` (single hardcoded threshold)
 - [x] Wire transaction recording → synchronous rule evaluation
-- [ ] Alert entity + repository (status, severity, rule reference,
+- [x] Alert entity + repository (status, severity, rule reference,
   source_type/source_id/source_name denormalized, account_id,
   created/acknowledged/closed timestamps, resolution notes,
   `alert_transactions`)
-- [ ] Alert lifecycle endpoints — acknowledge, investigate, close,
+- [x] Alert lifecycle endpoints — acknowledge, investigate, close,
   dismiss — with transition validation
-- [ ] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
+- [x] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
       filter by source)
 - [x] React UI: Dark Obsidian theme; zero horizontal scroll; transaction list (filter/search by source)
 - [x] React UI: alert list + alert detail + lifecycle action buttons

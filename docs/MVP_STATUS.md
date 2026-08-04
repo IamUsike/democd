@@ -9,57 +9,47 @@ the repository now, and how we are proceeding to complete the MVP.
 
 - Backend is a single Spring Boot modular monolith:
   `api`, `transaction`, `rule`, `alert`, `common`.
-- Database is MySQL with Flyway-managed schema migrations.
+- Database is MySQL with Flyway-managed schema migrations (`V1` transactions,
+  `V2` alerts + `alert_transactions`).
 - Frontend is a React + Vite operator dashboard shell.
 - MVP mode is synchronous evaluate-on-record (no queue yet).
 
 ## What is completed in repo
 
 1. Project skeleton and foundational conventions are in place.
-2. Rule engine skeleton is implemented and tested:
-   - `Rule` interface
-   - `RuleEngine`
-   - `AmountThresholdRule` (hardcoded threshold)
-   - Rule evaluation context placeholders
-3. Frontend MVP shell exists with:
-   - Dashboard / Transactions / Alerts pages
-   - bluish theme and app shell
-   - typed client scaffolding and sample-data fallback
-4. Core architecture and process docs exist:
-   - milestones
-   - DFD
-   - DB design
-   - API docs
-   - team split and storyline
+2. Transaction ingest/query APIs with soft-tenancy source fields and filters.
+3. Rule engine skeleton is implemented and tested:
+   - `Rule` / `RuleEngine` / `AmountThresholdRule`
+4. Sync path: save transaction → evaluate rules → create OPEN alerts linked
+   via `alert_transactions`.
+5. Alert APIs:
+   - `GET /api/v1/alerts` (optional `sourceType`, `sourceId`, `status`)
+   - `GET /api/v1/alerts/{id}` (includes linked transaction id(s))
+   - `PATCH /api/v1/alerts/{id}/status` with validated lifecycle transitions
+6. Frontend MVP shell exists with Dashboard / Transactions / Alerts pages
+   and typed clients (still falls back to sample data if APIs fail).
 
 ## What is still pending for MVP
 
-1. Alert backend completion:
-   - alert entity/repository
-   - `alert_transactions` linking
-   - lifecycle transition endpoints
-   - `GET /alerts` and `GET /alerts/{id}`
-2. Demo hardening:
-   - seed/simulate script
-   - Swagger/OpenAPI generation
-   - complete over-threshold end-to-end run in UI
+1. Demo hardening:
+   - seed/simulate script for BANK + MERCHANT traffic
+   - Swagger/OpenAPI polish if not already usable via springdoc
+   - remove frontend sample-data fallback once live APIs are verified
+2. End-to-end demo dry-run:
+   - over-threshold POST → alert appears in UI → acknowledge/close
 
 ## How we are proceeding to MVP (execution order)
 
-1. Implement alert persistence and lifecycle APIs in backend.
-2. Switch frontend from sample fallback to live API-only responses.
-3. Run end-to-end demo path:
-   - post normal transactions
-   - post over-threshold transaction
-   - verify alert appears
-   - acknowledge/investigate/close in UI
-4. Finalize docs + Swagger and freeze MVP branch.
+1. Point frontend at live alert/transaction APIs and clear sample fallback.
+2. Add seed/simulate script for repeatable demo data.
+3. Run end-to-end demo path as a team.
+4. Freeze MVP branch.
 
 ## Immediate next sprint focus
 
-- Backend alert work first (B): alert create/read/lifecycle APIs.
-- Frontend integration second (C): bind existing pages to live endpoints only.
-- Team dry-run third (ALL): full presentation script with repeatable seed data.
+- Frontend live integration (C): drop sample fallback when backend is up.
+- Seed + Swagger polish (A).
+- Team dry-run (ALL): over-threshold → alert → lifecycle in UI.
 
 ## MVP definition of done
 
