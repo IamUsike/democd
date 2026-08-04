@@ -29,14 +29,25 @@ Presentation talk track + deep dive:
 7. springdoc OpenAPI / Swagger UI.
 8. CORS for local UI → API.
 9. Presentation doc: [`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md).
+10. Docker Option A: frontend nginx production image on `:80` via compose
+    (`VITE_API_BASE_URL` build arg for VM).
 
 ## Demo runbook
 
-1. Start MySQL + API (`docker compose up -d` or `./mvnw spring-boot:run`).
-2. Start UI: `cd frontend && npm run dev`.
-3. Seed data: `./scripts/seed-demo.sh` (or `API_BASE=http://host:8081 ./scripts/seed-demo.sh`).
-4. In UI: Transactions list fills; Alerts shows the over-threshold OPEN alert;
-   walk Acknowledge → Investigate → Close.
+### Local (dev servers)
+
+1. Start MySQL + API (`docker compose up -d mysql` or `./mvnw spring-boot:run`).
+2. Start UI: `cd frontend && npm run dev` → `http://localhost:5173`.
+3. Seed data: `./scripts/seed-demo.sh`.
+4. In UI: Transactions → Alerts → Acknowledge → Investigate → Close.
+
+### Jenkins / Linux VM (Docker Option A)
+
+1. On the agent, set `VITE_API_BASE_URL=http://<VM_PUBLIC_IP>:8081` (job env or `.env`).
+2. Pipeline already runs `docker-compose build` / `up -d` (MySQL + API + frontend nginx).
+3. Open UI: `http://<VM_IP>/` · API: `http://<VM_IP>:8081`.
+4. Seed: `API_BASE=http://<VM_IP>:8081 ./scripts/seed-demo.sh`.
+5. Same alert lifecycle walkthrough in the UI.
 
 ## What remains
 
