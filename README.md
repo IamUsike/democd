@@ -55,6 +55,7 @@ npm run build
 ## Docs
 
 - [`Project_milestones.md`](Project_milestones.md) — build order and status
+- [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) — current repo progress + path to MVP
 - [`docs/KANBAN.md`](docs/KANBAN.md) — live sprint board
 - [`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md) — daily stand-up notes
 - [`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md) — product storyline + story IDs

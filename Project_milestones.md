@@ -7,10 +7,10 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
-**Currently working on:** Next — merge `transaction-api` into `dev` and implement
-rule engine + alerts backend wiring. Frontend MVP UI is implemented as an
-AGIL-ish app shell with separate Dashboard / Transactions / Alerts pages,
-typed API clients, and sample-data fallback until backend endpoints are live.
+**Currently working on:** Backend convergence for MVP:
+transaction API and sync rule-evaluation wiring are merged in `dev`;
+next is alert persistence/lifecycle APIs, then remove frontend sample-data
+fallback and run end-to-end demo flow.
 
 ---
 
@@ -25,34 +25,22 @@ API. Rules are **hardcoded** (Amount Threshold). MTTD goal: synchronous
 evaluate-on-record.
 
 - [x] Project skeleton — Spring Boot app, package structure per
-  ```
   `backend-java.mdc`, migration tool configured, git repo pushed
-  ```
-- [ ] Transaction entity + repository (fields: id, source_type, source_id,
-  ```
+- [x] Transaction entity + repository (fields: id, source_type, source_id,
   source_name, account_id, payee_id, payee_name, amount, currency,
   type, timestamp, location, latitude, longitude, description, status)
-  ```
-- [ ] `POST /transactions`, `GET /transactions` (list + filter/search by
-  ```
+- [x] `POST /transactions`, `GET /transactions` (list + filter/search by
   source and account) — **public simulate/ingest** for bank & merchant
   sims uses this same contract
-  ```
 - [x] Rule engine skeleton — `Rule` interface, `RuleEngine`,
-  ```
   `AmountThresholdRule` (single hardcoded threshold)
-  ```
-- [ ] Wire transaction recording → synchronous rule evaluation
+- [x] Wire transaction recording → synchronous rule evaluation
 - [ ] Alert entity + repository (status, severity, rule reference,
-  ```
   source_type/source_id/source_name denormalized, account_id,
   created/acknowledged/closed timestamps, resolution notes,
   `alert_transactions`)
-  ```
 - [ ] Alert lifecycle endpoints — acknowledge, investigate, close,
-  ```
   dismiss — with transition validation
-  ```
 - [ ] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
       filter by source)
 - [x] React UI: bluish theme; transaction list (filter/search by source)
@@ -61,14 +49,10 @@ evaluate-on-record.
       aggregations, not stored columns)
 - [ ] Swagger/OpenAPI docs generated
 - [ ] Seed / simulate script hitting `POST /transactions` for sample
-  ```
   BANK and MERCHANT sources
-  ```
 - [ ] End-to-end MVP demo: post a transaction over threshold from a
-  ```
   simulated bank/merchant, see the alert appear, acknowledge and
   close it, from the UI
-  ```
 
 
 
@@ -79,9 +63,7 @@ evaluate-on-record.
 - [ ] `DailyLimitRule` (cumulative daily amount)
 - [ ] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
 - [ ] Rules table / parameters + management UI (view; create/edit so
-  ```
   operators can set thresholds — stretch to full authoring)
-  ```
 - [ ] Additional team-authored custom rules as needed for the demo
 
 
@@ -90,9 +72,7 @@ evaluate-on-record.
 
 - [ ] Message queue between transaction recording and rule evaluation
 - [ ] Rule engine extracted as its own deployable, calling back into the
-  ```
   monolith's internal alert-creation endpoint
-  ```
 - [ ] Horizontal scaling of rule engine instances demonstrated
 - [ ] Cache for velocity/daily-limit count lookups
 - [ ] Read replica for reporting/dashboard KPI queries
