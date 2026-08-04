@@ -40,10 +40,19 @@ Implements MVP frontend scope:
 - AGIL-ish left-nav app shell (PWA-style layout)
 - Separate pages for Dashboard, Transactions, and Alerts
 - Dark Obsidian & Slate theme with multi-color accents & zero horizontal scroll layout
+- Live API clients only (no sample-data fallback)
 - KPI strip (`GET /api/v1/dashboard`)
 - Transaction list with source filters (`GET /api/v1/transactions`)
 - Active alerts list + detail (`GET /api/v1/alerts`, `GET /api/v1/alerts/{id}`)
 - Lifecycle actions (`PATCH /api/v1/alerts/{id}/status`)
+
+### Seed demo data
+
+```bash
+./scripts/seed-demo.sh
+# or against a remote API:
+API_BASE=http://your-vm:8081 ./scripts/seed-demo.sh
+```
 
 Build check:
 

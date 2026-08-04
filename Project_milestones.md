@@ -7,10 +7,8 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
-**Currently working on:** Alert backend is complete on `dev`
-(create-from-rule-match, GET alerts, lifecycle PATCH). Next: remove
-frontend sample-data fallback against live APIs, seed/simulate script,
-and end-to-end demo dry-run.
+**Currently working on:** Demo hardening — seed script + live UI against APIs.
+Core backend + frontend paths are in place for MVP dry-run.
 
 ---
 
@@ -47,8 +45,8 @@ evaluate-on-record.
 - [x] React UI: alert list + alert detail + lifecycle action buttons
 - [x] Basic dashboard KPI strip (txn counts by source, open alerts —
       aggregations, not stored columns)
-- [ ] Swagger/OpenAPI docs generated
-- [ ] Seed / simulate script hitting `POST /transactions` for sample
+- [x] Swagger/OpenAPI docs generated
+- [x] Seed / simulate script hitting `POST /transactions` for sample
   BANK and MERCHANT sources
 - [ ] End-to-end MVP demo: post a transaction over threshold from a
   simulated bank/merchant, see the alert appear, acknowledge and
