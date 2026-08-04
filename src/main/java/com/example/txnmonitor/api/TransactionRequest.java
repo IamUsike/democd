@@ -1,5 +1,7 @@
 package com.example.txnmonitor.api;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -36,6 +38,8 @@ public class TransactionRequest {
     private String currency;
 
     @NotBlank(message = "Transaction type is required")
+    @JsonProperty("type")
+    @JsonAlias("transactionType")
     private String type;
 
     @NotNull(message = "Timestamp is required")
@@ -74,12 +78,6 @@ public class TransactionRequest {
         this.longitude = longitude;
         this.description = description;
         this.status = status;
-    }
-
-    public TransactionRequest(String accountId, String payeeId, BigDecimal amount, String currency, String type,
-                              LocalDateTime timestamp, String description, String status) {
-        this(null, null, null, accountId, payeeId, null, amount, currency, type, timestamp,
-                null, null, null, description, status);
     }
 
     public String getSourceType() {

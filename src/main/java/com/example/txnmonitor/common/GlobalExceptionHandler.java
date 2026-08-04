@@ -1,8 +1,9 @@
 package com.example.txnmonitor.common;
 
-import com.example.txnmonitor.common.exception.ErrorResponse;
+import com.example.txnmonitor.common.exception.AlertNotFoundException;
+import com.example.txnmonitor.common.exception.InvalidAlertTransitionException;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
-import org.springframework.dao.DataIntegrityViolationException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -10,47 +11,99 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.time.Instant;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(TransactionNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleTransactionNotFoundException(TransactionNotFoundException ex) {
-        ErrorResponse errorResponse = buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), null);
+    public ResponseEntity<ApiErrorResponse> handleTransactionNotFoundException(
+            TransactionNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
-        Map<String, String> validationErrors = new LinkedHashMap<>();
-        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
-            String message = fieldError.getDefaultMessage();
-            if (message != null && !message.isBlank()) {
-                validationErrors.putIfAbsent(fieldError.getField(), message);
-            }
-        }
+    @ExceptionHandler(AlertNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleAlertNotFoundException(
+            AlertNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
 
-        ErrorResponse errorResponse = buildErrorResponse(HttpStatus.BAD_REQUEST, "Validation failed", validationErrors);
+    @ExceptionHandler(InvalidAlertTransitionException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidAlertTransitionException(
+            InvalidAlertTransitionException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        ErrorResponse errorResponse = buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid transaction data", null);
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        String validationMessage = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .filter(message -> message != null && !message.isBlank())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        if (validationMessage.isBlank()) {
+            validationMessage = "Validation failed";
+        }
+
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                validationMessage,
+                request.getRequestURI()
+        );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
-        ErrorResponse errorResponse = buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", null);
+    public ResponseEntity<ApiErrorResponse> handleException(Exception ex, HttpServletRequest request) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "Internal server error";
+        }
+
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                message,
+                request.getRequestURI()
+        );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
-    private ErrorResponse buildErrorResponse(HttpStatus status, String message, Map<String, String> errors) {
-        return new ErrorResponse(LocalDateTime.now(), status.value(), message, errors);
+    private ApiErrorResponse buildErrorResponse(HttpStatus status, String message, String path) {
+        return new ApiErrorResponse(
+                Instant.now().toString(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                path
+        );
     }
 }
 

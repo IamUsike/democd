@@ -1,5 +1,7 @@
 package com.example.txnmonitor.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -14,6 +16,7 @@ public class TransactionResponse {
     private String payeeName;
     private BigDecimal amount;
     private String currency;
+    @JsonProperty("transactionType")
     private String type;
     private LocalDateTime timestamp;
     private String location;

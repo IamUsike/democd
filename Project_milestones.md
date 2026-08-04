@@ -4,10 +4,12 @@ Update this file as milestones complete. Cursor agents read this before
 starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
-**Phase:** Phase 1 — MVP in progress
+
+**Phase:** Phase 1 — MVP **ready for live demo**
 **Last updated:** 04 August 2026
-**Currently working on:** Next — Transaction entity + repository
-(enriched multi-source fields)
+**Currently working on:** Room dry-run / presentation (software path complete).
+See [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md) for talk track +
+deep dive; [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) for status.
 
 ---
 
@@ -22,34 +24,36 @@ API. Rules are **hardcoded** (Amount Threshold). MTTD goal: synchronous
 evaluate-on-record.
 
 - [x] Project skeleton — Spring Boot app, package structure per
-      `backend-java.mdc`, migration tool configured, git repo pushed
-- [ ] Transaction entity + repository (fields: id, source_type, source_id,
-      source_name, account_id, payee_id, payee_name, amount, currency,
-      type, timestamp, location, latitude, longitude, description, status)
-- [ ] `POST /transactions`, `GET /transactions` (list + filter/search by
-      source and account) — **public simulate/ingest** for bank & merchant
-      sims uses this same contract
-- [ ] Rule engine skeleton — `Rule` interface, `RuleEngine`,
-      `AmountThresholdRule` (single hardcoded threshold)
-- [ ] Wire transaction recording → synchronous rule evaluation
-- [ ] Alert entity + repository (status, severity, rule reference,
-      source_type/source_id/source_name denormalized, account_id,
-      created/acknowledged/closed timestamps, resolution notes,
-      `alert_transactions`)
-- [ ] Alert lifecycle endpoints — acknowledge, investigate, close,
-      dismiss — with transition validation
-- [ ] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
+  `backend-java.mdc`, migration tool configured, git repo pushed
+- [x] Transaction entity + repository (fields: id, source_type, source_id,
+  source_name, account_id, payee_id, payee_name, amount, currency,
+  type, timestamp, location, latitude, longitude, description, status)
+- [x] `POST /transactions`, `GET /transactions` (list + filter/search by
+  source and account) — **public simulate/ingest** for bank & merchant
+  sims uses this same contract
+- [x] Rule engine skeleton — `Rule` interface, `RuleEngine`,
+  `AmountThresholdRule` (single hardcoded threshold)
+- [x] Wire transaction recording → synchronous rule evaluation
+- [x] Alert entity + repository (status, severity, rule reference,
+  source_type/source_id/source_name denormalized, account_id,
+  created/acknowledged/closed timestamps, resolution notes,
+  `alert_transactions`)
+- [x] Alert lifecycle endpoints — acknowledge, investigate, close,
+  dismiss — with transition validation
+- [x] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
       filter by source)
-- [ ] React UI: bluish theme; transaction list (filter/search by source)
-- [ ] React UI: alert list + alert detail + lifecycle action buttons
-- [ ] Basic dashboard KPI strip (txn counts by source, open alerts —
+- [x] React UI: Dark Obsidian theme; zero horizontal scroll; transaction list (filter/search by source)
+- [x] React UI: alert list + alert detail + lifecycle action buttons
+- [x] Basic dashboard KPI strip (txn counts by source, open alerts —
       aggregations, not stored columns)
-- [ ] Swagger/OpenAPI docs generated
-- [ ] Seed / simulate script hitting `POST /transactions` for sample
-      BANK and MERCHANT sources
-- [ ] End-to-end MVP demo: post a transaction over threshold from a
-      simulated bank/merchant, see the alert appear, acknowledge and
-      close it, from the UI
+- [x] Swagger/OpenAPI docs generated
+- [x] Seed / simulate script hitting `POST /transactions` for sample
+  BANK and MERCHANT sources
+- [x] End-to-end MVP path ready: seed over-threshold → OPEN alert →
+  acknowledge/close from UI (mark live room demo done when presented;
+  runbook in `docs/MVP_PRESENTATION.md`)
+
+
 
 ## Phase 2 — additional rule types + user-configurable rules
 
@@ -58,14 +62,16 @@ evaluate-on-record.
 - [ ] `DailyLimitRule` (cumulative daily amount)
 - [ ] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
 - [ ] Rules table / parameters + management UI (view; create/edit so
-      operators can set thresholds — stretch to full authoring)
+  operators can set thresholds — stretch to full authoring)
 - [ ] Additional team-authored custom rules as needed for the demo
+
+
 
 ## Phase 3 — scale-out (MTTD at volume)
 
 - [ ] Message queue between transaction recording and rule evaluation
 - [ ] Rule engine extracted as its own deployable, calling back into the
-      monolith's internal alert-creation endpoint
+  monolith's internal alert-creation endpoint
 - [ ] Horizontal scaling of rule engine instances demonstrated
 - [ ] Cache for velocity/daily-limit count lookups
 - [ ] Read replica for reporting/dashboard KPI queries
@@ -97,6 +103,8 @@ build-order rationale. Schema: `docs/DATABASE_DESIGN.md` +
 tenancy; `source_*` / `account_id` / `payee_id` on transactions; MVP
 tables `transactions`, `alerts`, `alert_transactions`. Flows:
 [`docs/DFD-MVP.md`](docs/DFD-MVP.md). Three-person ownership:
-[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Demo narrative + kanban:
-[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). HLD/LLD diagrams live
+[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Storyline:
+[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). Live board:
+[`docs/KANBAN.md`](docs/KANBAN.md). Stand-ups:
+[`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). HLD/LLD diagrams live
 wherever the team has put them (Miro/Figma/Drive link — *add link here*).

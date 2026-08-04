@@ -5,11 +5,11 @@
 **Source of truth for status:** [`Project_milestones.md`](../Project_milestones.md)  
 **Conventions:** [`AGENTS.md`](../AGENTS.md), [`.cursor/rules/`](../.cursor/rules/)
 
-| Role | Name | Primary ownership |
-|------|------|-------------------|
+| Role                              | Name         | Primary ownership                                                      |
+|-----------------------------------|--------------|------------------------------------------------------------------------|
 | **Person A** — Transactions & API | *\<Name 1\>* | `transaction` module, public REST for transactions, Swagger, test data |
-| **Person B** — Rules & Alerts | *\<Name 2\>* | `rule` module, `alert` module, wiring eval → alert creation |
-| **Person C** — Frontend & Demo | *\<Name 3\>* | `frontend/`, typed API clients, E2E demo path in the UI |
+| **Person B** — Rules & Alerts     | *\<Name 2\>* | `rule` module, `alert` module, wiring eval → alert creation            |
+| **Person C** — Frontend & Demo    | *\<Name 3\>* | `frontend/`, typed API clients, E2E demo path in the UI                |
 
 Shared for everyone: `common` (exceptions, shared config), schema decisions in
 [`DATABASE_DESIGN.md`](./DATABASE_DESIGN.md), updating milestones when a
@@ -38,12 +38,12 @@ Skeleton is **done**. Remaining work:
 
 ### Person A — Transactions & API
 
-| Milestone item | Notes |
-|----------------|--------|
-| Transaction entity + repository | Fields per milestones / DB design; TDD |
+| Milestone item                            | Notes                                                                     |
+|-------------------------------------------|---------------------------------------------------------------------------|
+| Transaction entity + repository           | Fields per milestones / DB design; TDD                                    |
 | `POST /transactions`, `GET /transactions` | Controllers/DTOs in `api`; service in `transaction`; list + filter/search |
-| Swagger / OpenAPI | Once transaction (and later alert) endpoints exist |
-| Test data generator | Script or endpoint that hits the API |
+| Swagger / OpenAPI                         | Once transaction (and later alert) endpoints exist                        |
+| Test data generator                       | Script or endpoint that hits the API                                      |
 
 **Owns packages:** `transaction`, transaction-related types under `api`  
 **Does not own:** rule evaluation logic, alert lifecycle UI
@@ -55,13 +55,13 @@ implements the engine; A and B agree the method signature early).
 
 ### Person B — Rules & Alerts
 
-| Milestone item | Notes |
-|----------------|--------|
-| Rule engine skeleton | `Rule`, `RuleEngine`, `AmountThresholdRule` (hardcoded threshold) |
-| Wire recording → sync evaluation | Called from transaction record path; no queue yet |
-| Alert entity + repository + `alert_transactions` | Flyway migration(s); junction table from day one |
-| Alert lifecycle endpoints | acknowledge / investigate / close / dismiss + transition validation in service |
-| `GET /alerts`, `GET /alerts/{id}` | Include triggering transactions |
+| Milestone item                                   | Notes                                                                          |
+|--------------------------------------------------|--------------------------------------------------------------------------------|
+| Rule engine skeleton                             | `Rule`, `RuleEngine`, `AmountThresholdRule` (hardcoded threshold)              |
+| Wire recording → sync evaluation                 | Called from transaction record path; no queue yet                              |
+| Alert entity + repository + `alert_transactions` | Flyway migration(s); junction table from day one                               |
+| Alert lifecycle endpoints                        | acknowledge / investigate / close / dismiss + transition validation in service |
+| `GET /alerts`, `GET /alerts/{id}`                | Include triggering transactions                                                |
 
 **Owns packages:** `rule`, `alert`, alert-related types under `api`  
 **TDD focus:** rule trigger/non-trigger/boundary; every lifecycle transition
@@ -72,11 +72,11 @@ endpoints (align with [`API_ENDPOINT.md`](./API_ENDPOINT.md) as you go).
 
 ### Person C — Frontend & Demo
 
-| Milestone item | Notes |
-|----------------|--------|
-| React: transaction list (filter/search) | After A’s GET exists — typed `transactionApi.ts` |
-| React: alert list + detail + lifecycle buttons | After B’s alert APIs exist — typed `alertApi.ts` |
-| End-to-end MVP demo | Post over-threshold txn → see alert → acknowledge/close in UI |
+| Milestone item                                 | Notes                                                         |
+|------------------------------------------------|---------------------------------------------------------------|
+| React: transaction list (filter/search)        | After A’s GET exists — typed `transactionApi.ts`              |
+| React: alert list + detail + lifecycle buttons | After B’s alert APIs exist — typed `alertApi.ts`              |
+| End-to-end MVP demo                            | Post over-threshold txn → see alert → acknowledge/close in UI |
 
 **Owns:** `frontend/`  
 **Screen order:** transaction list → active alerts → alert detail →
@@ -123,11 +123,11 @@ flowchart LR
 
 ## Phase 2 — Extra rules (after MVP works end to end)
 
-| Person | Owns |
-|--------|------|
-| **B** | `VelocityRule`, `NewPayeeRule`, `DailyLimitRule` (+ context lookups / indexes usage) |
-| **A** | Any new query helpers on transaction repo that rules need; keep API filters solid |
-| **C** | Severity color coding in UI; read-only rules view (edit is stretch) |
+| Person | Owns                                                                                 |
+|--------|--------------------------------------------------------------------------------------|
+| **B**  | `VelocityRule`, `NewPayeeRule`, `DailyLimitRule` (+ context lookups / indexes usage) |
+| **A**  | Any new query helpers on transaction repo that rules need; keep API filters solid    |
+| **C**  | Severity color coding in UI; read-only rules view (edit is stretch)                  |
 
 Do **not** start Phase 2 until Phase 1 E2E demo works
 ([`Project_milestones.md`](../Project_milestones.md)).
@@ -136,21 +136,21 @@ Do **not** start Phase 2 until Phase 1 E2E demo works
 
 ## Phase 3 — Scale-out
 
-| Person | Owns |
-|--------|------|
-| **B** | Queue between recording and evaluation; extract rule engine deployable; horizontal workers; cache for count/sum lookups |
-| **A** | Keep monolith’s **internal** alert-creation endpoint stable (`POST /internal/alerts` shape); read-replica wiring for reporting queries if needed |
-| **C** | Dashboard still works against public APIs; no UI dependency on sync vs async internals |
+| Person | Owns                                                                                                                                             |
+|--------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| **B**  | Queue between recording and evaluation; extract rule engine deployable; horizontal workers; cache for count/sum lookups                          |
+| **A**  | Keep monolith’s **internal** alert-creation endpoint stable (`POST /internal/alerts` shape); read-replica wiring for reporting queries if needed |
+| **C**  | Dashboard still works against public APIs; no UI dependency on sync vs async internals                                                           |
 
 ---
 
 ## Phase 4 — Security & hardening
 
-| Person | Owns |
-|--------|------|
-| **A** | TLS client↔API, credentials out of source (env / secrets), DB encryption-at-rest with ops |
-| **B** | Audit trail completeness for alert status changes (`alert_status_history` if added) |
-| **C** | Confirm UI works over HTTPS; no secrets in frontend |
+| Person | Owns                                                                                      |
+|--------|-------------------------------------------------------------------------------------------|
+| **A**  | TLS client↔API, credentials out of source (env / secrets), DB encryption-at-rest with ops |
+| **B**  | Audit trail completeness for alert status changes (`alert_status_history` if added)       |
+| **C**  | Confirm UI works over HTTPS; no secrets in frontend                                       |
 
 ---
 
@@ -171,16 +171,16 @@ Do **not** start Phase 2 until Phase 1 E2E demo works
 
 ## Out of scope (nobody builds these)
 
-- Machine learning / anomaly detection  
-- Authentication / multi-operator support  
+- Machine learning / anomaly detection
+- Authentication / multi-operator support
 
 ---
 
 ## Checklist: fill in before you start coding as a trio
 
-- [ ] Replace *\<Name 1/2/3\>* with real names in the table above  
-- [ ] Agree branch naming (e.g. `feat/A-transactions`, `feat/B-alerts`, `feat/C-ui`)  
-- [ ] Agree where shared DTOs / OpenAPI live so C is not blocked by surprise field renames  
-- [ ] Book a short sync after A’s first `GET /transactions` and after B’s first alert create  
+- [ ] Replace *\<Name 1/2/3\>* with real names in the table above
+- [ ] Agree branch naming (e.g. `feat/A-transactions`, `feat/B-alerts`, `feat/C-ui`)
+- [ ] Agree where shared DTOs / OpenAPI live so C is not blocked by surprise field renames
+- [ ] Book a short sync after A’s first `GET /transactions` and after B’s first alert create
 
 *Last updated: 03 August 2026*

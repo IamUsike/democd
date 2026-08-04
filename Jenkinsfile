@@ -3,8 +3,8 @@ pipeline {
     agent any
 
     environment {
-        GIT_URL = 'https://github.com/IamUsike/democd.git'
-        BRANCH = 'main'
+        GIT_URL = 'https://github.com/Neueda-Learning/room107_Agileish.git'
+        BRANCH = 'dev'
     }
 
     stages {
@@ -37,6 +37,7 @@ pipeline {
         stage('Verify') {
             steps {
                 sh 'docker ps'
+                sh 'curl -f http://localhost:8082/ || exit 1'
             }
         }
     }

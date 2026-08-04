@@ -84,10 +84,10 @@ public class Transaction {
     public Transaction() {
     }
 
-    public Transaction(Long transactionId, String sourceType, String sourceId, String sourceName,
-                       String accountId, String payeeId, String payeeName, BigDecimal amount, String currency,
-                       String type, LocalDateTime timestamp, String location, BigDecimal latitude,
-                       BigDecimal longitude, String description, String status) {
+    public Transaction(Long transactionId, String sourceType, String sourceId, String sourceName, String accountId,
+                       String payeeId, String payeeName, BigDecimal amount, String currency, String type,
+                       LocalDateTime timestamp, String location, BigDecimal latitude, BigDecimal longitude,
+                       String description, String status) {
         this.transactionId = transactionId;
         this.sourceType = sourceType;
         this.sourceId = sourceId;
@@ -104,12 +104,6 @@ public class Transaction {
         this.longitude = longitude;
         this.description = description;
         this.status = status;
-    }
-
-    public Transaction(Long transactionId, String accountId, String payeeId, BigDecimal amount, String currency,
-                       String type, LocalDateTime timestamp, String description, String status) {
-        this(transactionId, null, null, null, accountId, payeeId, null, amount, currency, type, timestamp,
-                null, null, null, description, status);
     }
 
     public Long getTransactionId() {
