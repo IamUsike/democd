@@ -65,11 +65,11 @@ npm run build
 
 Jenkins runs `docker-compose build` + `up -d`. Compose starts **MySQL**,
 **Spring Boot (:8081)**, and a **frontend nginx** container serving the
-production Vite build on **:80**.
+production Vite build on **:8082** (mapped to nginx internal `:80`).
 
 | Surface | URL |
 |---------|-----|
-| UI | `http://<VM_IP>/` |
+| UI | `http://<VM_IP>:8082/` |
 | API | `http://<VM_IP>:8081` |
 | Swagger | `http://<VM_IP>:8081/swagger-ui.html` |
 

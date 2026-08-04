@@ -329,7 +329,7 @@ Remaining ceremony: run the live dry-run in front of the team/instructors
 | Item | Value |
 |------|-------|
 | UI (dev) | http://localhost:5173 |
-| UI (Docker/VM) | http://\<VM_IP\>/ (nginx :80) |
+| UI (Docker/VM) | http://\<VM_IP\>:8082/ (nginx internal :80) |
 | API | http://localhost:8081 or http://\<VM_IP\>:8081 |
 | Swagger | http://localhost:8081/swagger-ui.html |
 | Seed | `./scripts/seed-demo.sh` · VM: `API_BASE=http://\<VM_IP\>:8081 ./scripts/seed-demo.sh` |

@@ -51,7 +51,7 @@ services:
     restart: always
 
     ports:
-      - "80:80"
+      - "8082:80"
 
     depends_on:
       - springboot-app

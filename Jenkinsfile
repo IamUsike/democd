@@ -37,6 +37,7 @@ pipeline {
         stage('Verify') {
             steps {
                 sh 'docker ps'
+                sh 'curl -f http://localhost:8082/ || exit 1'
             }
         }
     }

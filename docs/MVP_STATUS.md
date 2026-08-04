@@ -29,7 +29,7 @@ Presentation talk track + deep dive:
 7. springdoc OpenAPI / Swagger UI.
 8. CORS for local UI → API.
 9. Presentation doc: [`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md).
-10. Docker Option A: frontend nginx production image on `:80` via compose
+10. Docker Option A: frontend nginx production image on `:8082` via compose
     (`VITE_API_BASE_URL` build arg for VM).
 
 ## Demo runbook
@@ -45,7 +45,7 @@ Presentation talk track + deep dive:
 
 1. On the agent, set `VITE_API_BASE_URL=http://<VM_PUBLIC_IP>:8081` (job env or `.env`).
 2. Pipeline already runs `docker-compose build` / `up -d` (MySQL + API + frontend nginx).
-3. Open UI: `http://<VM_IP>/` · API: `http://<VM_IP>:8081`.
+3. Open UI: `http://<VM_IP>:8082/` · API: `http://<VM_IP>:8081`.
 4. Seed: `API_BASE=http://<VM_IP>:8081 ./scripts/seed-demo.sh`.
 5. Same alert lifecycle walkthrough in the UI.
 

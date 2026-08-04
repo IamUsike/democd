@@ -48,7 +48,7 @@ For Docker / Jenkins (production static build + nginx), see the root README
 VITE_API_BASE_URL=http://<VM_IP>:8081
 ```
 
-UI then: `http://<VM_IP>/` · API: `http://<VM_IP>:8081`
+UI then: `http://<VM_IP>:8082/` · API: `http://<VM_IP>:8081`
 
 ## Docker image
 
