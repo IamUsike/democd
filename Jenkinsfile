@@ -3,8 +3,8 @@ pipeline {
     agent any
 
     environment {
-        GIT_URL = 'https://github.com/IamUsike/democd.git'
-        BRANCH = 'main'
+        GIT_URL = 'https://github.com/Neueda-Learning/room107_Agileish.git'
+        BRANCH = 'dev'
     }
 
     stages {
