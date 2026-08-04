@@ -48,18 +48,26 @@ class TransactionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "sourceType": "BANK",
+                                  "sourceId": "HSBC-UK",
+                                  "sourceName": "HSBC United Kingdom",
                                   "accountId": "ACC-1",
                                   "payeeId": "PAYEE-1",
+                                  "payeeName": "Acme Vendors Ltd",
                                   "amount": 10.00,
                                   "currency": "USD",
                                   "type": "TRANSFER",
                                   "timestamp": "2026-08-03T10:15:30",
+                                  "location": "London, UK",
+                                  "latitude": 51.5074,
+                                  "longitude": -0.1278,
                                   "description": "Test payment",
                                   "status": "NEW"
                                 }
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.transactionId").value(1L))
+                .andExpect(jsonPath("$.sourceType").value("BANK"))
                 .andExpect(jsonPath("$.accountId").value("ACC-1"));
 
         assertEquals("ACC-1", transactionService.lastSavedRequest.getAccountId());
@@ -150,6 +158,9 @@ class TransactionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "sourceType": "BANK",
+                                  "sourceId": "HSBC-UK",
+                                  "sourceName": "HSBC United Kingdom",
                                   "accountId": "",
                                   "payeeId": "PAYEE-1",
                                   "amount": 10.00,
@@ -171,12 +182,19 @@ class TransactionControllerTest {
     private TransactionResponse sampleResponse() {
         return new TransactionResponse(
                 1L,
+                "BANK",
+                "HSBC-UK",
+                "HSBC United Kingdom",
                 "ACC-1",
                 "PAYEE-1",
+                "Acme Vendors Ltd",
                 new BigDecimal("10.00"),
                 "USD",
                 "TRANSFER",
                 LocalDateTime.of(2026, 8, 3, 10, 15, 30),
+                "London, UK",
+                new BigDecimal("51.5074000"),
+                new BigDecimal("-0.1278000"),
                 "Test payment",
                 "NEW"
         );

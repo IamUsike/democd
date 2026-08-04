@@ -53,12 +53,19 @@ public class TransactionService {
 
     private Transaction toEntity(TransactionRequest request) {
         Transaction transaction = new Transaction();
+        transaction.setSourceType(request.getSourceType());
+        transaction.setSourceId(request.getSourceId());
+        transaction.setSourceName(request.getSourceName());
         transaction.setAccountId(request.getAccountId());
         transaction.setPayeeId(request.getPayeeId());
+        transaction.setPayeeName(request.getPayeeName());
         transaction.setAmount(request.getAmount());
         transaction.setCurrency(request.getCurrency());
         transaction.setType(request.getType());
         transaction.setTimestamp(request.getTimestamp());
+        transaction.setLocation(request.getLocation());
+        transaction.setLatitude(request.getLatitude());
+        transaction.setLongitude(request.getLongitude());
         transaction.setDescription(request.getDescription());
         transaction.setStatus(request.getStatus());
         return transaction;
@@ -67,12 +74,19 @@ public class TransactionService {
     private TransactionResponse toResponse(Transaction transaction) {
         return new TransactionResponse(
                 transaction.getTransactionId(),
+                transaction.getSourceType(),
+                transaction.getSourceId(),
+                transaction.getSourceName(),
                 transaction.getAccountId(),
                 transaction.getPayeeId(),
+                transaction.getPayeeName(),
                 transaction.getAmount(),
                 transaction.getCurrency(),
                 transaction.getType(),
                 transaction.getTimestamp(),
+                transaction.getLocation(),
+                transaction.getLatitude(),
+                transaction.getLongitude(),
                 transaction.getDescription(),
                 transaction.getStatus()
         );

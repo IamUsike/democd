@@ -37,23 +37,37 @@ class TransactionServiceTest {
     @Test
     void saveTransactionDelegatesToRepository() {
         TransactionRequest request = new TransactionRequest(
+                "BANK",
+                "HSBC-UK",
+                "HSBC United Kingdom",
                 "ACC-1",
                 "PAYEE-1",
+                "Acme Vendors Ltd",
                 new BigDecimal("10.00"),
                 "USD",
                 "TRANSFER",
                 LocalDateTime.of(2026, 8, 3, 10, 15, 30),
+                "London, UK",
+                new BigDecimal("51.5074000"),
+                new BigDecimal("-0.1278000"),
                 "test",
                 "NEW"
         );
         Transaction savedTransaction = new Transaction(
                 1L,
+                "BANK",
+                "HSBC-UK",
+                "HSBC United Kingdom",
                 "ACC-1",
                 "PAYEE-1",
+                "Acme Vendors Ltd",
                 new BigDecimal("10.00"),
                 "USD",
                 "TRANSFER",
                 LocalDateTime.of(2026, 8, 3, 10, 15, 30),
+                "London, UK",
+                new BigDecimal("51.5074000"),
+                new BigDecimal("-0.1278000"),
                 "test",
                 "NEW"
         );
@@ -66,15 +80,24 @@ class TransactionServiceTest {
         Transaction capturedTransaction = transactionCaptor.getValue();
 
         assertEquals(request.getAccountId(), capturedTransaction.getAccountId());
+        assertEquals(request.getSourceType(), capturedTransaction.getSourceType());
+        assertEquals(request.getSourceId(), capturedTransaction.getSourceId());
+        assertEquals(request.getSourceName(), capturedTransaction.getSourceName());
         assertEquals(request.getPayeeId(), capturedTransaction.getPayeeId());
+        assertEquals(request.getPayeeName(), capturedTransaction.getPayeeName());
         assertEquals(request.getAmount(), capturedTransaction.getAmount());
         assertEquals(request.getCurrency(), capturedTransaction.getCurrency());
         assertEquals(request.getType(), capturedTransaction.getType());
         assertEquals(request.getTimestamp(), capturedTransaction.getTimestamp());
+        assertEquals(request.getLocation(), capturedTransaction.getLocation());
+        assertEquals(request.getLatitude(), capturedTransaction.getLatitude());
+        assertEquals(request.getLongitude(), capturedTransaction.getLongitude());
         assertEquals(request.getDescription(), capturedTransaction.getDescription());
         assertEquals(request.getStatus(), capturedTransaction.getStatus());
 
         assertEquals(1L, result.getTransactionId());
+        assertEquals("BANK", result.getSourceType());
+        assertEquals("HSBC-UK", result.getSourceId());
         assertEquals("ACC-1", result.getAccountId());
     }
 
@@ -93,12 +116,19 @@ class TransactionServiceTest {
     void getTransactionByIdReturnsTransactionWhenFound() {
         Transaction transaction = new Transaction(
                 1L,
+                "BANK",
+                "HSBC-UK",
+                "HSBC United Kingdom",
                 "ACC-1",
                 "PAYEE-1",
+                "Acme Vendors Ltd",
                 new BigDecimal("10.00"),
                 "USD",
                 "TRANSFER",
                 LocalDateTime.of(2026, 8, 3, 10, 15, 30),
+                "London, UK",
+                new BigDecimal("51.5074000"),
+                new BigDecimal("-0.1278000"),
                 "test",
                 "NEW"
         );
