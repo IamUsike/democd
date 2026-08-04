@@ -4,7 +4,9 @@ React + TypeScript operator dashboard for Phase 1 MVP.
 
 ## What is implemented
 
-- Huddle-inspired bluish landing/dashboard shell
+- AGIL-ish PWA-style shell with left navigation
+- Separate routes: Dashboard, Transactions, Alerts
+- Huddle-inspired bluish visual theme across all pages
 - KPI strip (`GET /api/v1/dashboard`)
 - Transactions list with source/account filters (`GET /api/v1/transactions`)
 - Active alerts list (`GET /api/v1/alerts`)

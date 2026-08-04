@@ -7,8 +7,9 @@ starting work — keep "Current status" honest and current, not aspirational.
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
 **Currently working on:** Next — merge `transaction-api` into `dev` and implement
-rule engine + alerts backend wiring. Frontend MVP UI is implemented with typed
-API clients and sample-data fallback until backend endpoints are live.
+rule engine + alerts backend wiring. Frontend MVP UI is implemented as an
+AGIL-ish app shell with separate Dashboard / Transactions / Alerts pages,
+typed API clients, and sample-data fallback until backend endpoints are live.
 
 ---
 
