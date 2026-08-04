@@ -38,7 +38,7 @@ evaluate-on-record.
   source and account) — **public simulate/ingest** for bank & merchant
   sims uses this same contract
   ```
-- [ ] Rule engine skeleton — `Rule` interface, `RuleEngine`,
+- [x] Rule engine skeleton — `Rule` interface, `RuleEngine`,
   ```
   `AmountThresholdRule` (single hardcoded threshold)
   ```
