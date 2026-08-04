@@ -1,0 +1,91 @@
+import type { DashboardSummary } from '../types/dashboard';
+import type { Alert } from '../types/alert';
+import type { Transaction } from '../types/transaction';
+
+export const demoTransactions: Transaction[] = [
+  {
+    transactionId: 1001,
+    sourceType: 'BANK',
+    sourceId: 'HSBC-UK',
+    sourceName: 'HSBC United Kingdom',
+    accountId: 'ACC1001',
+    payeeId: 'PAYEE-2002',
+    payeeName: 'Acme Vendors Ltd',
+    amount: 25000,
+    currency: 'USD',
+    transactionType: 'TRANSFER',
+    timestamp: '2026-08-04T10:15:00',
+    location: 'London, UK',
+    description: 'Vendor settlement',
+    status: 'COMPLETED',
+  },
+  {
+    transactionId: 1002,
+    sourceType: 'MERCHANT',
+    sourceId: 'ACME-POS',
+    sourceName: 'Acme Merchant POS',
+    accountId: 'ACC1002',
+    payeeId: 'PAYEE-3001',
+    payeeName: 'Metro Fuel',
+    amount: 980,
+    currency: 'USD',
+    transactionType: 'DEBIT',
+    timestamp: '2026-08-04T10:20:00',
+    location: 'Manchester, UK',
+    description: 'Fuel card payment',
+    status: 'COMPLETED',
+  },
+  {
+    transactionId: 1003,
+    sourceType: 'BANK',
+    sourceId: 'HSBC-UK',
+    sourceName: 'HSBC United Kingdom',
+    accountId: 'ACC1003',
+    payeeId: 'PAYEE-1008',
+    payeeName: 'Cloud Provider Ltd',
+    amount: 7800,
+    currency: 'USD',
+    transactionType: 'TRANSFER',
+    timestamp: '2026-08-04T10:28:00',
+    location: 'Leeds, UK',
+    description: 'Monthly cloud invoice',
+    status: 'COMPLETED',
+  },
+];
+
+export const demoAlerts: Alert[] = [
+  {
+    alertId: 201,
+    transactionId: 1001,
+    severity: 'HIGH',
+    status: 'OPEN',
+    ruleTriggered: 'Amount Threshold Rule',
+    accountId: 'ACC1001',
+    sourceType: 'BANK',
+    sourceId: 'HSBC-UK',
+    sourceName: 'HSBC United Kingdom',
+    createdAt: '2026-08-04T10:20:00',
+  },
+  {
+    alertId: 202,
+    transactionId: 1003,
+    severity: 'MEDIUM',
+    status: 'ACKNOWLEDGED',
+    ruleTriggered: 'Amount Threshold Rule',
+    accountId: 'ACC1003',
+    sourceType: 'BANK',
+    sourceId: 'HSBC-UK',
+    sourceName: 'HSBC United Kingdom',
+    createdAt: '2026-08-04T10:35:00',
+    acknowledgedAt: '2026-08-04T10:40:00',
+  },
+];
+
+export const demoDashboardSummary: DashboardSummary = {
+  totalTransactions: demoTransactions.length,
+  totalAlerts: demoAlerts.length,
+  openAlerts: demoAlerts.filter((a) => a.status === 'OPEN').length,
+  closedAlerts: demoAlerts.filter((a) => a.status === 'CLOSED').length,
+  highSeverityAlerts: demoAlerts.filter((a) => a.severity === 'HIGH').length,
+};
+

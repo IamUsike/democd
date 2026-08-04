@@ -14,6 +14,10 @@ Commit message when updating: `chore: kanban update [date]`
 | Skeleton (Spring Boot + Flyway + React placeholder) | ALL | |
 | ER diagram + database design docs | Rameez + shreya | |
 | DFD, storyline, team split docs | IamUsike | |
+| [C-1] AGIL-ish bluish UI shell + left nav routing | C | Dashboard / Transactions / Alerts pages |
+| [C-2] Transaction list UI (filter by source) | C | |
+| [C-3] Alert list + detail + lifecycle actions UI | C | |
+| [C-4] KPI strip (counts by source, open alerts) | C | |
 
 ---
 
@@ -29,7 +33,7 @@ Commit message when updating: `chore: kanban update [date]`
 ### 🚧 IN PROGRESS
 | Story | Owner | Branch | Started |
 |-------|-------|--------|---------|
-| *(none yet — start here ↓)* | | | |
+| *(none)* | | | |
 
 ---
 
@@ -38,7 +42,6 @@ Commit message when updating: `chore: kanban update [date]`
 |-------|-------|------------|
 | [B-1] Rule + RuleEngine + AmountThresholdRule (unit tests) | B | — |
 | [B-3] Alert entity + alert_transactions table | B | — |
-| [C-1] Bluish UI shell / routing / layout | C | — |
 
 ---
 
@@ -50,9 +53,6 @@ Commit message when updating: `chore: kanban update [date]`
 | [B-2] Wire record → sync rule evaluate | B | A-2 merged + B-1 + B-3 |
 | [B-4] Alert lifecycle endpoints (ack/investigate/close/dismiss) | B | B-3 |
 | [B-5] GET /alerts + GET /alerts/{id} | B | B-3 |
-| [C-2] Transaction list UI (filter by source) | C | A-3 merged |
-| [C-3] Alert list + detail + lifecycle buttons | C | B-4 + B-5 |
-| [C-4] KPI strip (counts by source, open alerts) | C | A-3 merged |
 | [ALL-1] E2E demo (over-threshold → alert → close) | ALL | A-4 + B-2 + C-2 + C-3 |
 
 ---
@@ -63,6 +63,10 @@ Commit message when updating: `chore: kanban update [date]`
 flowchart TB
   subgraph done [✅ Done]
     Skel[Skeleton]
+    C1[C-1 UI shell]
+    C2[C-2 Txn UI]
+    C3[C-3 Alert UI]
+    C4[C-4 KPIs]
   end
 
   subgraph review [🔁 Review / Merge]
@@ -74,7 +78,6 @@ flowchart TB
   subgraph ready [🟢 Ready]
     B1[B-1 Rule engine]
     B3[B-3 Alert entity]
-    C1[C-1 Bluish shell]
   end
 
   subgraph backlog [🔵 Backlog]
@@ -83,9 +86,6 @@ flowchart TB
     B2[B-2 Wire sync eval]
     B4[B-4 Lifecycle APIs]
     B5[B-5 GET alerts]
-    C2[C-2 Txn UI]
-    C3[C-3 Alert UI]
-    C4[C-4 KPIs]
     Demo[ALL-1 E2E demo]
   end
 

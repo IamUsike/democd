@@ -1,16 +1,21 @@
-import './App.css'
+import './App.css';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AppShell } from './layout/AppShell';
+import { AlertsPage } from './pages/AlertsPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { TransactionsPage } from './pages/TransactionsPage';
 
 function App() {
   return (
-    <main className="app">
-      <h1>Transaction Monitoring</h1>
-      <p>
-        Operator dashboard placeholder. Transaction list and alerts will land
-        here once the API endpoints exist.
-      </p>
-      <p className="hint">API default: http://localhost:8081</p>
-    </main>
-  )
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/alerts" element={<AlertsPage />} />
+      </Route>
+    </Routes>
+  );
 }
 
-export default App
+export default App;

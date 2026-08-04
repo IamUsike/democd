@@ -7,8 +7,10 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
-**Currently working on:** Next — Transaction entity + repository
-(enriched multi-source fields)
+**Currently working on:** Next — merge `transaction-api` into `dev` and implement
+rule engine + alerts backend wiring. Frontend MVP UI is implemented as an
+AGIL-ish app shell with separate Dashboard / Transactions / Alerts pages,
+typed API clients, and sample-data fallback until backend endpoints are live.
 
 ---
 
@@ -52,15 +54,11 @@ evaluate-on-record.
   dismiss — with transition validation
   ```
 - [ ] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
-  ```
-  filter by source)
-  ```
-- [ ] React UI: bluish theme; transaction list (filter/search by source)
-- [ ] React UI: alert list + alert detail + lifecycle action buttons
-- [ ] Basic dashboard KPI strip (txn counts by source, open alerts —
-  ```
-  aggregations, not stored columns)
-  ```
+      filter by source)
+- [x] React UI: bluish theme; transaction list (filter/search by source)
+- [x] React UI: alert list + alert detail + lifecycle action buttons
+- [x] Basic dashboard KPI strip (txn counts by source, open alerts —
+      aggregations, not stored columns)
 - [ ] Swagger/OpenAPI docs generated
 - [ ] Seed / simulate script hitting `POST /transactions` for sample
   ```
@@ -98,3 +96,36 @@ evaluate-on-record.
 - [ ] Horizontal scaling of rule engine instances demonstrated
 - [ ] Cache for velocity/daily-limit count lookups
 - [ ] Read replica for reporting/dashboard KPI queries
+
+## Phase 4 — security & hardening
+
+- [ ] TLS confirmed end-to-end (client↔API at minimum)
+- [ ] Database encryption at rest enabled
+- [ ] Mask sensitive fields in API/UI where practical (account, payee,
+      location) — show full values only when needed for investigation
+- [ ] Credentials out of source (env vars minimum; secrets manager if
+      time allows)
+- [ ] Audit trail confirmed complete (who/what/when for every alert
+      status change)
+
+## Explicitly out of scope
+- Machine learning / anomaly detection — not doing this; would eat the
+  remaining time budget for low presentation payoff relative to a
+  well-scaled, secured system.
+- Authentication / multi-operator support — spec says single operator,
+  no auth required.
+- Hard tenancy (separate DB/schema per bank) — soft tenancy only.
+- Live bank/merchant network integrations — simulate via public API.
+
+## Architecture reference
+See `.cursor/rules/general.mdc` for the modular monolith decision and
+build-order rationale. Schema: `docs/DATABASE_DESIGN.md` +
+`docs/transaction monitoring er diagram.mmd` — soft multi-source
+tenancy; `source_*` / `account_id` / `payee_id` on transactions; MVP
+tables `transactions`, `alerts`, `alert_transactions`. Flows:
+[`docs/DFD-MVP.md`](docs/DFD-MVP.md). Three-person ownership:
+[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Storyline:
+[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). Live board:
+[`docs/KANBAN.md`](docs/KANBAN.md). Stand-ups:
+[`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). HLD/LLD diagrams live
+wherever the team has put them (Miro/Figma/Drive link — *add link here*).
