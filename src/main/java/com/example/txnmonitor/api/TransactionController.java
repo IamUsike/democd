@@ -1,5 +1,6 @@
 package com.example.txnmonitor.api;
 
+import com.example.txnmonitor.common.ApiResponse;
 import com.example.txnmonitor.transaction.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,9 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -32,8 +33,11 @@ public class TransactionController {
             summary = "Create a transaction",
             description = "Creates a new transaction record and returns the saved transaction details."
     )
-    public ResponseEntity<TransactionResponse> createTransaction(@Valid @RequestBody TransactionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(transactionService.saveTransaction(request));
+    public ResponseEntity<ApiResponse<TransactionResponse>> createTransaction(
+            @Valid @RequestBody TransactionRequest request) {
+        TransactionResponse created = transactionService.saveTransaction(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Transaction recorded successfully.", created));
     }
 
     @GetMapping
@@ -41,11 +45,13 @@ public class TransactionController {
             summary = "Get all transactions",
             description = "Returns all transactions, with optional source/account filters."
     )
-    public ResponseEntity<List<TransactionResponse>> getTransactions(
+    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getTransactions(
             @RequestParam(required = false) String sourceType,
             @RequestParam(required = false) String sourceId,
             @RequestParam(required = false) String accountId) {
-        return ResponseEntity.ok(transactionService.getTransactions(sourceType, sourceId, accountId));
+        List<TransactionResponse> transactions =
+                transactionService.getTransactions(sourceType, sourceId, accountId);
+        return ResponseEntity.ok(ApiResponse.ok("Transactions retrieved successfully.", transactions));
     }
 
     @GetMapping("/{id}")
@@ -53,8 +59,9 @@ public class TransactionController {
             summary = "Get transaction by ID",
             description = "Returns a single transaction for the provided transaction ID."
     )
-    public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable Long id) {
-        return ResponseEntity.ok(transactionService.getTransactionById(id));
+    public ResponseEntity<ApiResponse<TransactionResponse>> getTransactionById(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.ok("Transaction retrieved successfully.", transactionService.getTransactionById(id)));
     }
 
     @GetMapping("/account/{accountId}")
@@ -62,8 +69,11 @@ public class TransactionController {
             summary = "Get transactions by account ID",
             description = "Returns all transactions that belong to the provided account ID."
     )
-    public ResponseEntity<List<TransactionResponse>> getTransactionsByAccountId(@PathVariable String accountId) {
-        return ResponseEntity.ok(transactionService.searchByAccountId(accountId));
+    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getTransactionsByAccountId(
+            @PathVariable String accountId) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Transactions retrieved successfully.",
+                transactionService.searchByAccountId(accountId)));
     }
 
     @GetMapping("/status/{status}")
@@ -71,8 +81,11 @@ public class TransactionController {
             summary = "Get transactions by status",
             description = "Returns all transactions with the provided status value."
     )
-    public ResponseEntity<List<TransactionResponse>> getTransactionsByStatus(@PathVariable String status) {
-        return ResponseEntity.ok(transactionService.searchByStatus(status));
+    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getTransactionsByStatus(
+            @PathVariable String status) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Transactions retrieved successfully.",
+                transactionService.searchByStatus(status)));
     }
 
     @GetMapping("/type/{type}")
@@ -80,8 +93,10 @@ public class TransactionController {
             summary = "Get transactions by type",
             description = "Returns all transactions of the provided transaction type."
     )
-    public ResponseEntity<List<TransactionResponse>> getTransactionsByType(@PathVariable String type) {
-        return ResponseEntity.ok(transactionService.searchByType(type));
+    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getTransactionsByType(
+            @PathVariable String type) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Transactions retrieved successfully.",
+                transactionService.searchByType(type)));
     }
 }
-

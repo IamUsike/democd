@@ -1,5 +1,7 @@
 package com.example.txnmonitor.api;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -36,6 +38,8 @@ public class TransactionRequest {
     private String currency;
 
     @NotBlank(message = "Transaction type is required")
+    @JsonProperty("type")
+    @JsonAlias("transactionType")
     private String type;
 
     @NotNull(message = "Timestamp is required")

@@ -66,9 +66,10 @@ class TransactionControllerTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.transactionId").value(1L))
-                .andExpect(jsonPath("$.sourceType").value("BANK"))
-                .andExpect(jsonPath("$.accountId").value("ACC-1"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.transactionId").value(1L))
+                .andExpect(jsonPath("$.data.sourceType").value("BANK"))
+                .andExpect(jsonPath("$.data.accountId").value("ACC-1"));
 
         assertEquals("ACC-1", transactionService.lastSavedRequest.getAccountId());
     }
@@ -79,7 +80,8 @@ class TransactionControllerTest {
 
         mockMvc.perform(get("/api/v1/transactions"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].transactionId").value(1L));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].transactionId").value(1L));
     }
 
     @Test
@@ -91,8 +93,8 @@ class TransactionControllerTest {
                         .param("sourceId", "HSBC-UK")
                         .param("accountId", "ACC-1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].sourceType").value("BANK"))
-                .andExpect(jsonPath("$[0].sourceId").value("HSBC-UK"));
+                .andExpect(jsonPath("$.data[0].sourceType").value("BANK"))
+                .andExpect(jsonPath("$.data[0].sourceId").value("HSBC-UK"));
 
         assertEquals("BANK", transactionService.lastSourceType);
         assertEquals("HSBC-UK", transactionService.lastSourceId);
@@ -105,7 +107,7 @@ class TransactionControllerTest {
 
         mockMvc.perform(get("/api/v1/transactions/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId").value(1L));
+                .andExpect(jsonPath("$.data.transactionId").value(1L));
 
         assertEquals(1L, transactionService.lastRequestedId);
     }
@@ -116,7 +118,7 @@ class TransactionControllerTest {
 
         mockMvc.perform(get("/api/v1/transactions/account/ACC-1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].accountId").value("ACC-1"));
+                .andExpect(jsonPath("$.data[0].accountId").value("ACC-1"));
 
         assertEquals("ACC-1", transactionService.lastAccountId);
     }
@@ -127,7 +129,7 @@ class TransactionControllerTest {
 
         mockMvc.perform(get("/api/v1/transactions/status/NEW"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("NEW"));
+                .andExpect(jsonPath("$.data[0].status").value("NEW"));
 
         assertEquals("NEW", transactionService.lastStatus);
     }
@@ -138,7 +140,7 @@ class TransactionControllerTest {
 
         mockMvc.perform(get("/api/v1/transactions/type/TRANSFER"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].type").value("TRANSFER"));
+                .andExpect(jsonPath("$.data[0].transactionType").value("TRANSFER"));
 
         assertEquals("TRANSFER", transactionService.lastType);
     }
