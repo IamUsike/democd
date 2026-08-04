@@ -1,8 +1,8 @@
-# Storyline & Kanban — 3-Person Team
+# Storyline — 3-Person Team
 
-Living board for the Transaction Monitoring & Alerts project.  
+Product narrative and user stories for the Transaction Monitoring & Alerts project.  
 **Owners:** Person A (Transactions), Person B (Rules & Alerts), Person C (Frontend).  
-**Status source:** [`Project_milestones.md`](../Project_milestones.md) · **Roles:** [`TEAM_WORK_SPLIT.md`](./TEAM_WORK_SPLIT.md)
+**Live board:** [`KANBAN.md`](./KANBAN.md) · **Status:** [`Project_milestones.md`](../Project_milestones.md) · **Roles:** [`TEAM_WORK_SPLIT.md`](./TEAM_WORK_SPLIT.md)
 
 Replace *\<Name 1/2/3\>* with real names when you have them.
 
@@ -126,97 +126,15 @@ Format: **As a … I want … so that …** · Points are relative (1/2/3/5).
 
 ---
 
-## 4. Kanban board (Phase 1)
+## 4. Kanban board
 
-Columns: **Backlog → Ready → In progress → Review → Done**.  
-Move a card when the story’s acceptance is met; update
-[`Project_milestones.md`](../Project_milestones.md) when a milestone checkbox
-lands.
+➡️ **The live board has moved to its own file: [`KANBAN.md`](./KANBAN.md)**
 
-### Board snapshot (start of Phase 1 coding)
-
-```text
-DONE
-  [x] Skeleton (Spring Boot + Flyway V1 + frontend placeholder)     ALL
-
-IN PROGRESS
-  (none — start here ↓)
-
-READY (unblocked now)
-  [A-1] Transaction entity + repository                             A
-  [B-1] Rule + RuleEngine + AmountThreshold (unit tests)            B
-  [B-3] Alert entity + alert_transactions                           B
-  [C-1] Bluish UI shell / layout                                    C
-
-BACKLOG (wait on Ready/Done)
-  [A-2] POST /transactions ingest                                   A  ← A-1
-  [A-3] GET /transactions + filters                                 A  ← A-1
-  [A-4] Seed BANK/MERCHANT script                                   A  ← A-2
-  [A-5] Swagger                                                     A  ← A-2, B-5
-  [B-2] Wire record → sync evaluate                                 B  ← A-2, B-1, B-3
-  [B-4] Alert lifecycle endpoints                                   B  ← B-3
-  [B-5] GET /alerts (+ detail)                                      B  ← B-3
-  [C-2] Transaction list UI                                         C  ← A-3
-  [C-3] Alert list/detail/actions UI                                C  ← B-4, B-5
-  [C-4] KPI strip                                                   C  ← A-3
-  [ALL-1] E2E demo                                                  ALL ← A-4, B-2, C-2, C-3
-```
-
-### Mermaid swimlanes (same board)
-
-```mermaid
-flowchart TB
-  subgraph done [Done]
-    Skel[Skeleton]
-  end
-
-  subgraph ready [Ready]
-    A1[A-1 Txn entity]
-    B1[B-1 Rule engine]
-    B3[B-3 Alert entity]
-    C1[C-1 Bluish shell]
-  end
-
-  subgraph backlog [Backlog]
-    A2[A-2 POST ingest]
-    A3[A-3 GET list]
-    B2[B-2 Wire sync eval]
-    B4[B-4 Lifecycle APIs]
-    B5[B-5 GET alerts]
-    C2[C-2 Txn UI]
-    C3[C-3 Alert UI]
-    C4[C-4 KPIs]
-    Demo[ALL-1 E2E demo]
-  end
-
-  A1 --> A2
-  A1 --> A3
-  A2 --> B2
-  B1 --> B2
-  B3 --> B2
-  B3 --> B4
-  B3 --> B5
-  A3 --> C2
-  B4 --> C3
-  B5 --> C3
-  A3 --> C4
-  A2 --> Demo
-  B2 --> Demo
-  C2 --> Demo
-  C3 --> Demo
-```
-
-### How to run the board day-to-day
-
-1. Each person pulls **one** Ready card into In progress (WIP limit = 1–2).
-2. PR title includes story ID (`A-2: POST transactions ingest`).
-3. Review column = PR open; Done = merged + milestone checkbox ticked.
-4. After A-2 and B-3 exist, promote B-2 to Ready and pair on the wire-up.
-5. C stays on C-1 until A-3/B-5 land; then burn down UI stories.
+Update `KANBAN.md` daily as cards move. This file keeps the stable product narrative and user story definitions only.
 
 ---
 
-## 5. Acceptance cheat-sheet (Phase 1 “done”)
+## 5. Acceptance cheat-sheet (Phase 1 "done")
 
 | Story | Done when |
 |-------|-----------|
@@ -240,19 +158,6 @@ Keep on a second board or below the fold until Phase 1 E2E is Done.
 | 2 | Velocity / NewPayee / DailyLimit (B); rules table + UI (B/C); severity colors (C) |
 | 3 | Queue (B); extract engine (B); internal alert API stability (A); cache (B); read replica KPIs (A) |
 | 4 | TLS + secrets (A); encryption at rest (A); field masking UI (C); audit history (B) |
-
----
-
-## 7. Copy-paste: GitHub Projects / Trello columns
-
-Create columns: `Backlog` | `Ready` | `In progress` | `Review` | `Done`.  
-Labels: `A`, `B`, `C`, `Phase-1`, `Phase-2`, `blocked`.  
-Card title examples:
-
-- `[A-1][P1] Transaction entity + repository`
-- `[B-1][P1] AmountThresholdRule + RuleEngine`
-- `[C-1][P1] Bluish dashboard shell`
-- `[ALL-1][P1] E2E demo bank over-threshold`
 
 ---
 

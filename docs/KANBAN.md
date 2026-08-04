@@ -29,7 +29,10 @@ Commit message when updating: `chore: kanban update [date]`
 ### 🚧 IN PROGRESS
 | Story | Owner | Branch | Started |
 |-------|-------|--------|---------|
-| *(none yet — start here ↓)* | | | |
+| [C-1] Bluish UI shell / routing / layout | C | `dev` | 04 Aug |
+| [C-2] Transaction list UI (filter by source) | C | `dev` | 04 Aug |
+| [C-3] Alert list + detail + lifecycle buttons | C | `dev` | 04 Aug |
+| [C-4] KPI strip (counts by source, open alerts) | C | `dev` | 04 Aug |
 
 ---
 
@@ -38,7 +41,6 @@ Commit message when updating: `chore: kanban update [date]`
 |-------|-------|------------|
 | [B-1] Rule + RuleEngine + AmountThresholdRule (unit tests) | B | — |
 | [B-3] Alert entity + alert_transactions table | B | — |
-| [C-1] Bluish UI shell / routing / layout | C | — |
 
 ---
 
@@ -50,9 +52,6 @@ Commit message when updating: `chore: kanban update [date]`
 | [B-2] Wire record → sync rule evaluate | B | A-2 merged + B-1 + B-3 |
 | [B-4] Alert lifecycle endpoints (ack/investigate/close/dismiss) | B | B-3 |
 | [B-5] GET /alerts + GET /alerts/{id} | B | B-3 |
-| [C-2] Transaction list UI (filter by source) | C | A-3 merged |
-| [C-3] Alert list + detail + lifecycle buttons | C | B-4 + B-5 |
-| [C-4] KPI strip (counts by source, open alerts) | C | A-3 merged |
 | [ALL-1] E2E demo (over-threshold → alert → close) | ALL | A-4 + B-2 + C-2 + C-3 |
 
 ---

@@ -6,8 +6,9 @@ starting work — keep "Current status" honest and current, not aspirational.
 ## Current status
 **Phase:** Phase 1 — MVP in progress
 **Last updated:** 04 August 2026
-**Currently working on:** Next — Transaction entity + repository
-(enriched multi-source fields)
+**Currently working on:** Next — merge `transaction-api` into `dev` and implement
+rule engine + alerts backend wiring. Frontend MVP UI is implemented with typed
+API clients and sample-data fallback until backend endpoints are live.
 
 ---
 
@@ -40,9 +41,9 @@ evaluate-on-record.
       dismiss — with transition validation
 - [ ] `GET /alerts`, `GET /alerts/{id}` (with triggering transactions;
       filter by source)
-- [ ] React UI: bluish theme; transaction list (filter/search by source)
-- [ ] React UI: alert list + alert detail + lifecycle action buttons
-- [ ] Basic dashboard KPI strip (txn counts by source, open alerts —
+- [x] React UI: bluish theme; transaction list (filter/search by source)
+- [x] React UI: alert list + alert detail + lifecycle action buttons
+- [x] Basic dashboard KPI strip (txn counts by source, open alerts —
       aggregations, not stored columns)
 - [ ] Swagger/OpenAPI docs generated
 - [ ] Seed / simulate script hitting `POST /transactions` for sample
@@ -97,6 +98,8 @@ build-order rationale. Schema: `docs/DATABASE_DESIGN.md` +
 tenancy; `source_*` / `account_id` / `payee_id` on transactions; MVP
 tables `transactions`, `alerts`, `alert_transactions`. Flows:
 [`docs/DFD-MVP.md`](docs/DFD-MVP.md). Three-person ownership:
-[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Demo narrative + kanban:
-[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). HLD/LLD diagrams live
+[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Storyline:
+[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). Live board:
+[`docs/KANBAN.md`](docs/KANBAN.md). Stand-ups:
+[`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). HLD/LLD diagrams live
 wherever the team has put them (Miro/Figma/Drive link — *add link here*).
