@@ -1,4 +1,4 @@
 /**
- * Alert service, repository, entity, and lifecycle logic.
+ * Alert persistence, create-from-rule-match, and lifecycle transitions.
  */
 package com.example.txnmonitor.alert;
