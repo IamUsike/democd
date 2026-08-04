@@ -97,5 +97,6 @@ build-order rationale. Schema: `docs/DATABASE_DESIGN.md` +
 tenancy; `source_*` / `account_id` / `payee_id` on transactions; MVP
 tables `transactions`, `alerts`, `alert_transactions`. Flows:
 [`docs/DFD-MVP.md`](docs/DFD-MVP.md). Three-person ownership:
-[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). HLD/LLD diagrams live
+[`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Demo narrative + kanban:
+[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). HLD/LLD diagrams live
 wherever the team has put them (Miro/Figma/Drive link — *add link here*).

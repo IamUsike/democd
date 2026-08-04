@@ -40,6 +40,7 @@ Theme direction: bluish operator dashboard (Phase 1).
 ## Docs
 
 - [`Project_milestones.md`](Project_milestones.md) — build order and status
+- [`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md) — demo story + 3-person kanban
 - [`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md) — how three people split ownership
 - [`docs/DFD-MVP.md`](docs/DFD-MVP.md) — data flows (every txn → rule engine in MVP)
 - [`docs/DATABASE_DESIGN.md`](docs/DATABASE_DESIGN.md) — schema (multi-source)
