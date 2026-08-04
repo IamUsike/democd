@@ -2,8 +2,10 @@
 
 Last updated: 04 August 2026
 
-This document is the quick source of truth for what is actually present in
-the repository now, and how we are proceeding to complete the MVP.
+**Verdict: Phase 1 MVP is ready for live demo.**
+
+Presentation talk track + deep dive:
+[`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md).
 
 ## Architecture snapshot
 
@@ -18,12 +20,15 @@ the repository now, and how we are proceeding to complete the MVP.
 ## What is completed in repo
 
 1. Transaction ingest/query APIs with soft-tenancy fields + envelope responses.
-2. Rule engine + sync evaluate-on-record.
-3. Alert create/list/detail/lifecycle APIs.
+2. Rule engine + sync evaluate-on-record (`AmountThresholdRule`, threshold
+   **10000**, strict `>`).
+3. Alert create/list/detail/lifecycle APIs with transition validation.
 4. Dashboard KPI endpoint `GET /api/v1/dashboard`.
 5. Frontend pages wired to live APIs (errors shown if API unavailable).
 6. Seed script: `scripts/seed-demo.sh`.
-7. springdoc OpenAPI available with the app (Swagger UI).
+7. springdoc OpenAPI / Swagger UI.
+8. CORS for local UI → API.
+9. Presentation doc: [`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md).
 
 ## Demo runbook
 
@@ -35,12 +40,14 @@ the repository now, and how we are proceeding to complete the MVP.
 
 ## What remains
 
-- Team end-to-end dry-run of the demo script above (mark ALL-1 done after).
+- Live dry-run in front of the team/instructors (ceremony only — mark ALL-1 /
+  E2E checkbox in milestones after that room demo).
+- Phase 2+ items (extra rules, queue, hardening) — deliberately not started.
 
 ## MVP definition of done
 
-1. Every persisted transaction is synchronously evaluated.
-2. Over-threshold transactions create `OPEN` alerts with linked transaction(s).
-3. Operator can move alert through valid lifecycle transitions.
-4. UI shows transactions, alerts, and lifecycle actions against live backend.
-5. Demo scenario runs without manual DB intervention.
+1. Every persisted transaction is synchronously evaluated. ✅
+2. Over-threshold transactions create `OPEN` alerts with linked transaction(s). ✅
+3. Operator can move alert through valid lifecycle transitions. ✅
+4. UI shows transactions, alerts, and lifecycle actions against live backend. ✅
+5. Demo scenario runs without manual DB intervention. ✅

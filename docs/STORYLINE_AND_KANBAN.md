@@ -21,8 +21,11 @@ Replace *\<Name 1/2/3\>* with real names when you have them.
 Banks and merchants generate payment traffic all day. Our platform **ingests**
 those transactions (we **simulate** the feeds), **evaluates** each one against
 monitoring rules the moment it lands, and gives a single operator a
-**bluish dashboard** to spot alerts, investigate, and close them — with a
+**Dark Obsidian dashboard** to spot alerts, investigate, and close them — with a
 clear trail from “money moved” to “risk reviewed.”
+
+**MVP status:** demo-ready. Full talk track + deep dive:
+[`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md).
 
 ### Characters
 
@@ -145,7 +148,7 @@ Update `KANBAN.md` daily as cards move. This file keeps the stable product narra
 | B-2 | POST over threshold creates alert in same flow |
 | B-3–B-5 | Lifecycle rejects illegal transitions; GET returns linked txns |
 | C-2–C-3 | UI shows sourceName; lifecycle buttons call APIs |
-| ALL-1 | Live demo script works without manual SQL |
+| ALL-1 | Live demo script works without manual SQL — **software ready**; present with `MVP_PRESENTATION.md` |
 
 ---
 
@@ -161,4 +164,4 @@ Keep on a second board or below the fold until Phase 1 E2E is Done.
 
 ---
 
-*Last updated: 04 August 2026 — aligned with multi-source soft tenancy and lean MVP.*
+*Last updated: 04 August 2026 — Phase 1 MVP demo-ready; see MVP_PRESENTATION.md.*

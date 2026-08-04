@@ -5,10 +5,11 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Phase 1 — MVP in progress
+**Phase:** Phase 1 — MVP **ready for live demo**
 **Last updated:** 04 August 2026
-**Currently working on:** Demo hardening — seed script + live UI against APIs.
-Core backend + frontend paths are in place for MVP dry-run.
+**Currently working on:** Room dry-run / presentation (software path complete).
+See [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md) for talk track +
+deep dive; [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) for status.
 
 ---
 
@@ -48,9 +49,9 @@ evaluate-on-record.
 - [x] Swagger/OpenAPI docs generated
 - [x] Seed / simulate script hitting `POST /transactions` for sample
   BANK and MERCHANT sources
-- [ ] End-to-end MVP demo: post a transaction over threshold from a
-  simulated bank/merchant, see the alert appear, acknowledge and
-  close it, from the UI
+- [x] End-to-end MVP path ready: seed over-threshold → OPEN alert →
+  acknowledge/close from UI (mark live room demo done when presented;
+  runbook in `docs/MVP_PRESENTATION.md`)
 
 
 

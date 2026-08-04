@@ -2,7 +2,7 @@
 
 **Update this file daily.** Move cards between columns as work progresses.  
 Commit message when updating: `chore: kanban update [date]`  
-**Milestones:** [`Project_milestones.md`](../Project_milestones.md) · **Stand-ups:** [`STANDUP_LOG.md`](./STANDUP_LOG.md) · **Stories:** [`STORYLINE_AND_KANBAN.md`](./STORYLINE_AND_KANBAN.md)
+**Milestones:** [`Project_milestones.md`](../Project_milestones.md) · **Stand-ups:** [`STANDUP_LOG.md`](./STANDUP_LOG.md) · **Stories:** [`STORYLINE_AND_KANBAN.md`](./STORYLINE_AND_KANBAN.md) · **Presentation:** [`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md)
 
 ---
 
@@ -14,97 +14,76 @@ Commit message when updating: `chore: kanban update [date]`
 | Skeleton (Spring Boot + Flyway + React placeholder) | ALL | |
 | ER diagram + database design docs | Rameez + shreya | |
 | DFD, storyline, team split docs | IamUsike | |
-| [C-1] AGIL-ish Dark Obsidian UI shell + left nav routing (zero horizontal scroll) | C | Dashboard / Transactions / Alerts pages |
-| [C-2] Transaction list UI (filter by source) | C | |
-| [C-3] Alert list + detail + lifecycle actions UI | C | |
-| [C-4] KPI strip (counts by source, open alerts) | C | |
+| [C-1] AGIL-ish Dark Obsidian UI shell + left nav routing | C | |
+| [C-2] Transaction list UI (filter by source) | C | Live API only |
+| [C-3] Alert list + detail + lifecycle actions UI | C | Live API only |
+| [C-4] KPI strip | C | `GET /api/v1/dashboard` |
+| [A-1] Transaction entity + repository | A | Merged on `dev` |
+| [A-2] POST /transactions ingest | A | + sync rule eval wiring |
+| [A-3] GET /transactions + filters | A | Envelope + `transactionType` |
+| [A-4] Seed BANK/MERCHANT script | A | `scripts/seed-demo.sh` |
+| [A-5] Swagger / OpenAPI | A | `/swagger-ui.html` |
+| [B-1] Rule + RuleEngine + AmountThresholdRule | B | Threshold 10000, strict `>` |
+| [B-2] Wire record → sync rule evaluate | B | |
+| [B-3] Alert entity + alert_transactions | B | Flyway V2 |
+| [B-4] Alert lifecycle endpoints | B | Validated transitions |
+| [B-5] GET /alerts + GET /alerts/{id} | B | |
+| [ALL-1] E2E MVP path (seed → alert → close) | ALL | Software ready; room dry-run = presentation |
 
 ---
 
-### 🔁 REVIEW (PR open — waiting for merge)
+### 🔁 REVIEW
 | Story | Owner | Branch | PR |
 |-------|-------|--------|----|
-| [A-1] Transaction entity + repository | shreya | `transaction-api` | ⚠️ **Open PR and merge today** |
-| [A-2] POST /transactions ingest | shreya | `transaction-api` | ⚠️ Included in same branch |
-| [A-3] GET /transactions + filters | shreya | `transaction-api` | ⚠️ Included in same branch |
+| *(none)* | | | |
 
 ---
 
 ### 🚧 IN PROGRESS
 | Story | Owner | Branch | Started |
 |-------|-------|--------|---------|
-| *(none)* | | | |
+| *(none — Phase 1 complete)* | | | |
 
 ---
 
-### 🟢 READY (unblocked — pick up now)
+### 🟢 READY (Phase 2 — do not start until after presentation dry-run)
 | Story | Owner | Depends on |
 |-------|-------|------------|
-| [B-1] Rule + RuleEngine + AmountThresholdRule (unit tests) | B | — |
-| [B-3] Alert entity + alert_transactions table | B | — |
+| VelocityRule | B | ALL-1 presented |
+| NewPayeeRule | B | ALL-1 presented |
+| DailyLimitRule | B | ALL-1 presented |
 
 ---
 
-### 🔵 BACKLOG (blocked — wait for dependencies)
-| Story | Owner | Blocked by |
-|-------|-------|------------|
-| [A-4] Seed BANK/MERCHANT script | A | A-2 merged |
-| [A-5] Swagger / OpenAPI | A | A-2 merged + B-5 |
-| [B-2] Wire record → sync rule evaluate | B | A-2 merged + B-1 + B-3 |
-| [B-4] Alert lifecycle endpoints (ack/investigate/close/dismiss) | B | B-3 |
-| [B-5] GET /alerts + GET /alerts/{id} | B | B-3 |
-| [ALL-1] E2E demo (over-threshold → alert → close) | ALL | A-4 + B-2 + C-2 + C-3 |
+### 🔵 BACKLOG
+| Story | Owner | Notes |
+|-------|-------|-------|
+| Rules table + config UI | B + C | Phase 2 |
+| Queue + extract rule engine | B + A | Phase 3 |
+| TLS / masking / audit hardening | ALL | Phase 4 |
 
 ---
 
-## Dependency map
+## Dependency map (Phase 1 — complete)
 
 ```mermaid
 flowchart TB
-  subgraph done [✅ Done]
-    Skel[Skeleton]
-    C1[C-1 UI shell]
-    C2[C-2 Txn UI]
-    C3[C-3 Alert UI]
-    C4[C-4 KPIs]
-  end
-
-  subgraph review [🔁 Review / Merge]
-    A1[A-1 Txn entity]
-    A2[A-2 POST ingest]
-    A3[A-3 GET list]
-  end
-
-  subgraph ready [🟢 Ready]
-    B1[B-1 Rule engine]
-    B3[B-3 Alert entity]
-  end
-
-  subgraph backlog [🔵 Backlog]
-    A4[A-4 Seed script]
-    A5[A-5 Swagger]
-    B2[B-2 Wire sync eval]
-    B4[B-4 Lifecycle APIs]
-    B5[B-5 GET alerts]
-    Demo[ALL-1 E2E demo]
-  end
-
-  A1 --> A2
-  A1 --> A3
-  A2 --> A4
+  Skel[Skeleton] --> A1[A-1 Txn entity]
+  A1 --> A2[A-2 POST ingest]
+  A1 --> A3[A-3 GET list]
+  B1[B-1 Rule engine] --> B2[B-2 Sync eval]
+  B3[B-3 Alert entity] --> B2
+  B3 --> B4[B-4 Lifecycle]
+  B3 --> B5[B-5 GET alerts]
   A2 --> B2
-  A2 --> A5
-  B1 --> B2
-  B3 --> B2
-  B3 --> B4
-  B3 --> B5
-  B5 --> A5
-  A3 --> C2
-  A3 --> C4
-  B4 --> C3
-  B5 --> C3
-  A4 --> Demo
+  A2 --> A4[A-4 Seed]
+  B5 --> A5[A-5 Swagger]
+  C1[C-1 UI] --> C2[C-2 Txn UI]
+  C1 --> C3[C-3 Alert UI]
+  C1 --> C4[C-4 KPIs]
+  A4 --> Demo[ALL-1 E2E]
   B2 --> Demo
+  B4 --> Demo
   C2 --> Demo
   C3 --> Demo
 ```
@@ -120,7 +99,7 @@ flowchart TB
 ---
 
 ## Phase 2+ parking lot
-*(Do not pick these up until ALL-1 E2E demo is Done)*
+*(Presentation / dry-run first; then pick these up)*
 
 | Phase | Stories |
 |-------|---------|
@@ -130,5 +109,4 @@ flowchart TB
 
 ---
 
-*Last updated: 04 August 2026*
-
+*Last updated: 04 August 2026 — Phase 1 MVP demo-ready*
