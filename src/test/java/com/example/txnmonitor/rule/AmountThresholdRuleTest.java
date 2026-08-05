@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ class AmountThresholdRuleTest {
 
 	private static final BigDecimal THRESHOLD = new BigDecimal("10000");
 	private static final Long TXN_ID = 42L;
+	private static final LocalDateTime TIMESTAMP = LocalDateTime.of(2026, 8, 5, 12, 0);
 
 	private AmountThresholdRule rule;
 	private RuleEvaluationContext context;
@@ -25,7 +27,7 @@ class AmountThresholdRuleTest {
 
 	@Test
 	void evaluate_amountAboveThreshold_returnsMatch() {
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, new BigDecimal("10000.01"));
+		TransactionSnapshot txn = snapshot(new BigDecimal("10000.01"));
 
 		List<RuleMatch> matches = rule.evaluate(txn, context);
 
@@ -39,7 +41,7 @@ class AmountThresholdRuleTest {
 
 	@Test
 	void evaluate_amountBelowThreshold_returnsEmpty() {
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, new BigDecimal("9999.99"));
+		TransactionSnapshot txn = snapshot(new BigDecimal("9999.99"));
 
 		List<RuleMatch> matches = rule.evaluate(txn, context);
 
@@ -48,10 +50,14 @@ class AmountThresholdRuleTest {
 
 	@Test
 	void evaluate_amountEqualToThreshold_returnsEmpty() {
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, new BigDecimal("10000"));
+		TransactionSnapshot txn = snapshot(new BigDecimal("10000"));
 
 		List<RuleMatch> matches = rule.evaluate(txn, context);
 
 		assertTrue(matches.isEmpty());
+	}
+
+	private static TransactionSnapshot snapshot(BigDecimal amount) {
+		return new TransactionSnapshot(TXN_ID, amount, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
 	}
 }

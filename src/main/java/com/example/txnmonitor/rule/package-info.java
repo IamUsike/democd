@@ -5,7 +5,9 @@
  * <h2>Handoff for TransactionService (Person A / B-2 wire-up)</h2>
  * After a transaction is persisted, call:
  * <pre>
- *   TransactionSnapshot snapshot = new TransactionSnapshot(saved.getId(), saved.getAmount());
+ *   TransactionSnapshot snapshot = new TransactionSnapshot(
+ *       saved.getTransactionId(), saved.getAmount(), saved.getAccountId(),
+ *       saved.getPayeeId(), saved.getTimestamp(), saved.getType());
  *   List&lt;RuleMatch&gt; matches = ruleEngine.evaluate(snapshot, ruleEvaluationContext);
  * </pre>
  * If {@code matches} is non-empty, AlertService creates OPEN alerts (Person B,
