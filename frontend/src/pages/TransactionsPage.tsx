@@ -16,13 +16,13 @@ export function TransactionsPage() {
     <main className="page-frame">
       <header className="page-header">
         <h2>Transactions</h2>
-        <p>Filter by source and account to inspect incoming payment activity.</p>
+        <p>Filter by source and account</p>
       </header>
 
       {warning && (
-        <section className="warning-strip" role="status">
-          <p>{warning}</p>
-        </section>
+        <p className="state-message" role="status">
+          {warning}
+        </p>
       )}
 
       <TransactionsPanel
@@ -34,4 +34,3 @@ export function TransactionsPage() {
     </main>
   );
 }
-

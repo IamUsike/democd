@@ -23,13 +23,13 @@ export function AlertsPage() {
     <main className="page-frame">
       <header className="page-header">
         <h2>Alerts</h2>
-        <p>Review active alerts and progress through the full lifecycle.</p>
+        <p>Review and update alert lifecycle</p>
       </header>
 
       {warning && (
-        <section className="warning-strip" role="status">
-          <p>{warning}</p>
-        </section>
+        <p className="state-message" role="status">
+          {warning}
+        </p>
       )}
 
       <div className="grid-two">
@@ -44,4 +44,3 @@ export function AlertsPage() {
     </main>
   );
 }
-
