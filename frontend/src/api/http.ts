@@ -37,5 +37,25 @@ export async function apiPatch<TRequest, TResponse>(
   return (await response.json()) as ApiEnvelope<TResponse>;
 }
 
+export async function apiPut<TRequest, TResponse>(
+  path: string,
+  body: TRequest,
+): Promise<ApiEnvelope<TResponse>> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`PUT ${path} failed with status ${response.status}`);
+  }
+
+  return (await response.json()) as ApiEnvelope<TResponse>;
+}
+
 export { API_BASE_URL };
 

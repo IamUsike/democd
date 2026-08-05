@@ -612,6 +612,227 @@ tbody tr:hover {
   cursor: not-allowed;
 }
 
+/* ── Rules page ── */
+.rules-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+/* Card layout */
+.rule-card {
+  display: grid;
+  gap: 0.85rem;
+  transition: opacity 0.2s ease;
+}
+
+.rule-card--disabled {
+  opacity: 0.5;
+}
+
+/* Top row: type badge + severity + toggle */
+.rule-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rule-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.rule-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.rule-type-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.1);
+  border: var(--border-width) solid rgba(99, 102, 241, 0.25);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  flex-shrink: 0;
+}
+
+/* Card body: name + description */
+.rule-card-body {
+  display: grid;
+  gap: 0.3rem;
+}
+
+/* Pill-style toggle switch */
+.rule-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.rule-toggle-input {
+  /* visually hidden but accessible */
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.rule-toggle-track {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.rule-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.rule-toggle-track--on {
+  background: var(--accent);
+}
+
+.rule-toggle-track--on::after {
+  transform: translateX(16px);
+}
+
+.rule-toggle-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  min-width: 3.5rem;
+}
+
+/* Rule names */
+.rule-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rule-description {
+  margin: 0;
+  font-size: 0.87rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Parameter input area */
+.rule-params {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  background: var(--surface-raised);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+}
+
+.rule-params-row {
+  grid-template-columns: 1fr 1fr;
+}
+
+.rule-param-label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  width: auto;
+}
+
+.rule-param-input {
+  width: 100%;
+}
+
+.rule-no-params {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface-raised);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.87rem;
+}
+
+/* Local validation error inside a card */
+.rule-local-error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #f87171;
+  padding: 0.4rem 0.65rem;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: var(--radius);
+}
+
+.rule-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rule-updated {
+  font-size: 0.78rem;
+}
+
+.rule-save-btn {
+  border: var(--border-width) solid var(--accent);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+  width: auto;
+}
+
+.rule-save-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.rule-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rule-error {
+  color: #f87171;
+}
+
+.rule-success {
+  color: #22c55e;
+}
+
 @media (max-width: 1080px) {
   .app-shell {
     grid-template-columns: 180px minmax(0, 1fr);
@@ -645,6 +866,10 @@ tbody tr:hover {
   .analytics-legend {
     width: 100%;
   }
+
+  .rule-params-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 740px) {
@@ -661,7 +886,7 @@ tbody tr:hover {
   }
 
   .app-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .nav-link {
