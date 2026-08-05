@@ -29,7 +29,7 @@ export function TransactionsPage() {
   });
 
   return (
-    <main className="page-frame">
+    <main className="page-frame transactions-page">
       <header className="page-header">
         <h2>Transactions</h2>
         <p>Filter by source and account</p>
