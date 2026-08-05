@@ -6,10 +6,11 @@ starting work — keep "Current status" honest and current, not aspirational.
 ## Current status
 
 **Phase:** Phase 1 — MVP **ready for live demo**
-**Last updated:** 04 August 2026
+**Last updated:** 05 August 2026
 **Currently working on:** Room dry-run / presentation (software path complete).
-See [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md) for talk track +
-deep dive; [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) for status.
+UI visual pass: flat token restyle on Dashboard / Transactions / Alerts
+(`frontend/src/styles/tokens.css`). See [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md)
+for talk track + deep dive; [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) for status.
 
 ---
 
