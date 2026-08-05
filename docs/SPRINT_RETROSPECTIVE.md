@@ -3,7 +3,7 @@
 **Sprint dates:** 29 July 2026 – 4 August 2026  
 **Retrospective date:** 4 August 2026  
 **Format:** Start / Stop / Continue + Action Items  
-**Attendees:** IamUsike (Person A), shreya (Person B/A), Rameez (Person C/B), chiragtank749
+**Attendees:** sathwik (Person A), shreya (Person B/A), Rameez (Person C/B), chiragtank749
 
 ---
 
@@ -22,12 +22,12 @@ The skeleton and all design/documentation is in great shape. The Transaction API
 | Date | Author | What was done |
 |------|--------|---------------|
 | 29 Jul | chiragtank749 | Initial Spring Boot project, app properties, branch setup |
-| 31 Jul | IamUsike | Repo confirmed, skeleton work begins |
+| 31 Jul | sathwik | Repo confirmed, skeleton work begins |
 | 02 Aug | Rameez | ER diagram created and revised |
 | 02 Aug | shreya | API + database design documentation, merged branch conflict |
-| 03 Aug | IamUsike | Full skeleton replacement (Booking demo → txnmonitor), Vite React frontend placeholder, milestone & docs alignment, package structure (`transaction`, `rule`, `alert`, `common`, `api`) |
+| 03 Aug | sathwik | Full skeleton replacement (Booking demo → txnmonitor), Vite React frontend placeholder, milestone & docs alignment, package structure (`transaction`, `rule`, `alert`, `common`, `api`) |
 | 03 Aug | shreya | Transaction entity, repository, service, controller + `TransactionControllerTest` — 244-line test file — all on `transaction-api` branch |
-| 04 Aug | IamUsike | DFD-MVP, docs refactor (client feedback), storyline + Kanban board |
+| 04 Aug | sathwik | DFD-MVP, docs refactor (client feedback), storyline + Kanban board |
 
 ### Branches created
 | Branch | Owner | Status |
@@ -100,13 +100,13 @@ The skeleton and all design/documentation is in great shape. The Transaction API
 
 | # | Action | Owner | Due |
 |---|--------|-------|-----|
-| 1 | Open PR: `transaction-api` → `dev`, review, merge | shreya + IamUsike | Today (04 Aug) |
+| 1 | Open PR: `transaction-api` → `dev`, review, merge | shreya + sathwik | Today (04 Aug) |
 | 2 | Start `Rule` interface + `AmountThresholdRule` with unit tests (story B-1) | Person B (shreya/Rameez) | 05 Aug |
 | 3 | Start `Alert` entity + repository (story B-3) — can run in parallel with B-1 | Person B | 05 Aug |
 | 4 | Update bluish UI shell / routing (story C-1) | Person C | 05 Aug |
 | 5 | Fill in real names in `TEAM_WORK_SPLIT.md` and `STORYLINE_AND_KANBAN.md` | All | Today |
 | 6 | Create `docs/STANDUP_LOG.md` and record daily | All | Starting 05 Aug |
-| 7 | Delete or document `feature/new_feature` branch | IamUsike | Today |
+| 7 | Delete or document `feature/new_feature` branch | sathwik | Today |
 | 8 | Wire `POST /transactions` → rule evaluation once B-1 and B-3 are done (story B-2) | A + B together | 06 Aug |
 
 ---
@@ -126,9 +126,10 @@ This is the "spine" of the whole system. Everything else (UI, Swagger, seed scri
 | Sprint 1 | Skeleton (ALL) | 3 |
 | Sprint 1 | Transaction entity + repo (A-1) — *code done, not merged* | — |
 | Sprint 1 | POST/GET /transactions (A-2, A-3) — *code done, not merged* | — |
-| **Target Sprint 2** | A-1, A-2, A-3 merged + B-1, B-3, B-2 done | ~21 pts |
+| **Sprint 2 (actual — days 1-2)** | A-1–A-5, B-1–B-8, C-1–C-6, ALL-1, T-1, T-2, Docker/nginx, Jenkins | ~55+ pts |
+| **Sprint 2 (remaining)** | QA/testing (shreya), severity UI, rules config UI, login page | ~10 pts |
 
 ---
 
-*Document created from git history, branch state, and project docs — 04 August 2026.*
+*Last updated: 05 August 2026 — Sprint 2 velocity vastly exceeded target.*
 

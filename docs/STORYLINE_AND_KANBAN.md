@@ -2,15 +2,15 @@
 
 Product narrative and user stories for the Transaction Monitoring & Alerts project.  
 **Owners:** Person A (Transactions), Person B (Rules & Alerts), Person C (Frontend).  
-**Live board:** [`KANBAN.md`](./KANBAN.md) · **Status:** [`Project_milestones.md`](../Project_milestones.md) · **Roles:** [`TEAM_WORK_SPLIT.md`](./TEAM_WORK_SPLIT.md)
+**Live board:** [`KANBAN.md`](./KANBAN.md) · **Status:** [`Project_milestones.md`](../Project_milestones.md) · **Roles:** [`TEAM_WORK_SPLIT.md`](./TEAM_WORK_SPLIT.md) · **User stories (TMD):** [`USER_STORIES.md`](./USER_STORIES.md)
 
-Replace *\<Name 1/2/3\>* with real names when you have them.
+Team: shreya (A), sathwik (B), Rameez (C).
 
 | Role | Name | Focus |
 |------|------|--------|
-| **A** | *\<Name 1\>* | Ingest API, transactions, simulate/seed, Swagger, KPIs API |
-| **B** | *\<Name 2\>* | Rule engine, alerts, lifecycle, sync MTTD path |
-| **C** | *\<Name 3\>* | Bluish UI, lists/detail, KPI strip, E2E demo |
+| **A** | shreya | Ingest API, transactions, simulate/seed, Swagger, KPIs API |
+| **B** | sathwik | Rule engine, alerts, lifecycle, sync MTTD path |
+| **C** | Rameez | UI enhancements, lists/detail, KPI strip, E2E demo |
 
 ---
 
@@ -33,9 +33,9 @@ clear trail from “money moved” to “risk reviewed.”
 |-----------|-------------------|
 | **HSBC-UK** (bank sim) | Pushes transfers with `sourceType=BANK` |
 | **ACME-POS** (merchant sim) | Pushes card/POS-like txns with `sourceType=MERCHANT` |
-| **Operator** (Person C’s UI) | Watches KPIs, opens alerts, walks lifecycle |
-| **Rules** (Person B) | Amount Threshold first; more rules later |
-| **Platform** (Person A’s API) | One public ingest contract for every source |
+| **Operator** (Rameez’s UI) | Watches KPIs, opens alerts, walks lifecycle |
+| **Rules** (sathwik) | Amount Threshold + Velocity + NewPayee + DailyLimit |
+| **Platform** (shreya’s API) | One public ingest contract for every source |
 
 ### Demo arc (Phase 1 “hero journey”)
 
@@ -83,9 +83,12 @@ separate DB per bank.
 
 ---
 
-## 3. User stories (Phase 1)
+## 3. User stories (Phase 1 — team board IDs)
 
 Format: **As a … I want … so that …** · Points are relative (1/2/3/5).
+
+Formal product backlog with **TMD-*** IDs, FR refs, and sprint targets:
+[`USER_STORIES.md`](./USER_STORIES.md).
 
 ### Epic E1 — Ingest (A)
 
@@ -158,10 +161,10 @@ Keep on a second board or below the fold until Phase 1 E2E is Done.
 
 | Phase | Cards (owner) |
 |-------|----------------|
-| 2 | Velocity / NewPayee / DailyLimit (B); rules table + UI (B/C); severity colors (C) |
-| 3 | Queue (B); extract engine (B); internal alert API stability (A); cache (B); read replica KPIs (A) |
-| 4 | TLS + secrets (A); encryption at rest (A); field masking UI (C); audit history (B) |
+| 2 | ~~Velocity / NewPayee / DailyLimit (sathwik)~~; rules table + UI (sathwik/Rameez); severity colors (Rameez) |
+| 3 | Queue (sathwik); extract engine (sathwik); internal alert API stability (shreya); cache (sathwik); read replica KPIs (shreya) |
+| 4 | TLS + secrets (shreya); encryption at rest (shreya); field masking UI (Rameez); audit history (sathwik) |
 
 ---
 
-*Last updated: 04 August 2026 — Phase 1 MVP demo-ready; see MVP_PRESENTATION.md.*
+*Last updated: 05 August 2026 — Phase 2 rules complete; testing in progress.*

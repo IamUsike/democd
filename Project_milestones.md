@@ -5,10 +5,10 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Phase 1 — MVP **ready for live demo**
+**Phase:** Phase 2 — additional rules **complete**; testing + login in progress
 **Last updated:** 05 August 2026
-**Currently working on:** Phase 2 rules (Velocity, New Payee, Daily Limit) on
-`feature/phase2-rules`. Frontend refactor and E2E/load testing in parallel.
+**Currently working on:** shreya — end-to-end + rule testing (QA).
+sathwik — login page + superadmin user. Rameez — UI enhancements.
 
 ---
 
@@ -90,8 +90,9 @@ evaluate-on-record.
 - Machine learning / anomaly detection — not doing this; would eat the
   remaining time budget for low presentation payoff relative to a
   well-scaled, secured system.
-- Authentication / multi-operator support — spec says single operator,
-  no auth required.
+- ~~Authentication / multi-operator support~~ — single-operator login
+  gate added (hardcoded superadmin `admin`/`password`); full multi-user
+  auth remains out of scope.
 - Hard tenancy (separate DB/schema per bank) — soft tenancy only.
 - Live bank/merchant network integrations — simulate via public API.
 
@@ -103,7 +104,9 @@ tenancy; `source_*` / `account_id` / `payee_id` on transactions; MVP
 tables `transactions`, `alerts`, `alert_transactions`. Flows:
 [`docs/DFD-MVP.md`](docs/DFD-MVP.md). Three-person ownership:
 [`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Storyline:
-[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). Live board:
+[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). User stories (TMD backlog):
+[`docs/USER_STORIES.md`](docs/USER_STORIES.md). Live board:
 [`docs/KANBAN.md`](docs/KANBAN.md). Stand-ups:
-[`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). HLD/LLD diagrams live
+[`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). Client meetings:
+[`docs/MEETING_NOTES.md`](docs/MEETING_NOTES.md). HLD/LLD diagrams live
 wherever the team has put them (Miro/Figma/Drive link — *add link here*).
