@@ -1,25 +1,122 @@
+import { useMemo } from 'react';
 import type { Transaction, TransactionFilters } from '../types/transaction';
 import { StatusIndicator } from './StatusIndicator';
 
 type TransactionsPanelProps = {
   transactions: Transaction[];
   filters: TransactionFilters;
+  quickSearch: string;
+  pinnedTransactionId: string;
+  autoRefresh: boolean;
+  paused: boolean;
+  lastUpdatedAt: Date | null;
+  newTransactionIds: number[];
   loading: boolean;
   onFilterChange: (nextFilters: TransactionFilters) => void;
+  onQuickSearchChange: (value: string) => void;
+  onPinnedTransactionIdChange: (value: string) => void;
+  onAutoRefreshChange: (enabled: boolean) => void;
+  onPausedChange: (paused: boolean) => void;
+  onRefreshNow: () => void;
 };
 
 export function TransactionsPanel({
   transactions,
   filters,
+  quickSearch,
+  pinnedTransactionId,
+  autoRefresh,
+  paused,
+  lastUpdatedAt,
+  newTransactionIds,
   loading,
   onFilterChange,
+  onQuickSearchChange,
+  onPinnedTransactionIdChange,
+  onAutoRefreshChange,
+  onPausedChange,
+  onRefreshNow,
 }: TransactionsPanelProps) {
+  const normalizedSearch = quickSearch.trim().toLowerCase();
+  const pinnedId = Number(pinnedTransactionId);
+  const newIdsSet = useMemo(() => new Set(newTransactionIds), [newTransactionIds]);
+
+  const visibleTransactions = useMemo(() => {
+    const filtered = normalizedSearch
+      ? transactions.filter((txn) => {
+          const searchable = [
+            String(txn.transactionId),
+            txn.sourceName,
+            txn.sourceId,
+            txn.accountId,
+            txn.payeeId,
+            txn.payeeName ?? '',
+            txn.description ?? '',
+          ]
+            .join(' ')
+            .toLowerCase();
+          return searchable.includes(normalizedSearch);
+        })
+      : transactions;
+
+    if (!Number.isFinite(pinnedId)) {
+      return filtered;
+    }
+
+    const pinnedRow = filtered.find((txn) => txn.transactionId === pinnedId);
+    if (!pinnedRow) {
+      return filtered;
+    }
+
+    return [pinnedRow, ...filtered.filter((txn) => txn.transactionId !== pinnedId)];
+  }, [transactions, normalizedSearch, pinnedId]);
+
   return (
     <section className="card">
       <header className="section-header">
         <h2>Transactions</h2>
-        <span className="muted">{loading ? 'Loading...' : `${transactions.length} results`}</span>
+        <span className="muted">
+          {loading ? 'Loading...' : `${visibleTransactions.length} shown`} ·{' '}
+          {lastUpdatedAt ? `updated ${lastUpdatedAt.toLocaleTimeString()}` : 'not loaded yet'}
+        </span>
       </header>
+
+      <div className="feed-controls">
+        <label className="inline-toggle">
+          <input
+            type="checkbox"
+            checked={autoRefresh}
+            onChange={(event) => onAutoRefreshChange(event.target.checked)}
+          />
+          Auto-refresh (3s)
+        </label>
+
+        <button
+          type="button"
+          className="feed-button"
+          onClick={() => onPausedChange(!paused)}
+        >
+          {paused ? 'Resume feed' : 'Pause feed'}
+        </button>
+
+        <button type="button" className="feed-button" onClick={onRefreshNow}>
+          Refresh now
+        </button>
+
+        <input
+          className="feed-input"
+          value={quickSearch}
+          onChange={(event) => onQuickSearchChange(event.target.value)}
+          placeholder="Quick search by ID/source/account/payee"
+        />
+
+        <input
+          className="feed-input feed-input-small"
+          value={pinnedTransactionId}
+          onChange={(event) => onPinnedTransactionIdChange(event.target.value)}
+          placeholder="Pin ID"
+        />
+      </div>
 
       <div className="filters">
         <label>
@@ -70,8 +167,13 @@ export function TransactionsPanel({
             </tr>
           </thead>
           <tbody>
-            {transactions.map((txn) => (
-              <tr key={txn.transactionId}>
+            {visibleTransactions.map((txn) => (
+              <tr
+                key={txn.transactionId}
+                className={`${newIdsSet.has(txn.transactionId) ? 'row-new' : ''} ${
+                  Number.isFinite(pinnedId) && txn.transactionId === pinnedId ? 'row-pinned' : ''
+                }`}
+              >
                 <td className="cell-data">{txn.transactionId}</td>
                 <td>
                   <span className="source-label">
@@ -90,7 +192,7 @@ export function TransactionsPanel({
                 <td className="cell-data">{new Date(txn.timestamp).toLocaleString()}</td>
               </tr>
             ))}
-            {transactions.length === 0 && (
+            {visibleTransactions.length === 0 && (
               <tr>
                 <td colSpan={8} className="empty-row">
                   No transactions found.

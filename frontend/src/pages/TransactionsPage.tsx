@@ -10,7 +10,23 @@ export function TransactionsPage() {
     accountId: '',
   });
 
-  const { transactions, loading, warning } = useTransactions(filters);
+  const [quickSearch, setQuickSearch] = useState('');
+  const [pinnedTransactionId, setPinnedTransactionId] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [paused, setPaused] = useState(false);
+
+  const {
+    transactions,
+    loading,
+    warning,
+    lastUpdatedAt,
+    newTransactionIds,
+    refreshNow,
+  } = useTransactions(filters, {
+    autoRefresh,
+    paused,
+    refreshIntervalMs: 3000,
+  });
 
   return (
     <main className="page-frame">
@@ -28,8 +44,19 @@ export function TransactionsPage() {
       <TransactionsPanel
         transactions={transactions}
         filters={filters}
+        quickSearch={quickSearch}
+        pinnedTransactionId={pinnedTransactionId}
+        autoRefresh={autoRefresh}
+        paused={paused}
+        lastUpdatedAt={lastUpdatedAt}
+        newTransactionIds={newTransactionIds}
         loading={loading}
         onFilterChange={setFilters}
+        onQuickSearchChange={setQuickSearch}
+        onPinnedTransactionIdChange={setPinnedTransactionId}
+        onAutoRefreshChange={setAutoRefresh}
+        onPausedChange={setPaused}
+        onRefreshNow={refreshNow}
       />
     </main>
   );
