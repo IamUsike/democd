@@ -48,7 +48,9 @@ class AlertControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data[0].alertId").value(201))
-				.andExpect(jsonPath("$.data[0].status").value("OPEN"));
+				.andExpect(jsonPath("$.data[0].status").value("OPEN"))
+				.andExpect(jsonPath("$.data[0].ruleDescription").value("Triggers when a transaction amount exceeds the configured threshold."))
+				.andExpect(jsonPath("$.data[0].failingReason").value("Transaction amount (25000 INR) exceeded threshold (10000 INR)."));
 	}
 
 	@Test
@@ -136,6 +138,8 @@ class AlertControllerTest {
 		response.setSourceId("HSBC-UK");
 		response.setSourceName("HSBC United Kingdom");
 		response.setCreatedAt(LocalDateTime.of(2026, 8, 2, 10, 20));
+		response.setRuleDescription("Triggers when a transaction amount exceeds the configured threshold.");
+		response.setFailingReason("Transaction amount (25000 INR) exceeded threshold (10000 INR).");
 		return response;
 	}
 

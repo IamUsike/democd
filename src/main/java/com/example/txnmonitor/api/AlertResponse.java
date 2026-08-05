@@ -22,6 +22,8 @@ public class AlertResponse {
 	private LocalDateTime dismissedAt;
 	private LocalDateTime closedAt;
 	private String resolutionNotes;
+	private String ruleDescription;
+	private String failingReason;
 
 	public AlertResponse() {
 	}
@@ -160,5 +162,21 @@ public class AlertResponse {
 
 	public void setResolutionNotes(String resolutionNotes) {
 		this.resolutionNotes = resolutionNotes;
+	}
+
+	public String getRuleDescription() {
+		return ruleDescription;
+	}
+
+	public void setRuleDescription(String ruleDescription) {
+		this.ruleDescription = ruleDescription;
+	}
+
+	public String getFailingReason() {
+		return failingReason;
+	}
+
+	public void setFailingReason(String failingReason) {
+		this.failingReason = failingReason;
 	}
 }

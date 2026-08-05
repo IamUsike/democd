@@ -66,12 +66,18 @@ class AlertServiceTest {
 		assertEquals(201L, created.get(0).getAlertId());
 		assertEquals("OPEN", created.get(0).getStatus());
 		assertEquals("Amount Threshold Rule", created.get(0).getRuleTriggered());
+		assertEquals("Triggers when a transaction amount exceeds the configured threshold.",
+				created.get(0).getRuleDescription());
+		assertEquals("over threshold", created.get(0).getFailingReason());
 		assertEquals(1L, created.get(0).getTransactionId());
 
 		ArgumentCaptor<Alert> alertCaptor = ArgumentCaptor.forClass(Alert.class);
 		verify(alertRepository).save(alertCaptor.capture());
 		assertEquals("BANK", alertCaptor.getValue().getSourceType());
 		assertEquals("ACC-1", alertCaptor.getValue().getAccountId());
+		assertEquals("Triggers when a transaction amount exceeds the configured threshold.",
+				alertCaptor.getValue().getRuleDescription());
+		assertEquals("over threshold", alertCaptor.getValue().getFailingReason());
 
 		verify(alertTransactionRepository).save(any(AlertTransaction.class));
 	}
@@ -89,6 +95,9 @@ class AlertServiceTest {
 				List.of(new RuleMatch("VELOCITY", "MEDIUM", "too fast", 1L)));
 
 		assertEquals("Velocity Rule", created.get(0).getRuleTriggered());
+		assertEquals("Triggers when an account performs more than allowed transactions within a specific time window.",
+				created.get(0).getRuleDescription());
+		assertEquals("too fast", created.get(0).getFailingReason());
 	}
 
 	@Test
@@ -152,6 +161,8 @@ class AlertServiceTest {
 
 		assertEquals(1, results.size());
 		assertEquals(42L, results.get(0).getTransactionId());
+		assertEquals("Triggers when a transaction amount exceeds the configured threshold.",
+				results.get(0).getRuleDescription());
 	}
 
 	private Transaction sampleTransaction() {
@@ -185,6 +196,8 @@ class AlertServiceTest {
 		alert.setSourceId("HSBC-UK");
 		alert.setSourceName("HSBC United Kingdom");
 		alert.setCreatedAt(LocalDateTime.of(2026, 8, 4, 10, 0));
+		alert.setRuleDescription("Triggers when a transaction amount exceeds the configured threshold.");
+		alert.setFailingReason("Amount threshold exceeded.");
 		return alert;
 	}
 }

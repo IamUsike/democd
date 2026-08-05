@@ -51,6 +51,8 @@ public class AlertService {
 			Alert alert = new Alert();
 			alert.setRuleType(match.ruleType());
 			alert.setSeverity(match.severity());
+			alert.setRuleDescription(ruleDescriptionForRuleType(match.ruleType()));
+			alert.setFailingReason(resolveFailingReason(match, transaction));
 			alert.setStatus(AlertStatus.OPEN.name());
 			alert.setAccountId(transaction.getAccountId());
 			alert.setSourceType(transaction.getSourceType());
@@ -176,6 +178,8 @@ public class AlertService {
 		response.setDismissedAt(alert.getDismissedAt());
 		response.setClosedAt(alert.getClosedAt());
 		response.setResolutionNotes(alert.getResolutionNotes());
+		response.setRuleDescription(alert.getRuleDescription());
+		response.setFailingReason(alert.getFailingReason());
 		return response;
 	}
 
@@ -187,6 +191,23 @@ public class AlertService {
 			case "DAILY_LIMIT" -> "Daily Limit Rule";
 			default -> ruleType;
 		};
+	}
+
+	private String ruleDescriptionForRuleType(String ruleType) {
+		return switch (ruleType) {
+			case "AMOUNT_THRESHOLD" -> "Triggers when a transaction amount exceeds the configured threshold.";
+			case "VELOCITY" -> "Triggers when an account performs more than allowed transactions within a specific time window.";
+			case "NEW_PAYEE" -> "Triggers when a transaction is made to a newly added payee.";
+			case "DAILY_LIMIT" -> "Triggers when daily transaction amount exceeds configured limit.";
+			default -> "Triggers when rule conditions are satisfied.";
+		};
+	}
+
+	private String resolveFailingReason(RuleMatch match, Transaction transaction) {
+		if (hasText(match.reason())) {
+			return match.reason();
+		}
+		return "Rule " + match.ruleType() + " matched for account " + transaction.getAccountId() + ".";
 	}
 
 	private boolean hasText(String value) {
