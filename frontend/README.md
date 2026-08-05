@@ -42,4 +42,22 @@ Override with Vite env variable:
 VITE_API_BASE_URL=http://localhost:8081
 ```
 
-This update keeps backend API contracts unchanged; transaction feed controls are handled in the frontend.
+For Docker / Jenkins (production static build + nginx), see the root README
+“Docker / Jenkins VM deploy” section. Build arg / `.env`:
+
+```bash
+VITE_API_BASE_URL=http://<VM_IP>:8081
+```
+
+UI then: `http://<VM_IP>:8082/` · API: `http://<VM_IP>:8081`
+
+## Docker image
+
+```bash
+# from repo root
+docker compose build frontend
+docker compose up -d frontend
+```
+
+`frontend/Dockerfile` multi-stage: `npm run build` → `nginx:alpine` on port 80.
+SPA routes fall back via `frontend/nginx.conf`.

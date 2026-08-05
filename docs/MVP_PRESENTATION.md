@@ -328,11 +328,12 @@ Remaining ceremony: run the live dry-run in front of the team/instructors
 
 | Item | Value |
 |------|-------|
-| UI | http://localhost:5173 |
-| API | http://localhost:8081 |
+| UI (dev) | http://localhost:5173 |
+| UI (Docker/VM) | http://\<VM_IP\>:8082/ (nginx internal :80) |
+| API | http://localhost:8081 or http://\<VM_IP\>:8081 |
 | Swagger | http://localhost:8081/swagger-ui.html |
-| Seed | `./scripts/seed-demo.sh` |
+| Seed | `./scripts/seed-demo.sh` · VM: `API_BASE=http://\<VM_IP\>:8081 ./scripts/seed-demo.sh` |
 | Threshold | amount **> 10000** |
 | Lifecycle | OPEN → ACK → INVESTIGATING → CLOSED / DISMISSED |
-| Stack | Spring Boot + MySQL/Flyway + React/Vite |
+| Stack | Spring Boot + MySQL/Flyway + React/Vite (+ nginx in Docker) |
 | Branch | `dev` |

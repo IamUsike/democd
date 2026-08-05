@@ -26,7 +26,7 @@ the `txnmonitor` database or Docker volume so Flyway checksums stay valid.
 Package layout: `com.example.txnmonitor` → `api`, `transaction`, `rule`,
 `alert`, `common`.
 
-## Frontend
+## Frontend (local dev)
 
 ```bash
 cd frontend
@@ -61,6 +61,49 @@ Build check:
 cd frontend
 npm run build
 ```
+
+## Docker / Jenkins VM deploy (Option A)
+
+Jenkins runs `docker-compose build` + `up -d`. Compose starts **MySQL**,
+**Spring Boot (:8081)**, and a **frontend nginx** container serving the
+production Vite build on **:8082** (mapped to nginx internal `:80`).
+
+| Surface | URL |
+|---------|-----|
+| UI | `http://<VM_IP>:8082/` |
+| API | `http://<VM_IP>:8081` |
+| Swagger | `http://<VM_IP>:8081/swagger-ui.html` |
+
+`VITE_API_BASE_URL` is baked into the frontend image at **build** time. On the
+VM it must be the address browsers use (not `localhost` if you open the UI
+from another machine):
+
+```bash
+# copy and edit
+cp .env.example .env
+# set e.g. VITE_API_BASE_URL=http://10.0.0.12:8081
+
+docker compose build --no-cache
+docker compose up -d
+```
+
+Or one-shot without a `.env` file:
+
+```bash
+VITE_API_BASE_URL=http://<VM_IP>:8081 docker compose build --no-cache frontend
+docker compose up -d
+```
+
+Seed against the VM API:
+
+```bash
+API_BASE=http://<VM_IP>:8081 ./scripts/seed-demo.sh
+```
+
+Jenkins tip: set `VITE_API_BASE_URL` as a job/environment variable on the agent
+so `docker-compose build` picks it up via `${VITE_API_BASE_URL}` in
+[`docker-compose.yml`](docker-compose.yml). The [`Jenkinsfile`](Jenkinsfile)
+does not need stage changes for Option A.
 
 ## Docs
 

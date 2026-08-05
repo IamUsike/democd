@@ -180,10 +180,13 @@ public class AlertService {
 	}
 
 	private String displayRuleName(String ruleType) {
-		if ("AMOUNT_THRESHOLD".equals(ruleType)) {
-			return "Amount Threshold Rule";
-		}
-		return ruleType;
+		return switch (ruleType) {
+			case "AMOUNT_THRESHOLD" -> "Amount Threshold Rule";
+			case "VELOCITY" -> "Velocity Rule";
+			case "NEW_PAYEE" -> "New Payee Rule";
+			case "DAILY_LIMIT" -> "Daily Limit Rule";
+			default -> ruleType;
+		};
 	}
 
 	private boolean hasText(String value) {

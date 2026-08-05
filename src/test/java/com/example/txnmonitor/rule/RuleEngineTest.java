@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -11,12 +12,13 @@ import org.junit.jupiter.api.Test;
 class RuleEngineTest {
 
 	private static final Long TXN_ID = 7L;
+	private static final LocalDateTime TIMESTAMP = LocalDateTime.of(2026, 8, 5, 12, 0);
 	private final RuleEvaluationContext context = new NoOpRuleEvaluationContext();
 
 	@Test
 	void evaluate_noRulesFire_returnsEmpty() {
 		RuleEngine engine = new RuleEngine(List.of(new AmountThresholdRule(new BigDecimal("10000"))));
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, new BigDecimal("100"));
+		TransactionSnapshot txn = snapshot(new BigDecimal("100"));
 
 		List<RuleMatch> matches = engine.evaluate(txn, context);
 
@@ -26,7 +28,7 @@ class RuleEngineTest {
 	@Test
 	void evaluate_amountRuleFires_returnsItsMatch() {
 		RuleEngine engine = new RuleEngine(List.of(new AmountThresholdRule(new BigDecimal("10000"))));
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, new BigDecimal("15000"));
+		TransactionSnapshot txn = snapshot(new BigDecimal("15000"));
 
 		List<RuleMatch> matches = engine.evaluate(txn, context);
 
@@ -42,7 +44,7 @@ class RuleEngineTest {
 		RuleEngine engine = new RuleEngine(List.of(
 				new AmountThresholdRule(new BigDecimal("10000")),
 				alwaysFires));
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, new BigDecimal("20000"));
+		TransactionSnapshot txn = snapshot(new BigDecimal("20000"));
 
 		List<RuleMatch> matches = engine.evaluate(txn, context);
 
@@ -54,8 +56,12 @@ class RuleEngineTest {
 	@Test
 	void evaluate_emptyRuleList_returnsEmpty() {
 		RuleEngine engine = new RuleEngine(List.of());
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, new BigDecimal("99999"));
+		TransactionSnapshot txn = snapshot(new BigDecimal("99999"));
 
 		assertTrue(engine.evaluate(txn, context).isEmpty());
+	}
+
+	private static TransactionSnapshot snapshot(BigDecimal amount) {
+		return new TransactionSnapshot(TXN_ID, amount, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
 	}
 }
