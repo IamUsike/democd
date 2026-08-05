@@ -58,10 +58,6 @@ class AmountThresholdRuleTest {
 		assertTrue(matches.isEmpty());
 	}
 
-<<<<<<< HEAD
-	private static TransactionSnapshot snapshot(BigDecimal amount) {
-		return new TransactionSnapshot(TXN_ID, amount, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
-=======
 	@Test
 	void constructor_nullThreshold_throwsNpe() {
 		assertThrows(NullPointerException.class, () -> new AmountThresholdRule(null));
@@ -74,8 +70,11 @@ class AmountThresholdRuleTest {
 
 	@Test
 	void evaluate_nullAmount_throwsNpe() {
-		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, null);
+		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, null, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
 		assertThrows(NullPointerException.class, () -> rule.evaluate(txn, context));
->>>>>>> d9e6b2b (test: improve rule coverage and document coverage workflow)
+	}
+
+	private static TransactionSnapshot snapshot(BigDecimal amount) {
+		return new TransactionSnapshot(TXN_ID, amount, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
 	}
 }
