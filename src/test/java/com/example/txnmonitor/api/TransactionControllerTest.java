@@ -4,6 +4,7 @@ import com.example.txnmonitor.common.GlobalExceptionHandler;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
 import com.example.txnmonitor.transaction.TransactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -236,7 +237,7 @@ class TransactionControllerTest {
         private boolean throwUnexpectedError;
 
         private RecordingTransactionService() {
-            super(null, null, null, null);
+            super(null, null, null, null, new SimpleMeterRegistry());
         }
 
         @Override

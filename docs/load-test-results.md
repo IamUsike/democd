@@ -103,6 +103,19 @@ k6 run .\scripts\k6\soak.js
 | Memory trend | |
 | PROCESSLIST / locks | |
 
+## rule.evaluate (Actuator)
+
+Sample during / after peak (from `/actuator/metrics/rule.evaluate`):
+
+| Measurement | Value |
+|-------------|-------|
+| count | |
+| total time | |
+| max | |
+| mean (total/count) | |
+
+Compare to k6 `http_req_duration` p95: ___
+
 ## Conclusions
 
 1. Max sustainable write RPS (before p95 cliff): ___

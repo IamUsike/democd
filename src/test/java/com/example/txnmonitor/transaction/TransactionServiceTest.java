@@ -8,6 +8,7 @@ import com.example.txnmonitor.common.exception.TransactionNotFoundException;
 import com.example.txnmonitor.rule.NoOpRuleEvaluationContext;
 import com.example.txnmonitor.rule.RuleEngine;
 import com.example.txnmonitor.rule.RuleMatch;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -43,7 +44,8 @@ class TransactionServiceTest {
                 transactionRepository,
                 new RuleEngine(List.of()),
                 new NoOpRuleEvaluationContext(),
-                alertService);
+                alertService,
+                new SimpleMeterRegistry());
     }
 
     @Test

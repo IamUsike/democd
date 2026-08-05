@@ -8,6 +8,8 @@ import com.example.txnmonitor.rule.RuleEngine;
 import com.example.txnmonitor.rule.RuleEvaluationContext;
 import com.example.txnmonitor.rule.RuleMatch;
 import com.example.txnmonitor.rule.TransactionSnapshot;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,23 +22,27 @@ public class TransactionService {
     private final RuleEngine ruleEngine;
     private final RuleEvaluationContext ruleEvaluationContext;
     private final AlertService alertService;
+    private final Timer ruleEvaluateTimer;
 
     public TransactionService(
             TransactionRepository transactionRepository,
             RuleEngine ruleEngine,
             RuleEvaluationContext ruleEvaluationContext,
-            AlertService alertService) {
+            AlertService alertService,
+            MeterRegistry meterRegistry) {
         this.transactionRepository = transactionRepository;
         this.ruleEngine = ruleEngine;
         this.ruleEvaluationContext = ruleEvaluationContext;
         this.alertService = alertService;
+        this.ruleEvaluateTimer = Timer.builder("rule.evaluate")
+                .description("Rule engine evaluation time")
+                .register(Objects.requireNonNull(meterRegistry, "meterRegistry"));
     }
 
     public TransactionResponse saveTransaction(TransactionRequest request) {
         Transaction savedTransaction = transactionRepository.save(toEntity(request));
-        List<RuleMatch> matches = ruleEngine.evaluate(
-                toSnapshot(savedTransaction),
-                ruleEvaluationContext);
+        List<RuleMatch> matches = ruleEvaluateTimer.record(
+                () -> ruleEngine.evaluate(toSnapshot(savedTransaction), ruleEvaluationContext));
         alertService.createFromMatches(savedTransaction, matches);
         return toResponse(savedTransaction);
     }

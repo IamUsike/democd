@@ -10,7 +10,16 @@ Run load tests from the **Windows** machine (where you SSH from). Point k6 at th
 **Correct API base (this repo):** `http://10.9.69.3:8081/api/v1/transactions`  
 (Not `/transactions` — the controller is `@RequestMapping("/api/v1/transactions")`. Successful create returns **201**.)
 
-**Actuator / `@Timed`:** not in the current deploy (`pom.xml` has no actuator). For this first run, use k6 latency + OS/MySQL watchers below. Adding Micrometer is a separate redeploy step after this run if you want `/actuator/metrics/rule.evaluate`.
+**Actuator / rule timer:** `rule.evaluate` is recorded via Micrometer around
+`RuleEngine.evaluate` in `TransactionService` (not `@Timed` on the final
+`RuleEngine` class — that would not AOP-proxy reliably). After you **redeploy**
+this branch:
+
+- Health: `http://10.9.69.3:8081/actuator/health`
+- Timer: `http://10.9.69.3:8081/actuator/metrics/rule.evaluate`
+- Prometheus scrape: `http://10.9.69.3:8081/actuator/prometheus`
+
+Still watch OS/MySQL during runs — Actuator alone does not show JVM vs mysqld contention.
 
 Scripts in repo:
 
@@ -244,11 +253,20 @@ Copy numbers into [`docs/load-test-results.md`](./load-test-results.md):
 | Success status | 200 | **201** |
 | Timestamp | `toISOString()` with `Z` | strip `Z` / millis (Jackson `LocalDateTime`) |
 | GET under load | bare `/transactions` | always `?accountId=…` |
-| Metrics | `/actuator/...` | not deployed yet — use k6 + OS + MySQL |
+| Metrics | guess at rule cost | `/actuator/metrics/rule.evaluate` after redeploy + OS/MySQL |
 | Seed | empty table | **200k–500k** rows first |
 
 ---
 
-## Optional later — Actuator after this first run
+## After redeploy — read rule.evaluate mid/post run
 
-Only if you want rule-eval timers in a follow-up deploy: add `spring-boot-starter-actuator` + `micrometer-registry-prometheus`, expose `health,metrics,prometheus`, and time the evaluate call site in `TransactionService` (prefer `MeterRegistry.timer(...)` around `ruleEngine.evaluate` — `RuleEngine` is a plain final class, so `@Timed` AOP is awkward). Redeploy via your usual `docker compose up -d --build`, then re-run Pass 1 and compare `http_req_duration` vs rule timer.
+From Windows (PowerShell), during or after a pass:
+
+```powershell
+curl.exe -sS http://10.9.69.3:8081/actuator/metrics/rule.evaluate
+```
+
+Useful fields in the JSON: look under `measurements` for `COUNT`, `TOTAL_TIME`, `MAX`.
+Compare mean rule time (`TOTAL_TIME / COUNT`) to k6 `http_req_duration` p95: if
+request p95 is high but rule mean stays low, the time is elsewhere (DB write,
+pool wait, GC, co-location).
