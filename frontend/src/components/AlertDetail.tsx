@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Alert, AlertStatus } from '../types/alert';
+import { StatusIndicator } from './StatusIndicator';
 
 type AlertDetailProps = {
   alert: Alert | null;
@@ -36,30 +37,33 @@ export function AlertDetail({ alert, updating, onChangeStatus }: AlertDetailProp
     <section className="card">
       <header className="section-header">
         <h2>Alert Detail</h2>
-        <span className={`severity ${alert.severity.toLowerCase()}`}>{alert.severity}</span>
+        <span className="severity">{alert.severity}</span>
       </header>
 
       <div className="detail-grid">
         <p>
-          <strong>ID:</strong> {alert.alertId}
+          <strong>ID:</strong> <span className="cell-data">{alert.alertId}</span>
         </p>
         <p>
-          <strong>Status:</strong> {alert.status}
+          <strong>Status:</strong> <StatusIndicator status={alert.status} />
         </p>
         <p>
           <strong>Rule:</strong> {alert.ruleTriggered}
         </p>
         <p>
-          <strong>Created:</strong> {new Date(alert.createdAt).toLocaleString()}
+          <strong>Created:</strong>{' '}
+          <span className="cell-data">{new Date(alert.createdAt).toLocaleString()}</span>
         </p>
         <p>
           <strong>Source:</strong> {alert.sourceName ?? '-'}
         </p>
         <p>
-          <strong>Account:</strong> {alert.accountId ?? '-'}
+          <strong>Account:</strong>{' '}
+          <span className="cell-data">{alert.accountId ?? '-'}</span>
         </p>
         <p>
-          <strong>Transaction:</strong> {alert.transactionId ?? '-'}
+          <strong>Transaction:</strong>{' '}
+          <span className="cell-data">{alert.transactionId ?? '-'}</span>
         </p>
       </div>
 
@@ -88,4 +92,3 @@ export function AlertDetail({ alert, updating, onChangeStatus }: AlertDetailProp
     </section>
   );
 }
-

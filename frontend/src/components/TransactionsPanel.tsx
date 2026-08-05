@@ -1,4 +1,5 @@
 import type { Transaction, TransactionFilters } from '../types/transaction';
+import { StatusIndicator } from './StatusIndicator';
 
 type TransactionsPanelProps = {
   transactions: Transaction[];
@@ -71,18 +72,22 @@ export function TransactionsPanel({
           <tbody>
             {transactions.map((txn) => (
               <tr key={txn.transactionId}>
-                <td>{txn.transactionId}</td>
+                <td className="cell-data">{txn.transactionId}</td>
                 <td>
-                  <span className="badge">{txn.sourceType}</span> {txn.sourceName}
+                  <span className="source-label">
+                    {txn.sourceType} {txn.sourceName}
+                  </span>
                 </td>
-                <td>{txn.accountId}</td>
+                <td className="cell-data">{txn.accountId}</td>
                 <td>{txn.payeeName ?? txn.payeeId}</td>
-                <td>
+                <td className="cell-amount">
                   {txn.currency} {txn.amount.toLocaleString()}
                 </td>
                 <td>{txn.transactionType}</td>
-                <td>{txn.status}</td>
-                <td>{new Date(txn.timestamp).toLocaleString()}</td>
+                <td>
+                  <StatusIndicator status={txn.status} />
+                </td>
+                <td className="cell-data">{new Date(txn.timestamp).toLocaleString()}</td>
               </tr>
             ))}
             {transactions.length === 0 && (
@@ -98,4 +103,3 @@ export function TransactionsPanel({
     </section>
   );
 }
-
