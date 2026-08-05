@@ -4,30 +4,81 @@ type DashboardGraphsProps = {
   analytics: DashboardAnalytics | null;
   loading: boolean;
   lastCalculatedAt: Date | null;
+  source: 'LIVE' | 'DEMO';
   onCalculate: () => void;
+  onShowDemo: () => void;
 };
 
+const PIE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
 function GraphBlock({ title, points }: { title: string; points: GraphPoint[] }) {
-  const maxValue = points.reduce((max, point) => Math.max(max, point.value), 0);
+  const validPoints = points.filter((point) => point.value > 0);
+  const total = validPoints.reduce((sum, point) => sum + point.value, 0);
+  const radius = 52;
+  const size = 120;
+  const circumference = 2 * Math.PI * radius;
+
+  let cumulative = 0;
 
   return (
     <article className="analytics-graph-block">
       <h3>{title}</h3>
-      {points.length === 0 && <p className="muted">No data available.</p>}
-      <div className="analytics-bars">
-        {points.map((point) => {
-          const widthPercent = maxValue === 0 ? 0 : (point.value / maxValue) * 100;
-          return (
-            <div key={point.label} className="analytics-bar-row">
-              <div className="analytics-bar-label">{point.label}</div>
-              <div className="analytics-bar-track" aria-hidden="true">
-                <div className="analytics-bar-fill" style={{ width: `${widthPercent}%` }} />
-              </div>
-              <div className="analytics-bar-value">{point.value}</div>
-            </div>
-          );
-        })}
-      </div>
+      {total === 0 ? (
+        <p className="muted">No data available.</p>
+      ) : (
+        <div className="analytics-pie-layout">
+          <svg className="analytics-pie" viewBox={`0 0 ${size} ${size}`} role="img" aria-label={title}>
+            <circle
+              className="analytics-pie-base"
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              strokeWidth="14"
+              fill="none"
+            />
+            <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+              {validPoints.map((point, index) => {
+                const sliceSize = (point.value / total) * circumference;
+                const sliceOffset = cumulative;
+                cumulative += sliceSize;
+
+                return (
+                  <circle
+                    key={point.label}
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    strokeWidth="14"
+                    fill="none"
+                    stroke={PIE_COLORS[index % PIE_COLORS.length]}
+                    strokeDasharray={`${sliceSize} ${circumference - sliceSize}`}
+                    strokeDashoffset={-sliceOffset}
+                    strokeLinecap="butt"
+                  />
+                );
+              })}
+            </g>
+          </svg>
+
+          <div className="analytics-legend">
+            {validPoints.map((point, index) => {
+              const pct = Math.round((point.value / total) * 100);
+              return (
+                <div key={point.label} className="analytics-legend-row">
+                  <span
+                    className="analytics-legend-dot"
+                    style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                    aria-hidden="true"
+                  />
+                  <span className="analytics-legend-label">{point.label}</span>
+                  <span className="analytics-legend-value">{point.value}</span>
+                  <span className="analytics-legend-pct">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </article>
   );
 }
@@ -36,7 +87,9 @@ export function DashboardGraphs({
   analytics,
   loading,
   lastCalculatedAt,
+  source,
   onCalculate,
+  onShowDemo,
 }: DashboardGraphsProps) {
   return (
     <section className="card analytics-card">
@@ -46,6 +99,12 @@ export function DashboardGraphs({
           <button type="button" className="feed-button" onClick={onCalculate} disabled={loading}>
             {loading ? 'Calculating...' : 'Calculate Graphs'}
           </button>
+          <button type="button" className="feed-button" onClick={onShowDemo} disabled={loading}>
+            Show Demo
+          </button>
+          <span className={`analytics-source-badge ${source === 'DEMO' ? 'demo' : 'live'}`}>
+            {source}
+          </span>
           <span className="muted">
             {lastCalculatedAt
               ? `Last calculated at ${lastCalculatedAt.toLocaleTimeString()}`
@@ -55,7 +114,7 @@ export function DashboardGraphs({
       </header>
 
       {!analytics && !loading && (
-        <p className="state-message">Click "Calculate Graphs" to build an overview from transactions and alerts.</p>
+        <p className="state-message">Click "Calculate Graphs" for live data or "Show Demo" for a visual preview.</p>
       )}
 
       {analytics && (
@@ -69,4 +128,3 @@ export function DashboardGraphs({
     </section>
   );
 }
-

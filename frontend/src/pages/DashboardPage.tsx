@@ -10,7 +10,9 @@ export function DashboardPage() {
     loading: analyticsLoading,
     warning: analyticsWarning,
     lastCalculatedAt,
+    source,
     calculateGraphs,
+    calculateDemoGraphs,
   } = useDashboardAnalytics();
 
   return (
@@ -38,7 +40,9 @@ export function DashboardPage() {
         analytics={analytics}
         loading={analyticsLoading}
         lastCalculatedAt={lastCalculatedAt}
+        source={source}
         onCalculate={calculateGraphs}
+        onShowDemo={calculateDemoGraphs}
       />
     </main>
   );
