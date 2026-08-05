@@ -4,7 +4,7 @@ pipeline {
 
     environment {
         GIT_URL = 'https://github.com/Neueda-Learning/room107_Agileish.git'
-        BRANCH = 'dev'
+        BRANCH = 'e2e_k6_testing'
     }
 
     stages {
