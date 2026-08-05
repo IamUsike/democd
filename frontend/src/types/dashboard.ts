@@ -6,3 +6,14 @@ export type DashboardSummary = {
   highSeverityAlerts: number;
 };
 
+export type GraphPoint = {
+  label: string;
+  value: number;
+};
+
+export type DashboardAnalytics = {
+  transactionsByType: GraphPoint[];
+  transactionsByStatus: GraphPoint[];
+  alertsByStatus: GraphPoint[];
+  alertsBySeverity: GraphPoint[];
+};
