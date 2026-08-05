@@ -35,7 +35,7 @@ public class TransactionService {
     public TransactionResponse saveTransaction(TransactionRequest request) {
         Transaction savedTransaction = transactionRepository.save(toEntity(request));
         List<RuleMatch> matches = ruleEngine.evaluate(
-                new TransactionSnapshot(savedTransaction.getTransactionId(), savedTransaction.getAmount()),
+                toSnapshot(savedTransaction),
                 ruleEvaluationContext);
         alertService.createFromMatches(savedTransaction, matches);
         return toResponse(savedTransaction);
@@ -107,6 +107,16 @@ public class TransactionService {
         transaction.setDescription(request.getDescription());
         transaction.setStatus(request.getStatus());
         return transaction;
+    }
+
+    private TransactionSnapshot toSnapshot(Transaction transaction) {
+        return new TransactionSnapshot(
+                transaction.getTransactionId(),
+                transaction.getAmount(),
+                transaction.getAccountId(),
+                transaction.getPayeeId(),
+                transaction.getTimestamp(),
+                transaction.getType());
     }
 
     private TransactionResponse toResponse(Transaction transaction) {
