@@ -1,6 +1,7 @@
 package com.example.txnmonitor.rule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
@@ -57,7 +58,24 @@ class AmountThresholdRuleTest {
 		assertTrue(matches.isEmpty());
 	}
 
+<<<<<<< HEAD
 	private static TransactionSnapshot snapshot(BigDecimal amount) {
 		return new TransactionSnapshot(TXN_ID, amount, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
+=======
+	@Test
+	void constructor_nullThreshold_throwsNpe() {
+		assertThrows(NullPointerException.class, () -> new AmountThresholdRule(null));
+	}
+
+	@Test
+	void evaluate_nullTxn_throwsNpe() {
+		assertThrows(NullPointerException.class, () -> rule.evaluate(null, context));
+	}
+
+	@Test
+	void evaluate_nullAmount_throwsNpe() {
+		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, null);
+		assertThrows(NullPointerException.class, () -> rule.evaluate(txn, context));
+>>>>>>> d9e6b2b (test: improve rule coverage and document coverage workflow)
 	}
 }
