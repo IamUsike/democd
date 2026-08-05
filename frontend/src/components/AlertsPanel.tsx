@@ -1,4 +1,5 @@
 import type { Alert } from '../types/alert';
+import { StatusIndicator } from './StatusIndicator';
 
 type AlertsPanelProps = {
   alerts: Alert[];
@@ -31,8 +32,8 @@ export function AlertsPanel({ alerts, selectedAlertId, loading, onSelect }: Aler
               <p>{alert.ruleTriggered}</p>
             </div>
             <div className="alert-meta">
-              <span className={`severity ${alert.severity.toLowerCase()}`}>{alert.severity}</span>
-              <span>{alert.status}</span>
+              <span className="severity">{alert.severity}</span>
+              <StatusIndicator status={alert.status} />
             </div>
           </button>
         ))}
@@ -41,4 +42,3 @@ export function AlertsPanel({ alerts, selectedAlertId, loading, onSelect }: Aler
     </section>
   );
 }
-

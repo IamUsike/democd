@@ -10,6 +10,7 @@ React + TypeScript operator dashboard for Phase 1 MVP.
 - Zero horizontal scroll layout with responsive data tables
 - KPI strip (`GET /api/v1/dashboard`)
 - Transactions list with source/account filters (`GET /api/v1/transactions`)
+- High-ingestion controls on Transactions page (auto-refresh, pause/resume, manual refresh, quick search, pin by ID, new-row highlight)
 - Active alerts list (`GET /api/v1/alerts`)
 - Alert detail view (`GET /api/v1/alerts/{id}`)
 - Lifecycle action buttons (`PATCH /api/v1/alerts/{id}/status`)
