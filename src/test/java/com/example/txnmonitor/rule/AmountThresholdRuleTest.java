@@ -1,6 +1,7 @@
 package com.example.txnmonitor.rule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
@@ -55,6 +56,22 @@ class AmountThresholdRuleTest {
 		List<RuleMatch> matches = rule.evaluate(txn, context);
 
 		assertTrue(matches.isEmpty());
+	}
+
+	@Test
+	void constructor_nullThreshold_throwsNpe() {
+		assertThrows(NullPointerException.class, () -> new AmountThresholdRule(null));
+	}
+
+	@Test
+	void evaluate_nullTxn_throwsNpe() {
+		assertThrows(NullPointerException.class, () -> rule.evaluate(null, context));
+	}
+
+	@Test
+	void evaluate_nullAmount_throwsNpe() {
+		TransactionSnapshot txn = new TransactionSnapshot(TXN_ID, null, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
+		assertThrows(NullPointerException.class, () -> rule.evaluate(txn, context));
 	}
 
 	private static TransactionSnapshot snapshot(BigDecimal amount) {
