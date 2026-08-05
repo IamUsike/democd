@@ -77,6 +77,21 @@ class AlertServiceTest {
 	}
 
 	@Test
+	void createFromMatches_velocityMatch_setsDisplayName() {
+		when(alertRepository.save(any(Alert.class))).thenAnswer(invocation -> {
+			Alert alert = invocation.getArgument(0);
+			alert.setAlertId(202L);
+			return alert;
+		});
+
+		List<AlertResponse> created = alertService.createFromMatches(
+				sampleTransaction(),
+				List.of(new RuleMatch("VELOCITY", "MEDIUM", "too fast", 1L)));
+
+		assertEquals("Velocity Rule", created.get(0).getRuleTriggered());
+	}
+
+	@Test
 	void updateStatus_openToAcknowledged_setsTimestamp() {
 		Alert open = openAlert(10L);
 		when(alertRepository.findById(10L)).thenReturn(Optional.of(open));
