@@ -1,14 +1,23 @@
+import { DashboardGraphs } from '../components/DashboardGraphs';
 import { KpiStrip } from '../components/KpiStrip';
+import { useDashboardAnalytics } from '../hooks/useDashboardAnalytics';
 import { useDashboardKpis } from '../hooks/useDashboardKpis';
 
 export function DashboardPage() {
   const { summary, loading, warning } = useDashboardKpis();
+  const {
+    analytics,
+    loading: analyticsLoading,
+    warning: analyticsWarning,
+    lastCalculatedAt,
+    calculateGraphs,
+  } = useDashboardAnalytics();
 
   return (
     <main className="page-frame">
       <header className="page-header">
         <h2>Dashboard</h2>
-        <p>Transaction volume and alert counts</p>
+        <p>Transaction volume, alert counts, and calculated analytics.</p>
       </header>
 
       {warning && (
@@ -18,6 +27,19 @@ export function DashboardPage() {
       )}
 
       <KpiStrip summary={summary} loading={loading} />
+
+      {analyticsWarning && (
+        <p className="state-message" role="status">
+          {analyticsWarning}
+        </p>
+      )}
+
+      <DashboardGraphs
+        analytics={analytics}
+        loading={analyticsLoading}
+        lastCalculatedAt={lastCalculatedAt}
+        onCalculate={calculateGraphs}
+      />
     </main>
   );
 }
