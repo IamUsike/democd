@@ -6,10 +6,9 @@ starting work — keep "Current status" honest and current, not aspirational.
 ## Current status
 
 **Phase:** Phase 1 — MVP **ready for live demo**
-**Last updated:** 04 August 2026
-**Currently working on:** Room dry-run / presentation (software path complete).
-See [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md) for talk track +
-deep dive; [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) for status.
+**Last updated:** 05 August 2026
+**Currently working on:** Phase 2 rules (Velocity, New Payee, Daily Limit) on
+`feature/phase2-rules`. Frontend refactor and E2E/load testing in parallel.
 
 ---
 
@@ -57,9 +56,9 @@ evaluate-on-record.
 
 ## Phase 2 — additional rule types + user-configurable rules
 
-- [ ] `VelocityRule` (N transactions within T minutes)
-- [ ] `NewPayeeRule` (first transaction to an unseen payee)
-- [ ] `DailyLimitRule` (cumulative daily amount)
+- [x] `VelocityRule` (N transactions within T minutes)
+- [x] `NewPayeeRule` (first transaction to an unseen payee)
+- [x] `DailyLimitRule` (cumulative daily amount)
 - [ ] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
 - [ ] Rules table / parameters + management UI (view; create/edit so
   operators can set thresholds — stretch to full authoring)
