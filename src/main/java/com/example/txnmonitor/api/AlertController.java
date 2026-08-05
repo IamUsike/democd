@@ -3,6 +3,7 @@ package com.example.txnmonitor.api;
 import com.example.txnmonitor.alert.AlertService;
 import com.example.txnmonitor.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 @RestController
-@RequestMapping("/api/v1/alerts")
+@RequestMapping({"/api/v1/alerts", "/api/alerts"})
 @Tag(name = "Alerts", description = "Alert retrieval and lifecycle APIs")
 public class AlertController {
 
@@ -30,11 +32,19 @@ public class AlertController {
 	@GetMapping
 	@Operation(summary = "Get alerts", description = "Returns alerts with optional sourceType/sourceId/status filters.")
 	public ResponseEntity<ApiResponse<List<AlertResponse>>> getAlerts(
-			@RequestParam(required = false) String sourceType,
-			@RequestParam(required = false) String sourceId,
-			@RequestParam(required = false) String status) {
+			@RequestParam(name = "sourceType", required = false) String sourceType,
+			@RequestParam(name = "sourceId", required = false) String sourceId,
+			@Parameter(name = "status", description = "Optional alert status filter", required = false, example = "OPEN")
+			@RequestParam(name = "status", required = false) String status) {
 		List<AlertResponse> alerts = alertService.getAlerts(sourceType, sourceId, status);
 		return ResponseEntity.ok(ApiResponse.ok("Alerts retrieved successfully.", alerts));
+	}
+
+	@GetMapping("/statuses")
+	@Operation(summary = "Get alert statuses", description = "Returns all supported alert status values.")
+	public ResponseEntity<ApiResponse<List<String>>> getAlertStatuses() {
+		List<String> statuses = alertService.getAvailableStatuses();
+		return ResponseEntity.ok(ApiResponse.ok("Alert statuses retrieved successfully.", statuses));
 	}
 
 	@GetMapping("/{alertId}")

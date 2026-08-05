@@ -1,6 +1,7 @@
 package com.example.txnmonitor.common;
 
 import com.example.txnmonitor.common.exception.AlertNotFoundException;
+import com.example.txnmonitor.common.exception.InvalidAlertStatusFilterException;
 import com.example.txnmonitor.common.exception.InvalidAlertTransitionException;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,6 +47,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidAlertTransitionException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidAlertTransitionException(
             InvalidAlertTransitionException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(InvalidAlertStatusFilterException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidAlertStatusFilterException(
+            InvalidAlertStatusFilterException ex,
             HttpServletRequest request
     ) {
         ApiErrorResponse errorResponse = buildErrorResponse(

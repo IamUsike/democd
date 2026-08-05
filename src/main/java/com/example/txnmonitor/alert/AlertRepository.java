@@ -10,6 +10,8 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
 	List<Alert> findBySourceTypeAndSourceIdOrderByCreatedAtDesc(String sourceType, String sourceId);
 
+	List<Alert> findByStatus(String status);
+
 	List<Alert> findByStatusOrderByCreatedAtDesc(String status);
 
 	List<Alert> findBySourceTypeAndSourceIdAndStatusOrderByCreatedAtDesc(

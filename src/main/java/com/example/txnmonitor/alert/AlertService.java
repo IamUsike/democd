@@ -2,6 +2,7 @@ package com.example.txnmonitor.alert;
 
 import com.example.txnmonitor.api.AlertResponse;
 import com.example.txnmonitor.common.exception.AlertNotFoundException;
+import com.example.txnmonitor.common.exception.InvalidAlertStatusFilterException;
 import com.example.txnmonitor.common.exception.InvalidAlertTransitionException;
 import com.example.txnmonitor.rule.RuleMatch;
 import com.example.txnmonitor.transaction.Transaction;
@@ -17,6 +18,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Arrays;
 
 @Service
 public class AlertService {
@@ -69,20 +71,27 @@ public class AlertService {
 	public List<AlertResponse> getAlerts(String sourceType, String sourceId, String status) {
 		List<Alert> alerts;
 		boolean hasSource = hasText(sourceType) && hasText(sourceId);
-		boolean hasStatus = hasText(status);
+		String normalizedStatus = normalizeStatusFilter(status);
+		boolean hasStatus = normalizedStatus != null;
 
 		if (hasSource && hasStatus) {
 			alerts = alertRepository.findBySourceTypeAndSourceIdAndStatusOrderByCreatedAtDesc(
-					sourceType, sourceId, status.toUpperCase(Locale.ROOT));
+					sourceType, sourceId, normalizedStatus);
 		} else if (hasSource) {
 			alerts = alertRepository.findBySourceTypeAndSourceIdOrderByCreatedAtDesc(sourceType, sourceId);
 		} else if (hasStatus) {
-			alerts = alertRepository.findByStatusOrderByCreatedAtDesc(status.toUpperCase(Locale.ROOT));
+			alerts = alertRepository.findByStatusOrderByCreatedAtDesc(normalizedStatus);
 		} else {
 			alerts = alertRepository.findAllByOrderByCreatedAtDesc();
 		}
 
 		return toResponses(alerts);
+	}
+
+	public List<String> getAvailableStatuses() {
+		return Arrays.stream(AlertStatus.values())
+				.map(Enum::name)
+				.toList();
 	}
 
 	public AlertResponse getAlertById(Long alertId) {
@@ -191,5 +200,19 @@ public class AlertService {
 
 	private boolean hasText(String value) {
 		return value != null && !value.isBlank();
+	}
+
+	private String normalizeStatusFilter(String status) {
+		if (!hasText(status)) {
+			return null;
+		}
+
+		String normalized = status.trim().toUpperCase(Locale.ROOT);
+		try {
+			AlertStatus.valueOf(normalized);
+			return normalized;
+		} catch (IllegalArgumentException ex) {
+			throw new InvalidAlertStatusFilterException(status, getAvailableStatuses());
+		}
 	}
 }

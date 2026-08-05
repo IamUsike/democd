@@ -2,6 +2,7 @@ package com.example.txnmonitor.alert;
 
 import com.example.txnmonitor.api.AlertResponse;
 import com.example.txnmonitor.common.exception.AlertNotFoundException;
+import com.example.txnmonitor.common.exception.InvalidAlertStatusFilterException;
 import com.example.txnmonitor.common.exception.InvalidAlertTransitionException;
 import com.example.txnmonitor.rule.RuleMatch;
 import com.example.txnmonitor.transaction.Transaction;
@@ -63,10 +64,10 @@ class AlertServiceTest {
 				List.of(new RuleMatch("AMOUNT_THRESHOLD", "HIGH", "over threshold", 1L)));
 
 		assertEquals(1, created.size());
-		assertEquals(201L, created.get(0).getAlertId());
-		assertEquals("OPEN", created.get(0).getStatus());
-		assertEquals("Amount Threshold Rule", created.get(0).getRuleTriggered());
-		assertEquals(1L, created.get(0).getTransactionId());
+		assertEquals(201L, created.getFirst().getAlertId());
+		assertEquals("OPEN", created.getFirst().getStatus());
+		assertEquals("Amount Threshold Rule", created.getFirst().getRuleTriggered());
+		assertEquals(1L, created.getFirst().getTransactionId());
 
 		ArgumentCaptor<Alert> alertCaptor = ArgumentCaptor.forClass(Alert.class);
 		verify(alertRepository).save(alertCaptor.capture());
@@ -88,7 +89,7 @@ class AlertServiceTest {
 				sampleTransaction(),
 				List.of(new RuleMatch("VELOCITY", "MEDIUM", "too fast", 1L)));
 
-		assertEquals("Velocity Rule", created.get(0).getRuleTriggered());
+		assertEquals("Velocity Rule", created.getFirst().getRuleTriggered());
 	}
 
 	@Test
@@ -151,7 +152,51 @@ class AlertServiceTest {
 		List<AlertResponse> results = alertService.getAlerts("BANK", "HSBC-UK", null);
 
 		assertEquals(1, results.size());
-		assertEquals(42L, results.get(0).getTransactionId());
+		assertEquals(42L, results.getFirst().getTransactionId());
+	}
+
+	@Test
+	void getAlerts_withStatusFilter_delegatesToRepository() {
+		Alert alert = openAlert(2L);
+		alert.setStatus(AlertStatus.CLOSED.name());
+		when(alertRepository.findByStatusOrderByCreatedAtDesc("CLOSED"))
+				.thenReturn(List.of(alert));
+		when(alertTransactionRepository.findByAlertIdIn(List.of(2L)))
+				.thenReturn(List.of(new AlertTransaction(2L, 77L)));
+
+		List<AlertResponse> results = alertService.getAlerts(null, null, "closed");
+
+		assertEquals(1, results.size());
+		assertEquals("CLOSED", results.getFirst().getStatus());
+	}
+
+	@Test
+	void getAlerts_withBlankStatus_returnsAllAlerts() {
+		Alert alert = openAlert(3L);
+		when(alertRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(alert));
+		when(alertTransactionRepository.findByAlertIdIn(List.of(3L)))
+				.thenReturn(List.of(new AlertTransaction(3L, 88L)));
+
+		List<AlertResponse> results = alertService.getAlerts(null, null, "   ");
+
+		assertEquals(1, results.size());
+		assertEquals(88L, results.getFirst().getTransactionId());
+	}
+
+	@Test
+	void getAlerts_withInvalidStatus_throwsBadRequestException() {
+		InvalidAlertStatusFilterException ex = assertThrows(
+				InvalidAlertStatusFilterException.class,
+				() -> alertService.getAlerts(null, null, "invalid"));
+
+		assertTrue(ex.getMessage().contains("invalid"));
+	}
+
+	@Test
+	void getAvailableStatuses_returnsAllEnumValuesInDeclarationOrder() {
+		List<String> statuses = alertService.getAvailableStatuses();
+
+		assertEquals(List.of("OPEN", "ACKNOWLEDGED", "INVESTIGATING", "CLOSED", "DISMISSED"), statuses);
 	}
 
 	private Transaction sampleTransaction() {

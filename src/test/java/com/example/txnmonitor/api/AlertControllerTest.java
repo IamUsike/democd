@@ -49,6 +49,28 @@ class AlertControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data[0].alertId").value(201))
 				.andExpect(jsonPath("$.data[0].status").value("OPEN"));
+
+		assertEquals(null, alertService.lastStatusFilter);
+	}
+
+	@Test
+	void getAlertsWithOpenApiStatusParamPassesStatus() throws Exception {
+		alertService.alertsToReturn = List.of(sampleAlert());
+
+		mockMvc.perform(get("/api/v1/alerts").param("status", "OPEN"))
+				.andExpect(status().isOk());
+
+		assertEquals("OPEN", alertService.lastStatusFilter);
+	}
+
+	@Test
+	void getAlertsBackwardCompatiblePathReturnsOkEnvelope() throws Exception {
+		alertService.alertsToReturn = List.of(sampleAlert());
+
+		mockMvc.perform(get("/api/alerts"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data[0].alertId").value(201));
 	}
 
 	@Test
@@ -67,6 +89,15 @@ class AlertControllerTest {
 	}
 
 	@Test
+	void getAlertsWithInvalidStatusReturnsBadRequest() throws Exception {
+		alertService.throwInvalidStatusFilter = true;
+
+		mockMvc.perform(get("/api/v1/alerts").param("status", "NOT_A_STATUS"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("Invalid alert status filter: NOT_A_STATUS. Allowed values: OPEN, ACKNOWLEDGED, INVESTIGATING, CLOSED, DISMISSED"));
+	}
+
+	@Test
 	void getAlertByIdReturnsOkEnvelope() throws Exception {
 		alertService.alertToReturn = sampleAlert();
 
@@ -76,6 +107,17 @@ class AlertControllerTest {
 				.andExpect(jsonPath("$.data.transactionId").value(101));
 
 		assertEquals(201L, alertService.lastRequestedId);
+	}
+
+	@Test
+	void getAlertStatusesReturnsOkEnvelope() throws Exception {
+		alertService.statusesToReturn = List.of("OPEN", "ACKNOWLEDGED", "INVESTIGATING", "CLOSED", "DISMISSED");
+
+		mockMvc.perform(get("/api/v1/alerts/statuses"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data[0]").value("OPEN"))
+				.andExpect(jsonPath("$.data[4]").value("DISMISSED"));
 	}
 
 	@Test
@@ -149,8 +191,10 @@ class AlertControllerTest {
 		private String lastSourceType;
 		private String lastSourceId;
 		private String lastStatusFilter;
+		private List<String> statusesToReturn = List.of();
 		private boolean throwNotFound;
 		private boolean throwInvalidTransition;
+		private boolean throwInvalidStatusFilter;
 
 		private RecordingAlertService() {
 			super(null, null);
@@ -158,6 +202,11 @@ class AlertControllerTest {
 
 		@Override
 		public List<AlertResponse> getAlerts(String sourceType, String sourceId, String status) {
+			if (throwInvalidStatusFilter) {
+				throw new com.example.txnmonitor.common.exception.InvalidAlertStatusFilterException(
+						status,
+						List.of("OPEN", "ACKNOWLEDGED", "INVESTIGATING", "CLOSED", "DISMISSED"));
+			}
 			this.lastSourceType = sourceType;
 			this.lastSourceId = sourceId;
 			this.lastStatusFilter = status;
@@ -171,6 +220,11 @@ class AlertControllerTest {
 			}
 			this.lastRequestedId = alertId;
 			return alertToReturn;
+		}
+
+		@Override
+		public List<String> getAvailableStatuses() {
+			return statusesToReturn;
 		}
 
 		@Override
