@@ -57,12 +57,19 @@ public class AlertService {
 		List<AlertResponse> created = new ArrayList<>();
 		LocalDateTime now = LocalDateTime.now();
 
+		boolean multipleMatches = matches.size() > 1;
+
 		for (RuleMatch match : matches) {
 			Alert alert = new Alert();
 			alert.setRuleType(match.ruleType());
-			alert.setSeverity(match.severity());
+			// If multiple rules fire for a single transaction, escalate severity to HIGH
+			alert.setSeverity(multipleMatches ? "HIGH" : match.severity());
 			alert.setRuleDescription(ruleDescriptionForRuleType(match.ruleType()));
-			alert.setFailingReason(resolveFailingReason(match, transaction));
+			String reason = resolveFailingReason(match, transaction);
+			if (multipleMatches) {
+				reason += " [MULTIPLE RULES TRIGGERED: " + matches.size() + " rules matched]";
+			}
+			alert.setFailingReason(reason);
 			alert.setStatus(AlertStatus.OPEN.name());
 			alert.setAccountId(transaction.getAccountId());
 			alert.setSourceType(transaction.getSourceType());

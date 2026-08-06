@@ -102,6 +102,27 @@ class AlertServiceTest {
 	}
 
 	@Test
+	void createFromMatches_multipleMatches_escalatesSeverityToHigh() {
+		when(alertRepository.save(any(Alert.class))).thenAnswer(invocation -> {
+			Alert alert = invocation.getArgument(0);
+			alert.setAlertId(300L);
+			return alert;
+		});
+
+		List<AlertResponse> created = alertService.createFromMatches(
+				sampleTransaction(),
+				List.of(
+						new RuleMatch("VELOCITY", "MEDIUM", "too fast", 1L),
+						new RuleMatch("NEW_PAYEE", "MEDIUM", "new payee", 1L)
+				));
+
+		assertEquals(2, created.size());
+		assertEquals("HIGH", created.get(0).getSeverity());
+		assertEquals("HIGH", created.get(1).getSeverity());
+		assertTrue(created.get(0).getFailingReason().contains("[MULTIPLE RULES TRIGGERED: 2 rules matched]"));
+	}
+
+	@Test
 	void updateStatus_openToAcknowledged_setsTimestamp() {
 		Alert open = openAlert(10L);
 		when(alertRepository.findById(10L)).thenReturn(Optional.of(open));
