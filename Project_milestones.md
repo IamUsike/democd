@@ -5,10 +5,10 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Sprint 2 wrap — client UI asks + load evidence **largely done**; Phase 3 infra + simulator + unit-test sweep in progress  
+**Phase:** Sprint 2 wrap — client UI asks + load evidence **largely done**; Phase 3 infra in progress; **alert/traffic simulator shipped**  
 **Last updated:** 06 August 2026 (EOD)  
 **Currently working on:**  
-- **shreya (A):** alert / traffic simulator; support final unit tests  
+- **shreya (A):** support final unit tests (simulator ✅)  
 - **sathwik (B):** queue + DB VM migration; confirm login gate  
 - **Rameez (C):** presentation dry-run; any residual UI polish  
 
@@ -79,7 +79,10 @@ evaluate-on-record.
 - [ ] Additional team-authored custom rules as needed for the demo
 - [x] QA: E2E + load test write-up (`docs/LOAD_TEST_GUIDE.md` / `docs/load-test-results.md`)
 - [ ] Login page + superadmin (single-operator gate)
-- [ ] Alert / traffic simulator for live demo (shreya)
+- [x] Alert / traffic simulator for live demo (shreya)  
+  — standalone Go+React under `transaction-simulator/`; scenario packs  
+  (Amount / Velocity / New Payee / Daily Limit / soft tenancy / MVP seed)  
+  + fixed FRAUD multi-txn continuous traffic; plan `.cursor/plans/013-alert-traffic-simulator.md`
 - [ ] Final unit-test sweep
 - [x] Presentation talk track (`docs/PRESENTATION_SCRIPT.md`)
 
