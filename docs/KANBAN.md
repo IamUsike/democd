@@ -34,6 +34,8 @@ Commit message when updating: `chore: kanban update [date]`
 | [B-8] DailyLimitRule (Phase 2) | sathwik | Cumulative daily amount |
 | [C-5] Frontend flat restyle | Rameez | Dark Obsidian tokens, status dots, mono cells |
 | [C-6] Search bar + pause feed button | Rameez | PR #2 merged |
+| [C-7] Dashboard graphs / analytics | Rameez | PR #4 |
+| [B-9] Configurable rules API + Rules UI | Rameez + sathwik | PR #5; Flyway V3 |
 | [T-1] Fix AmountThresholdRuleTest after merge | Rameez | Post-merge cleanup |
 | [T-2] Improve rule test coverage + doc workflow | Rameez | Coverage docs added |
 | Docker/nginx deployment | sathwik + shreya | compose; shreya env example |
@@ -59,11 +61,8 @@ Commit message when updating: `chore: kanban update [date]`
 ### 🟢 READY
 | Story | Owner | Depends on / notes |
 |-------|-------|-------------------|
-| Severity levels (HIGH/MEDIUM/LOW) in UI | Rameez | Phase 2 rules done; client ask 05 Aug |
+| Severity levels (HIGH/MEDIUM/LOW) in UI | Rameez | Client ask 05 Aug |
 | Alert status filter + sort in UI | Rameez | API has status filter; client ask 05 Aug |
-| Rules table + view/edit + explanations | sathwik + Rameez | Client ask 05 Aug |
-| Failing reason on alert (rule match explanation) | sathwik + Rameez | Client ask 05 Aug |
-| Dashboard graphs (trends) | Rameez + shreya | Client ask 05 Aug |
 
 ---
 

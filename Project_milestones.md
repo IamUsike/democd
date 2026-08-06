@@ -62,12 +62,12 @@ evaluate-on-record.
 - [x] `NewPayeeRule` (first transaction to an unseen payee)
 - [x] `DailyLimitRule` (cumulative daily amount)
 - [ ] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
-- [ ] Rules table / parameters + management UI (view; create/edit so
+- [x] Rules table / parameters + management UI (view; create/edit so
   operators can set thresholds — stretch to full authoring)
-- [ ] Rule explanations in UI (what each rule checks)
-- [ ] Failing reason on alerts (why the rule matched) visible in list/detail
+- [x] Rule explanations in UI (what each rule checks)
+- [x] Failing reason on alerts (why the rule matched) visible in list/detail
 - [ ] Alert list filter + sort by status in UI
-- [ ] Dashboard graphs (trends / counts over time)
+- [x] Dashboard graphs (trends / counts over time)
 - [ ] Additional team-authored custom rules as needed for the demo
 - [ ] QA: E2E + load test write-up (`docs/LOAD_TEST_GUIDE.md` / `load-test-results.md`)
 - [ ] Login page + superadmin (single-operator gate)
