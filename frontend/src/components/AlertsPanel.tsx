@@ -1,44 +1,92 @@
 import type { Alert } from '../types/alert';
+import type { StatusFilter } from '../hooks/useAlerts';
+import { ALL_STATUSES } from '../hooks/useAlerts';
+import { StatusIndicator } from './StatusIndicator';
+
+const STATUS_LABELS: Record<string, string> = {
+  ALL: 'All',
+  OPEN: 'Open',
+  ACKNOWLEDGED: 'Acknowledged',
+  INVESTIGATING: 'Investigating',
+  CLOSED: 'Closed',
+  DISMISSED: 'Dismissed',
+};
 
 type AlertsPanelProps = {
   alerts: Alert[];
   selectedAlertId: number | null;
   loading: boolean;
+  statusFilter: StatusFilter;
+  onStatusFilter: (status: StatusFilter) => void;
   onSelect: (alertId: number) => void;
 };
 
-export function AlertsPanel({ alerts, selectedAlertId, loading, onSelect }: AlertsPanelProps) {
-  const activeAlerts = alerts.filter(
-    (alert) => alert.status !== 'CLOSED' && alert.status !== 'DISMISSED',
-  );
-
+export function AlertsPanel({
+  alerts,
+  selectedAlertId,
+  loading,
+  statusFilter,
+  onStatusFilter,
+  onSelect,
+}: AlertsPanelProps) {
   return (
-    <section className="card">
+    <section className="card alerts-panel">
       <header className="section-header">
-        <h2>Active Alerts</h2>
-        <span className="muted">{loading ? 'Loading...' : `${activeAlerts.length} active`}</span>
+        <h2>Alerts</h2>
+        <span className="muted">
+          {loading ? 'Loading…' : `${alerts.length} result${alerts.length !== 1 ? 's' : ''}`}
+        </span>
       </header>
+
+      {/* ── Status filter tabs ── */}
+      <div className="status-tabs" role="tablist" aria-label="Filter alerts by status">
+        {ALL_STATUSES.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={statusFilter === tab}
+            className={`status-tab${statusFilter === tab ? ' active' : ''}`}
+            onClick={() => onStatusFilter(tab)}
+          >
+            {STATUS_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Alert list ── */}
       <div className="alerts-list">
-        {activeAlerts.map((alert) => (
+        {alerts.map((alert) => (
           <button
             key={alert.alertId}
             type="button"
-            className={`alert-item ${selectedAlertId === alert.alertId ? 'active' : ''}`}
+            className={`alert-item${selectedAlertId === alert.alertId ? ' active' : ''}`}
             onClick={() => onSelect(alert.alertId)}
           >
-            <div>
-              <strong>Alert #{alert.alertId}</strong>
-              <p>{alert.ruleTriggered}</p>
+            <div className="alert-item-main">
+              <div className="alert-item-header">
+                <strong className="alert-item-id">#{alert.alertId}</strong>
+                <StatusIndicator status={alert.status} />
+              </div>
+              <p className="alert-item-rule">{alert.ruleTriggered}</p>
+              {alert.failingReason && (
+                <p className="alert-item-reason">{alert.failingReason}</p>
+              )}
             </div>
-            <div className="alert-meta">
-              <span className={`severity ${alert.severity.toLowerCase()}`}>{alert.severity}</span>
-              <span>{alert.status}</span>
+            <div className="alert-item-meta">
+              <span className={`severity ${alert.severity.toLowerCase()}`}>
+                {alert.severity}
+              </span>
+              <span className="alert-item-time muted">
+                {new Date(alert.createdAt).toLocaleDateString()}
+              </span>
             </div>
           </button>
         ))}
-        {activeAlerts.length === 0 && <p className="muted">No active alerts.</p>}
+        {!loading && alerts.length === 0 && (
+          <p className="muted alerts-empty">No alerts match this filter.</p>
+        )}
       </div>
     </section>
   );
 }
-

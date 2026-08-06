@@ -748,9 +748,13 @@ This endpoint provides statistical information used to render dashboard charts a
 
 # 6. Rule APIs
 
-The Rule APIs provide visibility into the transaction monitoring rules configured in the system.
+The Rule APIs expose monitoring rule configuration to the operator UI.
+Seeded rules (`AMOUNT_THRESHOLD`, `VELOCITY`, `NEW_PAYEE`, `DAILY_LIMIT`) can be
+listed and updated (enable/disable + type-specific parameters). Create/delete of
+new rule types is out of scope — operators tune the seeded set only.
 
-For the MVP release, rules are hardcoded and cannot be created, modified, or deleted through the user interface.
+Parameters are **type-scoped**: sending `amountThreshold` on `PUT …/VELOCITY`
+returns **400**. Disabled rules are skipped by the rule engine at evaluate time.
 
 
 ## 6.1 Get Configured Rules
@@ -771,7 +775,7 @@ GET
 
 ### Called By
 
-- Web UI
+- Web UI (`/rules` page)
 
 ### Success Response
 
@@ -781,19 +785,94 @@ GET
   "message": "Rules retrieved successfully.",
   "data": [
     {
-      "ruleId": 1,
-      "ruleName": "Amount Threshold Rule",
-      "thresholdAmount": 10000,
-      "severity": "HIGH",
-      "status": "ACTIVE"
+      "ruleType": "AMOUNT_THRESHOLD",
+      "name": "Amount Threshold",
+      "description": "Triggers when a transaction amount exceeds the configured threshold.",
+      "enabled": true,
+      "amountThreshold": 10000,
+      "velocityMaxTransactions": null,
+      "velocityWindowMinutes": null,
+      "dailyLimit": null,
+      "updatedAt": "2026-08-06T10:00:00"
     }
   ]
 }
 ```
+
 ### Notes
 
-- Rules are read-only in the MVP.
-- Rules cannot be created, updated or deleted through the user interface.
+- Rules are seeded via Flyway `V3__create_rule_configs.sql`.
+- Operators can update parameters and the enabled flag (see 6.3).
+
+
+## 6.2 Get Rule By Type
+
+### Endpoint
+
+```
+GET /api/v1/rules/{ruleType}
+```
+
+### Success Response
+
+Same shape as a single element of the list in 6.1.
+
+### Error Response
+
+- **404** — unknown `ruleType`
+
+
+## 6.3 Update Rule
+
+### Purpose
+
+Update enablement and/or type-specific parameters for one seeded rule.
+Changes persist to `rule_configs` and apply immediately to the live rule bean
+(no restart).
+
+### Endpoint
+
+```
+PUT /api/v1/rules/{ruleType}
+```
+
+### Request body (all fields optional; omit fields you are not changing)
+
+```json
+{
+  "enabled": true,
+  "amountThreshold": 15000,
+  "velocityMaxTransactions": 5,
+  "velocityWindowMinutes": 10,
+  "dailyLimit": 50000
+}
+```
+
+| ruleType | Allowed numeric fields |
+|----------|------------------------|
+| `AMOUNT_THRESHOLD` | `amountThreshold` |
+| `VELOCITY` | `velocityMaxTransactions`, `velocityWindowMinutes` |
+| `DAILY_LIMIT` | `dailyLimit` |
+| `NEW_PAYEE` | *(none — enabled only)* |
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "Rule updated successfully.",
+  "data": { "...updated rule..." }
+}
+```
+
+### Error Responses
+
+- **400** — validation failure or foreign parameter for this `ruleType`
+- **404** — unknown `ruleType`
+
+### Notes
+
+- `enabled: false` causes `RuleEngine` to skip that rule on ingest.
 ---
 
 
@@ -805,7 +884,7 @@ The following HTTP status codes are used by the Transaction Monitoring System AP
 
 | Status Code | Meaning | Usage |
 |--------------|---------|-------|
-| 200 OK | Request completed successfully | GET, PATCH |
+| 200 OK | Request completed successfully | GET, PUT, PATCH |
 | 201 Created | Resource created successfully | POST |
 | 400 Bad Request | Invalid request or validation failed | Invalid input |
 | 404 Not Found | Requested resource does not exist | Invalid Transaction ID or Alert ID |
@@ -878,8 +957,8 @@ Example
 - Monitoring rules are evaluated immediately after transaction creation
   (sync MTTD path).
 - Alerts are generated automatically when a monitoring rule is triggered.
-- Rule configuration is hardcoded for the MVP release (user-defined rules
-  are Phase 2).
+- Rule configuration is stored in `rule_configs` and tunable via
+  `GET/PUT /api/v1/rules` (seeded rule types only; create/delete out of scope).
 - Authentication and authorization are outside the scope of Version 1.
 - Phase 4 adds encryption at rest and masking of sensitive fields in
   API/UI responses where practical.

@@ -1,15 +1,15 @@
 # Team Work Split — Transaction Monitoring & Alerts
 
 **Team size:** 3  
-**Names:** fill in below (replace the placeholders)  
-**Source of truth for status:** [`Project_milestones.md`](../Project_milestones.md)  
+**Names:** shreya, sathwik, Rameez  
+**Source of truth for status:** [`Project_milestones.md`](../Project_milestones.md) · **Board:** [`KANBAN.md`](./KANBAN.md) · **Retros:** [`SPRINT_RETROSPECTIVE.md`](./SPRINT_RETROSPECTIVE.md)  
 **Conventions:** [`AGENTS.md`](../AGENTS.md), [`.cursor/rules/`](../.cursor/rules/)
 
 | Role                              | Name         | Primary ownership                                                      |
 |-----------------------------------|--------------|------------------------------------------------------------------------|
-| **Person A** — Transactions & API | *\<Name 1\>* | `transaction` module, public REST for transactions, Swagger, test data |
-| **Person B** — Rules & Alerts     | *\<Name 2\>* | `rule` module, `alert` module, wiring eval → alert creation            |
-| **Person C** — Frontend & Demo    | *\<Name 3\>* | `frontend/`, typed API clients, E2E demo path in the UI                |
+| **Person A** — Transactions & API | shreya       | `transaction` module, public REST, seed, Swagger, KPI API, QA/load test |
+| **Person B** — Rules & Alerts     | sathwik      | `rule` + `alert` modules, sync eval wiring, Docker/Jenkins *(slightly more scope)* |
+| **Person C** — Frontend & Demo    | Rameez       | `frontend/` screens (shell, lists, alerts, KPIs), coverage, E2E demo UI |
 
 Shared for everyone: `common` (exceptions, shared config), schema decisions in
 [`DATABASE_DESIGN.md`](./DATABASE_DESIGN.md), updating milestones when a
@@ -178,9 +178,9 @@ Do **not** start Phase 2 until Phase 1 E2E demo works
 
 ## Checklist: fill in before you start coding as a trio
 
-- [ ] Replace *\<Name 1/2/3\>* with real names in the table above
-- [ ] Agree branch naming (e.g. `feat/A-transactions`, `feat/B-alerts`, `feat/C-ui`)
-- [ ] Agree where shared DTOs / OpenAPI live so C is not blocked by surprise field renames
-- [ ] Book a short sync after A’s first `GET /transactions` and after B’s first alert create
+- [x] Replace names in the table above — done (shreya, sathwik, Rameez)
+- [x] Agree branch naming
+- [x] Agree where shared DTOs / OpenAPI live
+- [x] Book a short sync after A’s first `GET /transactions` and after B’s first alert create
 
-*Last updated: 03 August 2026*
+*Last updated: 05 August 2026*

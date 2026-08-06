@@ -43,6 +43,7 @@ Implements MVP frontend scope:
 - Live API clients only (no sample-data fallback)
 - KPI strip (`GET /api/v1/dashboard`)
 - Transaction list with source filters (`GET /api/v1/transactions`)
+- Frontend-only high-ingestion controls (auto-refresh, pause/resume, pin row, quick search, new-row highlight)
 - Active alerts list + detail (`GET /api/v1/alerts`, `GET /api/v1/alerts/{id}`)
 - Lifecycle actions (`PATCH /api/v1/alerts/{id}/status`)
 
@@ -115,4 +116,5 @@ does not need stage changes for Option A.
 - [`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md) — ownership split
 - [`docs/DFD-MVP.md`](docs/DFD-MVP.md) — data flows (every txn → rule engine in MVP)
 - [`docs/DATABASE_DESIGN.md`](docs/DATABASE_DESIGN.md) — schema (multi-source)
+- [`docs/FRONTEND_BACKEND_HANDOFF.md`](docs/FRONTEND_BACKEND_HANDOFF.md) — frontend/backend context for high-ingestion transaction visibility
 - [`AGENTS.md`](AGENTS.md) — conventions for contributors / agents

@@ -58,6 +58,12 @@ public class Alert {
 	@Column(name = "resolution_notes", length = 1000)
 	private String resolutionNotes;
 
+	@Column(name = "rule_description", length = 500)
+	private String ruleDescription;
+
+	@Column(name = "failing_reason", length = 1000)
+	private String failingReason;
+
 	public Alert() {
 	}
 
@@ -171,6 +177,22 @@ public class Alert {
 
 	public void setResolutionNotes(String resolutionNotes) {
 		this.resolutionNotes = resolutionNotes;
+	}
+
+	public String getRuleDescription() {
+		return ruleDescription;
+	}
+
+	public void setRuleDescription(String ruleDescription) {
+		this.ruleDescription = ruleDescription;
+	}
+
+	public String getFailingReason() {
+		return failingReason;
+	}
+
+	public void setFailingReason(String failingReason) {
+		this.failingReason = failingReason;
 	}
 
 	@Override

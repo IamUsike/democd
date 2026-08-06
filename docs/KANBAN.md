@@ -2,33 +2,44 @@
 
 **Update this file daily.** Move cards between columns as work progresses.  
 Commit message when updating: `chore: kanban update [date]`  
-**Milestones:** [`Project_milestones.md`](../Project_milestones.md) · **Stand-ups:** [`STANDUP_LOG.md`](./STANDUP_LOG.md) · **Stories:** [`STORYLINE_AND_KANBAN.md`](./STORYLINE_AND_KANBAN.md) · **Presentation:** [`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md)
+**Milestones:** [`Project_milestones.md`](../Project_milestones.md) · **Stand-ups:** [`STANDUP_LOG.md`](./STANDUP_LOG.md) · **Stories:** [`STORYLINE_AND_KANBAN.md`](./STORYLINE_AND_KANBAN.md) · **User stories (TMD):** [`USER_STORIES.md`](./USER_STORIES.md) · **Meetings:** [`MEETING_NOTES.md`](./MEETING_NOTES.md) · **Retros:** [`SPRINT_RETROSPECTIVE.md`](./SPRINT_RETROSPECTIVE.md) · **Presentation:** [`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md)
 
 ---
 
-## Board — Sprint 2 (05–11 August 2026)
+## Board — Sprint 2 (05–11 August 2026) — live
 
 ### ✅ DONE
 | Story | Owner | Notes |
 |-------|-------|-------|
-| Skeleton (Spring Boot + Flyway + React placeholder) | ALL | |
-| ER diagram + database design docs | Rameez + shreya | |
-| DFD, storyline, team split docs | IamUsike | |
-| [C-1] AGIL-ish Dark Obsidian UI shell + left nav routing | C | |
-| [C-2] Transaction list UI (filter by source) | C | Live API only |
-| [C-3] Alert list + detail + lifecycle actions UI | C | Live API only |
-| [C-4] KPI strip | C | `GET /api/v1/dashboard` |
-| [A-1] Transaction entity + repository | A | Merged on `dev` |
-| [A-2] POST /transactions ingest | A | + sync rule eval wiring |
-| [A-3] GET /transactions + filters | A | Envelope + `transactionType` |
-| [A-4] Seed BANK/MERCHANT script | A | `scripts/seed-demo.sh` |
-| [A-5] Swagger / OpenAPI | A | `/swagger-ui.html` |
-| [B-1] Rule + RuleEngine + AmountThresholdRule | B | Threshold 10000, strict `>` |
-| [B-2] Wire record → sync rule evaluate | B | |
-| [B-3] Alert entity + alert_transactions | B | Flyway V2 |
-| [B-4] Alert lifecycle endpoints | B | Validated transitions |
-| [B-5] GET /alerts + GET /alerts/{id} | B | |
-| [ALL-1] E2E MVP path (seed → alert → close) | ALL | Software ready; room dry-run = presentation |
+| Skeleton (Spring Boot + Flyway + React placeholder) | ALL | sathwik led scaffold; team aligned packages |
+| ER diagram + database design docs | Rameez + shreya | Rameez ER; shreya schema/API docs |
+| DFD, storyline, team split docs | sathwik + ALL | Architecture narrative; team reviewed |
+| [C-1] AGIL-ish Dark Obsidian UI shell + left nav routing | Rameez | Operator shell |
+| [C-2] Transaction list UI (filter by source) | Rameez | Live API; shreya contract support |
+| [C-3] Alert list + detail + lifecycle actions UI | Rameez | Live API; sathwik lifecycle contract |
+| [C-4] KPI strip | Rameez | UI; KPI API with shreya |
+| [A-1] Transaction entity + repository | shreya | Merged on `dev` |
+| [A-2] POST /transactions ingest | shreya | Ingest contract; sathwik wired eval call-site |
+| [A-3] GET /transactions + filters | shreya | Envelope + `transactionType` |
+| [A-4] Seed BANK/MERCHANT script | shreya | `scripts/seed-demo.sh` |
+| [A-5] Swagger / OpenAPI | shreya | `/swagger-ui.html` |
+| [B-1] Rule + RuleEngine + AmountThresholdRule | sathwik | Threshold 10000, strict `>`; Rameez test fixes |
+| [B-2] Wire record → sync rule evaluate | sathwik + shreya | Call-site in transaction service |
+| [B-3] Alert entity + alert_transactions | sathwik | Flyway V2 |
+| [B-4] Alert lifecycle endpoints | sathwik | Validated transitions |
+| [B-5] GET /alerts + GET /alerts/{id} | sathwik | |
+| [ALL-1] E2E MVP path (seed → alert → close) | ALL | Software ready — demo practiced together |
+| [B-6] VelocityRule (Phase 2) | sathwik | N txns within T mins; tests with Rameez |
+| [B-7] NewPayeeRule (Phase 2) | sathwik | First txn to unseen payee |
+| [B-8] DailyLimitRule (Phase 2) | sathwik | Cumulative daily amount |
+| [C-5] Frontend flat restyle | Rameez | Dark Obsidian tokens, status dots, mono cells |
+| [C-6] Search bar + pause feed button | Rameez | PR #2 merged |
+| [C-7] Dashboard graphs / analytics | Rameez | PR #4 |
+| [B-9] Configurable rules API + Rules UI | Rameez + sathwik | PR #5; Flyway V3 |
+| [T-1] Fix AmountThresholdRuleTest after merge | Rameez | Post-merge cleanup |
+| [T-2] Improve rule test coverage + doc workflow | Rameez | Coverage docs added |
+| Docker/nginx deployment | sathwik + shreya | compose; shreya env example |
+| Jenkins CI update | sathwik | Neueda repo; QA branch tip-offs with shreya |
 
 ---
 
@@ -42,25 +53,75 @@ Commit message when updating: `chore: kanban update [date]`
 ### 🚧 IN PROGRESS
 | Story | Owner | Branch | Started |
 |-------|-------|--------|---------|
-| *(none — Phase 1 complete)* | | | |
+| [QA-1] End-to-end + rule testing + k6 load test | shreya | `e2e_k6_testing` / `dev` | 05 Aug |
+| Login page + superadmin user | sathwik | `dev` | 05 Aug |
 
 ---
 
-### 🟢 READY (Phase 2 — do not start until after presentation dry-run)
-| Story | Owner | Depends on |
-|-------|-------|------------|
-| VelocityRule | B | ALL-1 presented |
-| NewPayeeRule | B | ALL-1 presented |
-| DailyLimitRule | B | ALL-1 presented |
+### 🟢 READY
+| Story | Owner | Depends on / notes |
+|-------|-------|-------------------|
+| Severity levels (HIGH/MEDIUM/LOW) in UI | Rameez | Client ask 05 Aug |
+| Alert status filter + sort in UI | Rameez | API has status filter; client ask 05 Aug |
 
 ---
 
 ### 🔵 BACKLOG
 | Story | Owner | Notes |
 |-------|-------|-------|
-| Rules table + config UI | B + C | Phase 2 |
-| Queue + extract rule engine | B + A | Phase 3 |
+| Queue + extract rule engine | sathwik + shreya | Phase 3 |
 | TLS / masking / audit hardening | ALL | Phase 4 |
+
+---
+
+## Board — Sprint 1 (29 July – 4 August 2026) — archived
+
+Snapshot of the board **at Sprint 1 close** (04 Aug retrospective). Kept for audit / instructor review — do not move cards here; use the Sprint 2 board above.
+
+### ✅ DONE
+| Story | Owner | Notes |
+|-------|-------|-------|
+| Project skeleton (Spring Boot + Flyway + React placeholder) | ALL / sathwik | Booking demo → txnmonitor |
+| Package structure (`api`, `transaction`, `rule`, `alert`, `common`) | sathwik | Matches AGENTS conventions |
+| ER diagram | Rameez | Iterated on feedback |
+| DATABASE_DESIGN + API endpoint docs | shreya + Rameez | |
+| DFD-MVP, storyline, team split, kanban docs | sathwik | 04 Aug |
+| CI scaffolding (Dockerfile, compose, Jenkinsfile) | sathwik | Present early |
+
+### 🔁 REVIEW
+| Story | Owner | Branch | Notes |
+|-------|-------|--------|-------|
+| *(none — no PRs opened in Sprint 1)* | | | |
+
+### 🚧 IN PROGRESS / stuck off-board
+| Story | Owner | Branch | Notes |
+|-------|-------|--------|-------|
+| [A-1] Transaction entity + repository | shreya | `transaction-api` | Code + tests done — **not merged to `dev`** |
+| [A-2] POST /transactions ingest | shreya | `transaction-api` | Same |
+| [A-3] GET /transactions + filters | shreya | `transaction-api` | Same |
+
+### 🟢 READY (planned for Sprint 2 start)
+| Story | Owner | Depends on |
+|-------|-------|------------|
+| Merge `transaction-api` → `dev` | shreya + sathwik | Unblocks B + C |
+| [B-1] Rule + AmountThresholdRule (TDD) | B | A-2 in `dev` |
+| [B-3] Alert entity + alert_transactions | B | — |
+| [C-1] UI shell / routing | C | — |
+
+### 🔵 BACKLOG (rest of MVP at Sprint 1 end)
+| Story | Owner | Notes |
+|-------|-------|-------|
+| [B-2] Wire record → sync evaluate | A + B | |
+| [B-4] Alert lifecycle APIs | B | |
+| [B-5] GET /alerts | B | |
+| [C-2]–[C-4] Txn list, alerts UI, KPIs | C | |
+| [A-4] Seed script · [A-5] Swagger · [ALL-1] E2E demo | shared | |
+| Phase 2–4 parking lot | — | See below |
+
+### Sprint 1 board notes
+- Goal ~40% met in shared `dev` (skeleton + docs); txn API complete but siloed.
+- WIP / merge discipline failed: no PRs, `transaction-api` blocked the team.
+- Full write-up: [`SPRINT_RETROSPECTIVE.md`](./SPRINT_RETROSPECTIVE.md) § Sprint 1.
 
 ---
 
@@ -99,14 +160,13 @@ flowchart TB
 ---
 
 ## Phase 2+ parking lot
-*(Presentation / dry-run first; then pick these up)*
 
 | Phase | Stories |
 |-------|---------|
-| 2 | VelocityRule, NewPayeeRule, DailyLimitRule; rules table + config UI; severity colors |
+| 2 | ~~VelocityRule~~, ~~NewPayeeRule~~, ~~DailyLimitRule~~; rules table + config UI + explanations; severity colors; failing reason; alert status filter/sort; dashboard graphs |
 | 3 | Message queue; extract rule engine; cache; read replica |
 | 4 | TLS; DB encryption; field masking; full audit trail |
 
 ---
 
-*Last updated: 04 August 2026 — Phase 1 MVP demo-ready*
+*Last updated: 06 August 2026 — ownership rebalanced across A/B/C; Sprint 1 board archived; QA + login + client Ready cards in flight*

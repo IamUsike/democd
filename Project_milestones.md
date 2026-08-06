@@ -5,10 +5,12 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Phase 1 — MVP **ready for live demo**
-**Last updated:** 05 August 2026
-**Currently working on:** Phase 2 rules (Velocity, New Payee, Daily Limit) on
-`feature/phase2-rules`. Frontend refactor and E2E/load testing in parallel.
+**Phase:** Phase 2 — additional rules **complete**; QA load test + login + client UI asks in progress  
+**Last updated:** 06 August 2026  
+**Currently working on:**  
+- **shreya (A):** E2E / k6 load testing (QA-1), results write-up  
+- **sathwik (B):** login + superadmin; Actuator/deploy support *(slightly broader B + infra)*  
+- **Rameez (C):** severity colors + alert status filter/sort (client Ready)
 
 ---
 
@@ -60,10 +62,15 @@ evaluate-on-record.
 - [x] `NewPayeeRule` (first transaction to an unseen payee)
 - [x] `DailyLimitRule` (cumulative daily amount)
 - [ ] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
-- [ ] Rules table / parameters + management UI (view; create/edit so
+- [x] Rules table / parameters + management UI (view; create/edit so
   operators can set thresholds — stretch to full authoring)
+- [x] Rule explanations in UI (what each rule checks)
+- [x] Failing reason on alerts (why the rule matched) visible in list/detail
+- [ ] Alert list filter + sort by status in UI
+- [x] Dashboard graphs (trends / counts over time)
 - [ ] Additional team-authored custom rules as needed for the demo
-
+- [ ] QA: E2E + load test write-up (`docs/LOAD_TEST_GUIDE.md` / `load-test-results.md`)
+- [ ] Login page + superadmin (single-operator gate)
 
 
 ## Phase 3 — scale-out (MTTD at volume)
@@ -90,8 +97,9 @@ evaluate-on-record.
 - Machine learning / anomaly detection — not doing this; would eat the
   remaining time budget for low presentation payoff relative to a
   well-scaled, secured system.
-- Authentication / multi-operator support — spec says single operator,
-  no auth required.
+- ~~Authentication / multi-operator support~~ — single-operator login
+  gate added (hardcoded superadmin `admin`/`password`); full multi-user
+  auth remains out of scope.
 - Hard tenancy (separate DB/schema per bank) — soft tenancy only.
 - Live bank/merchant network integrations — simulate via public API.
 
@@ -103,7 +111,10 @@ tenancy; `source_*` / `account_id` / `payee_id` on transactions; MVP
 tables `transactions`, `alerts`, `alert_transactions`. Flows:
 [`docs/DFD-MVP.md`](docs/DFD-MVP.md). Three-person ownership:
 [`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md). Storyline:
-[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). Live board:
+[`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md). User stories (TMD backlog):
+[`docs/USER_STORIES.md`](docs/USER_STORIES.md). Live board:
 [`docs/KANBAN.md`](docs/KANBAN.md). Stand-ups:
-[`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). HLD/LLD diagrams live
+[`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). Client meetings:
+[`docs/MEETING_NOTES.md`](docs/MEETING_NOTES.md). Retrospectives:
+[`docs/SPRINT_RETROSPECTIVE.md`](docs/SPRINT_RETROSPECTIVE.md). HLD/LLD diagrams live
 wherever the team has put them (Miro/Figma/Drive link — *add link here*).
