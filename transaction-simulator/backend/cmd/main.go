@@ -14,8 +14,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 
+	"transaction-simulator/client"
 	"transaction-simulator/config"
 	"transaction-simulator/controller"
+	"transaction-simulator/generator"
+	"transaction-simulator/service"
 	"transaction-simulator/utils"
 )
 
@@ -98,8 +101,44 @@ func buildRouter() chi.Router {
 	healthCtrl := controller.NewHealthController()
 	r.Get("/health", healthCtrl.Check)
 
-	// TODO: register simulation endpoints in future milestones.
+	// Simulator endpoints
+	simCtrl, err := buildSimulatorController()
+	if err != nil {
+		slog.Error("failed to build simulator controller", "error", err)
+	} else {
+		r.Post("/api/simulator/start", simCtrl.Start)
+		r.Post("/api/simulator/stop", simCtrl.Stop)
+		r.Get("/api/simulator/status", simCtrl.Status)
+	}
 
 	return r
+}
+
+// buildSimulatorController builds the simulator controller with all dependencies.
+func buildSimulatorController() (*controller.SimulatorController, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	logger := slog.Default()
+
+	// Create generator with current time as seed
+	gen := generator.New(time.Now().UnixNano(), logger, time.Now)
+
+	// Create transaction client
+	txnClient, err := client.NewTransactionClient(cfg.Target, nil, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create simulator service
+	simService, err := service.NewWithComponents(gen, txnClient, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create and return controller
+	return controller.NewSimulatorController(simService, logger), nil
 }
 
