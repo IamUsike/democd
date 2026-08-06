@@ -105,8 +105,35 @@ so `docker-compose build` picks it up via `${VITE_API_BASE_URL}` in
 [`docker-compose.yml`](docker-compose.yml). The [`Jenkinsfile`](Jenkinsfile)
 does not need stage changes for Option A.
 
+### Phase 3 — dedicated DB VM + async evaluation
+
+Local/dev compose still runs MySQL + RabbitMQ + API + frontend together.
+For production-like deploy (MySQL on a **separate VM**):
+
+```bash
+DB_URL=jdbc:mysql://<DB_VM_IP>:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
+DB_PASS=<password> \
+VITE_API_BASE_URL=http://<APP_VM_IP>:8081 \
+  docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Async rule evaluation is **on** in the `docker` profile (`txnmonitor.evaluation.mode=async`).
+Local `./mvnw spring-boot:run` defaults to **sync** unless you set
+`txnmonitor.evaluation.mode=async` and start RabbitMQ (`docker compose up -d rabbitmq`).
+
+| Surface | URL |
+|---------|-----|
+| RabbitMQ management (dev) | `http://localhost:15672/` (guest/guest) |
+
+Plan: [`.cursor/plans/008-phase3-scale-out.md`](.cursor/plans/008-phase3-scale-out.md)
+
+Full write-up: [`docs/PHASE3_SCALE_OUT.md`](docs/PHASE3_SCALE_OUT.md)  
+DB VM runbook: [`docs/DB_VM_MIGRATION.md`](docs/DB_VM_MIGRATION.md)
+
 ## Docs
 
+- [`docs/PHASE3_SCALE_OUT.md`](docs/PHASE3_SCALE_OUT.md) — Phase 3 async queue, cache, deploy topology
+- [`docs/DB_VM_MIGRATION.md`](docs/DB_VM_MIGRATION.md) — move MySQL to a dedicated VM
 - [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md) — presentation talk track + in-depth system explanation
 - [`Project_milestones.md`](Project_milestones.md) — build order and status
 - [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) — current repo progress (MVP demo-ready)

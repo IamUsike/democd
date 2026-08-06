@@ -5,7 +5,7 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Phase 2 — additional rules **complete**; QA load test + login + client UI asks in progress  
+**Phase:** Phase 3 — async queue + cache **in progress** (worker extract + read replica next)  
 **Last updated:** 06 August 2026  
 **Currently working on:**  
 - **shreya (A):** E2E / k6 load testing (QA-1), results write-up  
@@ -75,11 +75,13 @@ evaluate-on-record.
 
 ## Phase 3 — scale-out (MTTD at volume)
 
-- [ ] Message queue between transaction recording and rule evaluation
+- [x] Message queue between transaction recording and rule evaluation (RabbitMQ; `txnmonitor.evaluation.mode=async`)
+- [x] Cache for velocity/daily-limit count lookups (`txnmonitor.rule-evaluation.cache.enabled`)
+- [x] Internal alert-creation endpoint (`POST /internal/alerts`) for future worker extract
+- [x] Dedicated DB VM compose overlay (`docker-compose.prod.yml` — app + RabbitMQ; external `DB_URL`)
 - [ ] Rule engine extracted as its own deployable, calling back into the
   monolith's internal alert-creation endpoint
 - [ ] Horizontal scaling of rule engine instances demonstrated
-- [ ] Cache for velocity/daily-limit count lookups
 - [ ] Read replica for reporting/dashboard KPI queries
 
 ## Phase 4 — security & hardening
