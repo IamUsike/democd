@@ -41,31 +41,49 @@ class AlertControllerTest {
 	}
 
 	@Test
-	void getAlertsReturnsOkEnvelope() throws Exception {
-		alertService.alertsToReturn = List.of(sampleAlert());
+	void getAlertsReturnsOkPageEnvelope() throws Exception {
+		alertService.pageToReturn = PageResponse.of(List.of(sampleAlert()), 1, 0, 50);
 
 		mockMvc.perform(get("/api/v1/alerts"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.data[0].alertId").value(201))
-				.andExpect(jsonPath("$.data[0].status").value("OPEN"))
-				.andExpect(jsonPath("$.data[0].ruleDescription").value("Triggers when a transaction amount exceeds the configured threshold."))
-				.andExpect(jsonPath("$.data[0].failingReason").value("Transaction amount (25000 INR) exceeded threshold (10000 INR)."));
+				.andExpect(jsonPath("$.data.items[0].alertId").value(201))
+				.andExpect(jsonPath("$.data.items[0].status").value("OPEN"))
+				.andExpect(jsonPath("$.data.items[0].ruleDescription").value(
+						"Triggers when a transaction amount exceeds the configured threshold."))
+				.andExpect(jsonPath("$.data.items[0].failingReason").value(
+						"Transaction amount (25000 INR) exceeded threshold (10000 INR)."))
+				.andExpect(jsonPath("$.data.totalCount").value(1))
+				.andExpect(jsonPath("$.data.page").value(0))
+				.andExpect(jsonPath("$.data.size").value(50))
+				.andExpect(jsonPath("$.data.hasNext").value(false));
 	}
 
 	@Test
 	void getAlertsWithFiltersPassesParams() throws Exception {
-		alertService.alertsToReturn = List.of(sampleAlert());
+		alertService.pageToReturn = PageResponse.of(List.of(sampleAlert()), 1, 0, 25);
 
 		mockMvc.perform(get("/api/v1/alerts")
 						.param("sourceType", "BANK")
 						.param("sourceId", "HSBC-UK")
-						.param("status", "OPEN"))
+						.param("status", "OPEN")
+						.param("severity", "HIGH")
+						.param("accountId", "ACC-1")
+						.param("q", "threshold")
+						.param("page", "1")
+						.param("size", "25")
+						.param("sort", "severity,asc"))
 				.andExpect(status().isOk());
 
 		assertEquals("BANK", alertService.lastSourceType);
 		assertEquals("HSBC-UK", alertService.lastSourceId);
 		assertEquals("OPEN", alertService.lastStatusFilter);
+		assertEquals("HIGH", alertService.lastSeverity);
+		assertEquals("ACC-1", alertService.lastAccountId);
+		assertEquals("threshold", alertService.lastQ);
+		assertEquals(1, alertService.lastPage);
+		assertEquals(25, alertService.lastSize);
+		assertEquals("severity,asc", alertService.lastSort);
 	}
 
 	@Test
@@ -145,7 +163,7 @@ class AlertControllerTest {
 
 	private static final class RecordingAlertService extends AlertService {
 
-		private List<AlertResponse> alertsToReturn = List.of();
+		private PageResponse<AlertResponse> pageToReturn = PageResponse.of(List.of(), 0, 0, 50);
 		private AlertResponse alertToReturn;
 		private Long lastRequestedId;
 		private Long lastUpdatedId;
@@ -153,6 +171,12 @@ class AlertControllerTest {
 		private String lastSourceType;
 		private String lastSourceId;
 		private String lastStatusFilter;
+		private String lastSeverity;
+		private String lastAccountId;
+		private String lastQ;
+		private Integer lastPage;
+		private Integer lastSize;
+		private String lastSort;
 		private boolean throwNotFound;
 		private boolean throwInvalidTransition;
 
@@ -161,11 +185,28 @@ class AlertControllerTest {
 		}
 
 		@Override
-		public List<AlertResponse> getAlerts(String sourceType, String sourceId, String status) {
+		public PageResponse<AlertResponse> getAlerts(
+				String sourceType,
+				String sourceId,
+				String status,
+				String severity,
+				String accountId,
+				String q,
+				LocalDateTime createdFrom,
+				LocalDateTime createdTo,
+				Integer page,
+				Integer size,
+				String sort) {
 			this.lastSourceType = sourceType;
 			this.lastSourceId = sourceId;
 			this.lastStatusFilter = status;
-			return alertsToReturn;
+			this.lastSeverity = severity;
+			this.lastAccountId = accountId;
+			this.lastQ = q;
+			this.lastPage = page;
+			this.lastSize = size;
+			this.lastSort = sort;
+			return pageToReturn;
 		}
 
 		@Override

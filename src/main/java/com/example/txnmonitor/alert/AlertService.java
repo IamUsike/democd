@@ -1,17 +1,21 @@
 package com.example.txnmonitor.alert;
 
 import com.example.txnmonitor.api.AlertResponse;
+import com.example.txnmonitor.api.PageResponse;
+import com.example.txnmonitor.common.PageRequestFactory;
 import com.example.txnmonitor.common.exception.AlertNotFoundException;
 import com.example.txnmonitor.common.exception.InvalidAlertTransitionException;
 import com.example.txnmonitor.rule.RuleMatch;
 import com.example.txnmonitor.transaction.Transaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,6 +24,12 @@ import java.util.Set;
 
 @Service
 public class AlertService {
+
+	private static final Set<String> SORTABLE = Set.of("createdAt", "severity", "status", "alertId");
+	private static final List<String> ACTIVE_STATUSES = List.of(
+			AlertStatus.OPEN.name(),
+			AlertStatus.ACKNOWLEDGED.name(),
+			AlertStatus.INVESTIGATING.name());
 
 	private static final Map<AlertStatus, Set<AlertStatus>> ALLOWED_TRANSITIONS = Map.of(
 			AlertStatus.OPEN, EnumSet.of(AlertStatus.ACKNOWLEDGED),
@@ -68,23 +78,32 @@ public class AlertService {
 		return created;
 	}
 
-	public List<AlertResponse> getAlerts(String sourceType, String sourceId, String status) {
-		List<Alert> alerts;
-		boolean hasSource = hasText(sourceType) && hasText(sourceId);
-		boolean hasStatus = hasText(status);
+	public PageResponse<AlertResponse> getAlerts(
+			String sourceType,
+			String sourceId,
+			String status,
+			String severity,
+			String accountId,
+			String q,
+			LocalDateTime createdFrom,
+			LocalDateTime createdTo,
+			Integer page,
+			Integer size,
+			String sort) {
+		List<String> statuses = resolveStatuses(status);
+		Sort sortSpec = PageRequestFactory.parseSort(sort, "createdAt", SORTABLE);
+		Pageable pageable = PageRequestFactory.create(page, size, sortSpec);
 
-		if (hasSource && hasStatus) {
-			alerts = alertRepository.findBySourceTypeAndSourceIdAndStatusOrderByCreatedAtDesc(
-					sourceType, sourceId, status.toUpperCase(Locale.ROOT));
-		} else if (hasSource) {
-			alerts = alertRepository.findBySourceTypeAndSourceIdOrderByCreatedAtDesc(sourceType, sourceId);
-		} else if (hasStatus) {
-			alerts = alertRepository.findByStatusOrderByCreatedAtDesc(status.toUpperCase(Locale.ROOT));
-		} else {
-			alerts = alertRepository.findAllByOrderByCreatedAtDesc();
-		}
+		Page<Alert> result = alertRepository.findAll(
+				AlertSpecifications.withFilters(
+						sourceType, sourceId, statuses, severity, accountId, q, createdFrom, createdTo),
+				pageable);
 
-		return toResponses(alerts);
+		List<AlertResponse> items = result.getContent().stream()
+				.map(alert -> toResponse(alert, List.of()))
+				.toList();
+
+		return PageResponse.of(items, result.getTotalElements(), result.getNumber(), result.getSize());
 	}
 
 	public AlertResponse getAlertById(Long alertId) {
@@ -142,21 +161,14 @@ public class AlertService {
 		return toResponse(saved, transactionIds);
 	}
 
-	private List<AlertResponse> toResponses(List<Alert> alerts) {
-		if (alerts.isEmpty()) {
-			return List.of();
+	List<String> resolveStatuses(String status) {
+		if (!hasText(status)) {
+			return ACTIVE_STATUSES;
 		}
-
-		List<Long> alertIds = alerts.stream().map(Alert::getAlertId).toList();
-		Map<Long, List<Long>> txnIdsByAlert = new HashMap<>();
-		for (AlertTransaction link : alertTransactionRepository.findByAlertIdIn(alertIds)) {
-			txnIdsByAlert.computeIfAbsent(link.getAlertId(), ignored -> new ArrayList<>())
-					.add(link.getTransactionId());
+		if ("ALL".equalsIgnoreCase(status.trim())) {
+			return null;
 		}
-
-		return alerts.stream()
-				.map(alert -> toResponse(alert, txnIdsByAlert.getOrDefault(alert.getAlertId(), List.of())))
-				.toList();
+		return List.of(status.trim().toUpperCase(Locale.ROOT));
 	}
 
 	private AlertResponse toResponse(Alert alert, List<Long> transactionIds) {

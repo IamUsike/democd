@@ -5,6 +5,7 @@ import com.example.txnmonitor.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/v1/alerts")
@@ -28,12 +29,25 @@ public class AlertController {
 	}
 
 	@GetMapping
-	@Operation(summary = "Get alerts", description = "Returns alerts with optional sourceType/sourceId/status filters.")
-	public ResponseEntity<ApiResponse<List<AlertResponse>>> getAlerts(
+	@Operation(
+			summary = "Get alerts",
+			description = "Returns a paginated alert list. Default status filter is active "
+					+ "(OPEN, ACKNOWLEDGED, INVESTIGATING). Pass status=ALL for history. "
+					+ "List items are summaries (no linked transaction IDs); use GET /{id} for detail.")
+	public ResponseEntity<ApiResponse<PageResponse<AlertResponse>>> getAlerts(
 			@RequestParam(required = false) String sourceType,
 			@RequestParam(required = false) String sourceId,
-			@RequestParam(required = false) String status) {
-		List<AlertResponse> alerts = alertService.getAlerts(sourceType, sourceId, status);
+			@RequestParam(required = false) String status,
+			@RequestParam(required = false) String severity,
+			@RequestParam(required = false) String accountId,
+			@RequestParam(required = false) String q,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdFrom,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdTo,
+			@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer size,
+			@RequestParam(required = false) String sort) {
+		PageResponse<AlertResponse> alerts = alertService.getAlerts(
+				sourceType, sourceId, status, severity, accountId, q, createdFrom, createdTo, page, size, sort);
 		return ResponseEntity.ok(ApiResponse.ok("Alerts retrieved successfully.", alerts));
 	}
 
