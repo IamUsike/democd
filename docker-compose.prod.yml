@@ -1,24 +1,13 @@
+# Production-like deploy: app VM runs API + RabbitMQ + frontend;
+# MySQL runs on a separate DB VM. Set DB_URL to the remote host.
+#
+# Usage:
+#   DB_URL=jdbc:mysql://<DB_VM_IP>:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
+#     docker compose -f docker-compose.prod.yml up -d
+
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8
-    container_name: mysql-container
-    restart: always
-
-    environment:
-      - MYSQL_ROOT_PASSWORD=n3u3da!
-      - MYSQL_DATABASE=txnmonitor
-
-    ports:
-      - "3306:3306"
-
-    volumes:
-      - mysql-data:/var/lib/data
-
-    networks:
-      - springboot-network
-
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq-container
@@ -39,14 +28,13 @@ services:
       - "8081:8081"
 
     depends_on:
-      - mysql
       - rabbitmq
 
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_URL: jdbc:mysql://mysql:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      DB_USER: root
-      DB_PASS: n3u3da!
+      DB_URL: ${DB_URL:?Set DB_URL to the dedicated MySQL VM JDBC URL}
+      DB_USER: ${DB_USER:-root}
+      DB_PASS: ${DB_PASS:?Set DB_PASS}
       SPRING_RABBITMQ_HOST: rabbitmq
 
     networks:
@@ -56,10 +44,6 @@ services:
     build:
       context: ./frontend
       args:
-        # Browser-reachable API URL (baked into the JS bundle).
-        # Local compose default: localhost. On the VM override, e.g.:
-        #   docker compose build --build-arg VITE_API_BASE_URL=http://<VM_IP>:8081 frontend
-        # or set VITE_API_BASE_URL in the environment / .env next to this file.
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8081}
     container_name: txnmonitor-frontend
     restart: always
@@ -72,9 +56,6 @@ services:
 
     networks:
       - springboot-network
-
-volumes:
-  mysql-data:
 
 networks:
   springboot-network:
