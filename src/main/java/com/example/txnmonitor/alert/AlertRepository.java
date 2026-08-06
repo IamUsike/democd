@@ -30,4 +30,8 @@ public interface AlertRepository extends JpaRepository<Alert, Long>, JpaSpecific
 
 	@Query("SELECT a.severity, COUNT(a) FROM Alert a GROUP BY a.severity")
 	List<Object[]> countGroupedBySeverity();
+
+	/** Raw ruleType column values (may be comma-joined for multi-rule alerts). */
+	@Query("SELECT a.ruleType FROM Alert a WHERE a.ruleType IS NOT NULL AND a.ruleType <> ''")
+	List<String> findAllRuleTypes();
 }

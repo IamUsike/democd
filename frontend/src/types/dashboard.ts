@@ -16,4 +16,5 @@ export type DashboardAnalytics = {
   transactionsByStatus: GraphPoint[];
   alertsByStatus: GraphPoint[];
   alertsBySeverity: GraphPoint[];
+  alertsByRuleType: GraphPoint[];
 };

@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -68,6 +69,11 @@ class DashboardControllerTest {
 				new Object[]{"LOW", 4L},
 				new Object[]{"MEDIUM", 5L},
 				new Object[]{"HIGH", 1L}));
+		when(alertRepository.findAllRuleTypes()).thenReturn(List.of(
+				"AMOUNT_THRESHOLD",
+				"AMOUNT_THRESHOLD,VELOCITY",
+				"NEW_PAYEE",
+				"VELOCITY"));
 
 		mockMvc.perform(get("/api/v1/dashboard/analytics"))
 				.andExpect(status().isOk())
@@ -80,6 +86,36 @@ class DashboardControllerTest {
 				.andExpect(jsonPath("$.data.alertsBySeverity[0].label").value("MEDIUM"))
 				.andExpect(jsonPath("$.data.alertsBySeverity[0].value").value(5))
 				.andExpect(jsonPath("$.data.alertsBySeverity[1].label").value("LOW"))
-				.andExpect(jsonPath("$.data.alertsBySeverity[2].label").value("HIGH"));
+				.andExpect(jsonPath("$.data.alertsBySeverity[2].label").value("HIGH"))
+				.andExpect(jsonPath("$.data.alertsByRuleType[0].label").value("AMOUNT_THRESHOLD"))
+				.andExpect(jsonPath("$.data.alertsByRuleType[0].value").value(2))
+				.andExpect(jsonPath("$.data.alertsByRuleType[1].label").value("VELOCITY"))
+				.andExpect(jsonPath("$.data.alertsByRuleType[1].value").value(2))
+				.andExpect(jsonPath("$.data.alertsByRuleType[2].label").value("NEW_PAYEE"))
+				.andExpect(jsonPath("$.data.alertsByRuleType[2].value").value(1));
+	}
+
+	@Test
+	void countByRuleType_splitsCommaJoinedMultiRuleAlerts() {
+		List<GraphPointResponse> points = DashboardController.countByRuleType(java.util.Arrays.asList(
+				"NEW_PAYEE,VELOCITY",
+				"amount_threshold",
+				"  ",
+				null));
+
+		assertEquals(3, points.size());
+		// Same counts → secondary sort by label ascending
+		assertEquals("AMOUNT_THRESHOLD", points.get(0).getLabel());
+		assertEquals(1L, points.get(0).getValue());
+		assertEquals("NEW_PAYEE", points.get(1).getLabel());
+		assertEquals(1L, points.get(1).getValue());
+		assertEquals("VELOCITY", points.get(2).getLabel());
+		assertEquals(1L, points.get(2).getValue());
+	}
+
+	@Test
+	void countByRuleType_emptyInput_returnsEmptyList() {
+		assertEquals(List.of(), DashboardController.countByRuleType(List.of()));
+		assertEquals(List.of(), DashboardController.countByRuleType(null));
 	}
 }

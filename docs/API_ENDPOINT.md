@@ -729,16 +729,16 @@ This endpoint provides aggregated information used to populate dashboard summary
 
 
 
-## 5.2 Dashboard Statistics
+## 5.2 Dashboard Analytics
 
 ### Purpose
 
-Returns statistical data required to display dashboard charts and reports.
+Returns grouped counts for dashboard donut charts (full-table aggregations, not a page sample).
 
 ### Endpoint
 
 ```
-GET /api/v1/dashboard/statistics
+GET /api/v1/dashboard/analytics
 ```
 
 ### HTTP Method
@@ -747,33 +747,32 @@ GET
 
 ### Called By
 
-- Web UI
+- Web UI (Calculate Graphs)
 
 ### Success Response
 
 ```json
 {
   "success": true,
-  "message": "Statistics retrieved successfully.",
+  "message": "Dashboard analytics retrieved successfully.",
   "data": {
-    "transactionsPerDay": [
-      {
-        "date": "2026-08-01",
-        "count": 124
-      },
-      {
-        "date": "2026-08-02",
-        "count": 182
-      }
+    "transactionsByType": [{ "label": "PAYMENT", "value": 10 }],
+    "transactionsByStatus": [{ "label": "COMPLETED", "value": 12 }],
+    "alertsByStatus": [{ "label": "OPEN", "value": 8 }],
+    "alertsBySeverity": [{ "label": "MEDIUM", "value": 5 }],
+    "alertsByRuleType": [
+      { "label": "AMOUNT_THRESHOLD", "value": 2 },
+      { "label": "VELOCITY", "value": 2 }
     ]
   }
 }
 ```
+
 ### Notes
 
+- `alertsByRuleType` splits comma-joined multi-rule `ruleType` values so each rule gets a slice credit.
+- Points are sorted by value descending.
 
-
-This endpoint provides statistical information used to render dashboard charts and reports.
 ---
 
 # 6. Rule APIs
