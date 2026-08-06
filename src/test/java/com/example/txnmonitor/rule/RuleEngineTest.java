@@ -61,6 +61,32 @@ class RuleEngineTest {
 		assertTrue(engine.evaluate(txn, context).isEmpty());
 	}
 
+	@Test
+	void evaluate_disabledConfigurableRule_isSkipped() {
+		AmountThresholdRule rule = new AmountThresholdRule(new BigDecimal("10000"));
+		RuleConfig disabled = new RuleConfig();
+		disabled.setRuleType(AmountThresholdRule.RULE_TYPE);
+		disabled.setEnabled(false);
+		disabled.setAmountThreshold(new BigDecimal("10000"));
+		rule.applyConfig(disabled);
+
+		RuleEngine engine = new RuleEngine(List.of(rule));
+		TransactionSnapshot txn = snapshot(new BigDecimal("20000"));
+
+		assertTrue(engine.evaluate(txn, context).isEmpty());
+	}
+
+	@Test
+	void evaluate_enabledConfigurableRule_stillFires() {
+		AmountThresholdRule rule = new AmountThresholdRule(new BigDecimal("10000"));
+		RuleEngine engine = new RuleEngine(List.of(rule));
+
+		List<RuleMatch> matches = engine.evaluate(snapshot(new BigDecimal("20000")), context);
+
+		assertEquals(1, matches.size());
+		assertEquals("AMOUNT_THRESHOLD", matches.get(0).ruleType());
+	}
+
 	private static TransactionSnapshot snapshot(BigDecimal amount) {
 		return new TransactionSnapshot(TXN_ID, amount, "ACC-1", "PAYEE-1", TIMESTAMP, "DEBIT");
 	}
