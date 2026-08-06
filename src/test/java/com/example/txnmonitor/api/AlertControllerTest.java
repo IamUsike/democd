@@ -87,6 +87,17 @@ class AlertControllerTest {
 	}
 
 	@Test
+	void getAlertsWithStatusAllPassesThrough() throws Exception {
+		alertService.pageToReturn = PageResponse.of(List.of(sampleAlert()), 1, 0, 50);
+
+		mockMvc.perform(get("/api/v1/alerts").param("status", "ALL"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.totalCount").value(1));
+
+		assertEquals("ALL", alertService.lastStatusFilter);
+	}
+
+	@Test
 	void getAlertByIdReturnsOkEnvelope() throws Exception {
 		alertService.alertToReturn = sampleAlert();
 

@@ -174,6 +174,10 @@ public class AlertService {
 		return toResponse(saved, transactionIds);
 	}
 
+	/**
+	 * Map the status query param to a status list for the specification.
+	 * blank → active only; ALL → null (no predicate); otherwise a single uppercased status.
+	 */
 	List<String> resolveStatuses(String status) {
 		if (!hasText(status)) {
 			return ACTIVE_STATUSES;

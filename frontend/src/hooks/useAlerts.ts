@@ -8,6 +8,10 @@ export type StatusFilter = (typeof ALL_STATUSES)[number];
 
 const DEFAULT_SIZE = 50;
 
+/**
+ * Owns alert list filters, pagination, selection, and lifecycle updates.
+ * List rows are summaries; selecting an id lazy-loads full detail.
+ */
 export function useAlerts(initialFilters: AlertFilters = {}) {
   const [filters, setFilters] = useState<AlertFilters>({
     status: '',
@@ -21,6 +25,8 @@ export function useAlerts(initialFilters: AlertFilters = {}) {
     size: DEFAULT_SIZE,
     ...initialFilters,
   });
+
+  // Debounce search so we don't hit the API on every keystroke.
   const debouncedQ = useDebouncedValue(filters.q ?? '', 300);
 
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -33,6 +39,7 @@ export function useAlerts(initialFilters: AlertFilters = {}) {
   const [warning, setWarning] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
 
+  // Strip empty strings so the API applies its own defaults (e.g. active statuses).
   const queryFilters = useMemo(
     () => ({
       sourceType: filters.sourceType || undefined,
@@ -58,6 +65,7 @@ export function useAlerts(initialFilters: AlertFilters = {}) {
     ],
   );
 
+  // Reload list whenever filters / page change. Cancel stale responses on rapid edits.
   useEffect(() => {
     let cancelled = false;
 
@@ -71,6 +79,7 @@ export function useAlerts(initialFilters: AlertFilters = {}) {
         setTotalCount(page.totalCount);
         setHasNext(page.hasNext);
         if (page.items.length > 0) {
+          // Keep selection if it still appears on this page; else select first row.
           setSelectedAlertId((prev) => {
             if (prev != null && page.items.some((a) => a.alertId === prev)) {
               return prev;
@@ -100,6 +109,7 @@ export function useAlerts(initialFilters: AlertFilters = {}) {
     };
   }, [queryFilters]);
 
+  // Detail is a separate fetch (list omits linked transaction ids for payload size).
   useEffect(() => {
     if (selectedAlertId == null) {
       setSelectedAlert(null);

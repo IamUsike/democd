@@ -222,11 +222,56 @@ class AlertServiceTest {
 		assertEquals(
 				List.of("OPEN", "ACKNOWLEDGED", "INVESTIGATING"),
 				alertService.resolveStatuses(null));
+		assertEquals(
+				List.of("OPEN", "ACKNOWLEDGED", "INVESTIGATING"),
+				alertService.resolveStatuses("   "));
 	}
 
 	@Test
 	void resolveStatuses_all_meansNoStatusFilter() {
 		assertEquals(null, alertService.resolveStatuses("ALL"));
+		assertEquals(null, alertService.resolveStatuses("all"));
+	}
+
+	@Test
+	void resolveStatuses_singleStatus_uppercases() {
+		assertEquals(List.of("CLOSED"), alertService.resolveStatuses("closed"));
+		assertEquals(List.of("DISMISSED"), alertService.resolveStatuses("DISMISSED"));
+	}
+
+	@Test
+	void getAlerts_withSeverityAndSearch_queriesRepository() {
+		Alert alert = openAlert(1L);
+		when(alertRepository.findAll(
+				any(org.springframework.data.jpa.domain.Specification.class),
+				any(org.springframework.data.domain.Pageable.class)))
+				.thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(alert)));
+
+		PageResponse<AlertResponse> results = alertService.getAlerts(
+				null, null, "ALL", "HIGH", null, "threshold", null, null, 0, 25, "severity,desc");
+
+		assertEquals(1, results.items().size());
+		assertEquals(1, results.totalCount());
+		assertEquals("HIGH", results.items().get(0).getSeverity());
+		verify(alertRepository).findAll(
+				any(org.springframework.data.jpa.domain.Specification.class),
+				any(org.springframework.data.domain.Pageable.class));
+	}
+
+	@Test
+	void getAlerts_statusClosed_stillReturnsPageEnvelope() {
+		Alert closed = openAlert(2L);
+		closed.setStatus(AlertStatus.CLOSED.name());
+		when(alertRepository.findAll(
+				any(org.springframework.data.jpa.domain.Specification.class),
+				any(org.springframework.data.domain.Pageable.class)))
+				.thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(closed)));
+
+		PageResponse<AlertResponse> results = alertService.getAlerts(
+				null, null, "CLOSED", null, null, null, null, null, 0, 50, null);
+
+		assertEquals(1, results.items().size());
+		assertEquals("CLOSED", results.items().get(0).getStatus());
 	}
 
 	private Transaction sampleTransaction() {

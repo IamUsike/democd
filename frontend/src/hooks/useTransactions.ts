@@ -10,8 +10,13 @@ type UseTransactionsOptions = {
 };
 
 const DEFAULT_SIZE = 50;
+/** Cap in-memory rows when delta-polling so the feed cannot grow without bound. */
 const MAX_FEED_BUFFER = 200;
 
+/**
+ * Paginated transaction browse + optional afterId delta poll for new rows.
+ * Full reload on filter/page change; poll only appends newer ids.
+ */
 export function useTransactions(
   filters: TransactionFilters,
   options: UseTransactionsOptions,
@@ -30,6 +35,7 @@ export function useTransactions(
   const page = filters.page ?? 0;
   const size = filters.size ?? DEFAULT_SIZE;
 
+  // Shared query for page loads and delta polls (poll overrides page/sort/afterId).
   const baseQuery = useMemo(
     () => ({
       sourceType: filters.sourceType || undefined,
@@ -55,7 +61,7 @@ export function useTransactions(
     setRefreshToken((value) => value + 1);
   }, []);
 
-  // Full page load (filters / page / manual refresh)
+  // Full page load when filters, page, or manual refresh token change.
   useEffect(() => {
     let cancelled = false;
 
@@ -93,7 +99,7 @@ export function useTransactions(
     };
   }, [baseQuery, refreshToken]);
 
-  // Delta poll via afterId — does not re-fetch the full page
+  // Delta poll: only rows with transactionId > max seen so far.
   useEffect(() => {
     if (!options.autoRefresh || options.paused) {
       return undefined;

@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Transaction, TransactionFilters } from '../types/transaction';
 import { StatusIndicator } from './StatusIndicator';
 
+/** Props for the live transaction feed (filters, pin, auto-refresh, pager). */
 type TransactionsPanelProps = {
   transactions: Transaction[];
   filters: TransactionFilters;
@@ -22,6 +23,10 @@ type TransactionsPanelProps = {
   onPageChange: (page: number) => void;
 };
 
+/**
+ * Virtualized transaction table with feed controls.
+ * Search covers account/source/payee fuzzy match — no separate Source/Account ID fields.
+ */
 export function TransactionsPanel({
   transactions,
   filters,
@@ -44,6 +49,7 @@ export function TransactionsPanel({
   const newIdsSet = useMemo(() => new Set(newTransactionIds), [newTransactionIds]);
   const page = filters.page ?? 0;
 
+  // Pin moves a matching row to the top of the current page for quick inspection.
   const visibleTransactions = useMemo(() => {
     if (!Number.isFinite(pinnedId)) {
       return transactions;
@@ -106,6 +112,7 @@ export function TransactionsPanel({
         />
       </div>
 
+      {/* Source type + sort only; text search above handles IDs / names. */}
       <div className="filters">
         <label>
           Source Type
@@ -123,28 +130,6 @@ export function TransactionsPanel({
             <option value="BANK">BANK</option>
             <option value="MERCHANT">MERCHANT</option>
           </select>
-        </label>
-
-        <label>
-          Source ID
-          <input
-            value={filters.sourceId ?? ''}
-            onChange={(event) =>
-              onFilterChange({ ...filters, sourceId: event.target.value, page: 0 })
-            }
-            placeholder="HSBC-UK"
-          />
-        </label>
-
-        <label>
-          Account ID
-          <input
-            value={filters.accountId ?? ''}
-            onChange={(event) =>
-              onFilterChange({ ...filters, accountId: event.target.value, page: 0 })
-            }
-            placeholder="ACC1001"
-          />
         </label>
 
         <label>

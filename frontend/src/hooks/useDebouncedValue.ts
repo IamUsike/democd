@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+/** Delay propagating a rapidly changing value (e.g. search box → API). */
 export function useDebouncedValue<T>(value: T, delayMs = 300): T {
   const [debounced, setDebounced] = useState(value);
 

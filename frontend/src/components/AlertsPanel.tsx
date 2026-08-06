@@ -14,6 +14,11 @@ type AlertsPanelProps = {
   onPageChange: (page: number) => void;
 };
 
+/**
+ * Paginated alert list with virtual scrolling.
+ * Only visible rows are mounted; parent `.virtual-list` must have a fixed height
+ * so this div — not the page — is the scroll container.
+ */
 export function AlertsPanel({
   alerts,
   selectedAlertId,
@@ -25,11 +30,20 @@ export function AlertsPanel({
   onPageChange,
 }: AlertsPanelProps) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const showSkeleton = loading && alerts.length === 0;
+  const rowCount = showSkeleton ? 8 : alerts.length;
+
+  // Absolute-positioned rows inside a tall inner spacer = O(visible) DOM nodes.
   const rowVirtualizer = useVirtualizer({
-    count: loading && alerts.length === 0 ? 8 : alerts.length,
+    count: rowCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 88,
-    overscan: 6,
+    estimateSize: () => 96,
+    overscan: 8,
+    // Measure real multi-rule row heights (Firefox falls back to estimateSize).
+    measureElement:
+      typeof window !== 'undefined' && !navigator.userAgent.includes('Firefox')
+        ? (element) => element.getBoundingClientRect().height
+        : undefined,
   });
 
   return (
@@ -42,7 +56,7 @@ export function AlertsPanel({
       </header>
 
       <div className="alerts-list virtual-list" ref={parentRef}>
-        {loading && alerts.length === 0 ? (
+        {showSkeleton ? (
           <div
             className="virtual-list-inner"
             style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
@@ -50,6 +64,8 @@ export function AlertsPanel({
             {rowVirtualizer.getVirtualItems().map((virtualRow) => (
               <div
                 key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={rowVirtualizer.measureElement}
                 className="skeleton-row alert-skeleton"
                 style={{
                   position: 'absolute',
@@ -62,7 +78,7 @@ export function AlertsPanel({
               />
             ))}
           </div>
-        ) : (
+        ) : alerts.length > 0 ? (
           <div
             className="virtual-list-inner"
             style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
@@ -74,6 +90,8 @@ export function AlertsPanel({
                 <button
                   key={alert.alertId}
                   type="button"
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
                   className={`alert-item${selectedAlertId === alert.alertId ? ' active' : ''}`}
                   onClick={() => onSelect(alert.alertId)}
                   style={{
@@ -81,7 +99,6 @@ export function AlertsPanel({
                     top: 0,
                     left: 0,
                     width: '100%',
-                    height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
@@ -115,9 +132,8 @@ export function AlertsPanel({
               );
             })}
           </div>
-        )}
-        {!loading && alerts.length === 0 && (
-          <p className="muted alerts-empty">No alerts match filters.</p>
+        ) : (
+          !loading && <p className="muted alerts-empty">No alerts match filters.</p>
         )}
       </div>
 
