@@ -10,7 +10,42 @@ type DashboardGraphsProps = {
   onShowDemo: () => void;
 };
 
-const PIE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const COLOR_PALETTE: Record<string, string> = {
+  // Severity Level Colors
+  HIGH: '#ef4444',
+  MEDIUM: '#f59e0b',
+  LOW: '#10b981',
+
+  // Alert Lifecycle Status Colors
+  OPEN: '#f59e0b',
+  ACKNOWLEDGED: '#3b82f6',
+  INVESTIGATING: '#8b5cf6',
+  CLOSED: '#10b981',
+  DISMISSED: '#64748b',
+
+  // Transaction Status Colors
+  COMPLETED: '#10b981',
+  SUCCESS: '#10b981',
+  PENDING: '#f59e0b',
+  FAILED: '#ef4444',
+  REJECTED: '#ef4444',
+
+  // Transaction Types / Sources
+  PAYMENT: '#3b82f6',
+  TRANSFER: '#6366f1',
+  REFUND: '#06b6d4',
+  DEBIT: '#8b5cf6',
+  CREDIT: '#10b981',
+  BANK: '#3b82f6',
+  MERCHANT: '#ec4899',
+};
+
+const FALLBACK_COLORS = ['#3b82f6', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+function getPointColor(label: string, index: number): string {
+  const upperKey = label.trim().toUpperCase();
+  return COLOR_PALETTE[upperKey] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+}
 
 /** Largest-remainder percentages so legend values always sum to 100 when total > 0. */
 function percentageShares(values: number[]): number[] {
@@ -73,7 +108,7 @@ function GraphBlock({ title, points }: { title: string; points: GraphPoint[] }) 
                     r={radius}
                     strokeWidth="14"
                     fill="none"
-                    stroke={PIE_COLORS[index % PIE_COLORS.length]}
+                    stroke={getPointColor(point.label, index)}
                     strokeDasharray={`${sliceSize} ${circumference - sliceSize}`}
                     strokeDashoffset={-sliceOffset}
                     strokeLinecap="butt"
@@ -88,7 +123,7 @@ function GraphBlock({ title, points }: { title: string; points: GraphPoint[] }) 
               <div key={point.label} className="analytics-legend-row">
                 <span
                   className="analytics-legend-dot"
-                  style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                  style={{ backgroundColor: getPointColor(point.label, index) }}
                   aria-hidden="true"
                 />
                 <span className="analytics-legend-label">{point.label}</span>
