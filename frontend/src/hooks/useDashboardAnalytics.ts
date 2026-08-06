@@ -8,12 +8,14 @@ export function useDashboardAnalytics() {
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [lastCalculatedAt, setLastCalculatedAt] = useState<Date | null>(null);
-  const [source, setSource] = useState<AnalyticsSource>('LIVE');
+  const [source, setSource] = useState<AnalyticsSource | null>(null);
 
   async function calculateGraphs() {
     setLoading(true);
     setWarning(null);
+    setInfoMessage(null);
 
     try {
       const next = await getDashboardAnalytics();
@@ -28,7 +30,8 @@ export function useDashboardAnalytics() {
   }
 
   function calculateDemoGraphs() {
-    setWarning('Showing demo graph preview data.');
+    setWarning(null);
+    setInfoMessage('Showing demo graph preview data.');
     setAnalytics(getDemoDashboardAnalytics());
     setLastCalculatedAt(new Date());
     setSource('DEMO');
@@ -38,6 +41,7 @@ export function useDashboardAnalytics() {
     analytics,
     loading,
     warning,
+    infoMessage,
     lastCalculatedAt,
     source,
     calculateGraphs,
