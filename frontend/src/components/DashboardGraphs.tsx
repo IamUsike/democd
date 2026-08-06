@@ -34,6 +34,12 @@ const COLOR_PALETTE: Record<string, string> = {
   CLOSED: '#10b981',
   DISMISSED: '#64748b',
 
+  // Rule types (alerts-by-rule pie)
+  AMOUNT_THRESHOLD: '#ef4444',
+  VELOCITY: '#38bdf8',
+  NEW_PAYEE: '#c084fc',
+  DAILY_LIMIT: '#f472b6',
+
   // Transaction Status Colors
   COMPLETED: '#10b981',
   SUCCESS: '#10b981',
@@ -247,7 +253,8 @@ export function DashboardGraphs({
           <GraphBlock title="Transactions by Type" points={analytics.transactionsByType} />
           <GraphBlock title="Transactions by Status" points={analytics.transactionsByStatus} />
           <GraphBlock title="Alerts by Status" points={analytics.alertsByStatus} />
-          <GraphBlock title="Alerts by Severity" points={analytics.alertsBySeverity} />
+          <GraphBlock title="Alerts by severity level" points={analytics.alertsBySeverity} />
+          <GraphBlock title="Alerts by rule" points={analytics.alertsByRuleType ?? []} />
         </div>
       )}
     </section>

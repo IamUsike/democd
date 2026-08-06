@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
@@ -49,8 +52,36 @@ public class DashboardController {
 				toGraphPoints(transactionRepository.countGroupedByType()),
 				toGraphPoints(transactionRepository.countGroupedByStatus()),
 				toGraphPoints(alertRepository.countGroupedByStatus()),
-				toGraphPoints(alertRepository.countGroupedBySeverity()));
+				toGraphPoints(alertRepository.countGroupedBySeverity()),
+				countByRuleType(alertRepository.findAllRuleTypes()));
 		return ResponseEntity.ok(ApiResponse.ok("Dashboard analytics retrieved successfully.", analytics));
+	}
+
+	/**
+	 * Split comma-joined multi-rule values so each rule type gets a slice credit.
+	 * Package-visible for unit tests.
+	 */
+	static List<GraphPointResponse> countByRuleType(List<String> rawRuleTypes) {
+		Map<String, Long> counts = new HashMap<>();
+		if (rawRuleTypes != null) {
+			for (String raw : rawRuleTypes) {
+				if (raw == null || raw.isBlank()) {
+					continue;
+				}
+				for (String part : raw.split(",")) {
+					String token = part.trim().toUpperCase(Locale.ROOT);
+					if (token.isEmpty()) {
+						continue;
+					}
+					counts.merge(token, 1L, Long::sum);
+				}
+			}
+		}
+		return counts.entrySet().stream()
+				.map(entry -> new GraphPointResponse(entry.getKey(), entry.getValue()))
+				.sorted(Comparator.comparingLong(GraphPointResponse::getValue).reversed()
+						.thenComparing(GraphPointResponse::getLabel))
+				.toList();
 	}
 
 	private static List<GraphPointResponse> toGraphPoints(List<Object[]> rows) {

@@ -7,7 +7,7 @@ import type { DashboardAnalytics, DashboardSummary, GraphPoint } from '../types/
 function toGraphPoints(counts: Record<string, number>): GraphPoint[] {
   return Object.entries(counts)
     .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value);
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
 }
 
 function countBy(values: string[]): Record<string, number> {
@@ -16,6 +16,20 @@ function countBy(values: string[]): Record<string, number> {
     acc[key] = (acc[key] ?? 0) + 1;
     return acc;
   }, {});
+}
+
+/** Split multi-rule alerts so each rule type gets credit (matches backend). */
+function ruleTypeTokens(alert: Alert): string[] {
+  if (alert.ruleTypes && alert.ruleTypes.length > 0) {
+    return alert.ruleTypes.map((token) => token.trim().toUpperCase()).filter(Boolean);
+  }
+  if (alert.ruleType) {
+    return alert.ruleType
+      .split(',')
+      .map((token) => token.trim().toUpperCase())
+      .filter(Boolean);
+  }
+  return ['UNKNOWN'];
 }
 
 function aggregateAnalytics(
@@ -34,6 +48,9 @@ function aggregateAnalytics(
     ),
     alertsBySeverity: toGraphPoints(
       countBy(alerts.map((alert) => alert.severity)),
+    ),
+    alertsByRuleType: toGraphPoints(
+      countBy(alerts.flatMap((alert) => ruleTypeTokens(alert))),
     ),
   };
 }

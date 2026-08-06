@@ -8,6 +8,7 @@ public class DashboardAnalyticsResponse {
 	private List<GraphPointResponse> transactionsByStatus;
 	private List<GraphPointResponse> alertsByStatus;
 	private List<GraphPointResponse> alertsBySeverity;
+	private List<GraphPointResponse> alertsByRuleType;
 
 	public DashboardAnalyticsResponse() {
 	}
@@ -16,11 +17,13 @@ public class DashboardAnalyticsResponse {
 			List<GraphPointResponse> transactionsByType,
 			List<GraphPointResponse> transactionsByStatus,
 			List<GraphPointResponse> alertsByStatus,
-			List<GraphPointResponse> alertsBySeverity) {
+			List<GraphPointResponse> alertsBySeverity,
+			List<GraphPointResponse> alertsByRuleType) {
 		this.transactionsByType = transactionsByType;
 		this.transactionsByStatus = transactionsByStatus;
 		this.alertsByStatus = alertsByStatus;
 		this.alertsBySeverity = alertsBySeverity;
+		this.alertsByRuleType = alertsByRuleType;
 	}
 
 	public List<GraphPointResponse> getTransactionsByType() {
@@ -53,5 +56,13 @@ public class DashboardAnalyticsResponse {
 
 	public void setAlertsBySeverity(List<GraphPointResponse> alertsBySeverity) {
 		this.alertsBySeverity = alertsBySeverity;
+	}
+
+	public List<GraphPointResponse> getAlertsByRuleType() {
+		return alertsByRuleType;
+	}
+
+	public void setAlertsByRuleType(List<GraphPointResponse> alertsByRuleType) {
+		this.alertsByRuleType = alertsByRuleType;
 	}
 }
