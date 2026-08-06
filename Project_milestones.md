@@ -14,7 +14,7 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 **Closed today (checklist):** interactive dashboard · rules edit/explain · alert status filter/sort · failing reason · severity · E2E/benchmarks write-up · pagination/`afterId` · virtual alert scroll · multi-rule alerts · search fixes · UI theme · “Mark suspicious” dropped  
 
-**Talk track:** [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) · **Load numbers:** [`docs/load-test-results.md`](docs/load-test-results.md)
+**Talk track:** [`FINAL-PRESENTATION.md`](FINAL-PRESENTATION.md) (10 min final) · [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) · **Load numbers:** [`docs/load-test-results.md`](docs/load-test-results.md)
 
 ---
 
