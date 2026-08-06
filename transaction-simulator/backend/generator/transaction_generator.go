@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"transaction-simulator/model"
@@ -43,7 +44,21 @@ const (
 	ScenarioDailyLimit      ScenarioID = "DAILY_LIMIT"
 	ScenarioSoftTenancyMix  ScenarioID = "SOFT_TENANCY_MIX"
 	ScenarioMVPSeed         ScenarioID = "MVP_SEED"
+	ScenarioMultiRule       ScenarioID = "MULTI_RULE"
 )
+
+// RuleType is a monitoring rule id that MULTI_RULE can target.
+type RuleType string
+
+const (
+	RuleAmountThreshold RuleType = "AMOUNT_THRESHOLD"
+	RuleVelocity        RuleType = "VELOCITY"
+	RuleNewPayee        RuleType = "NEW_PAYEE"
+	RuleDailyLimit      RuleType = "DAILY_LIMIT"
+)
+
+// DefaultMultiRules is used when MULTI_RULE is started without an explicit rules list.
+var DefaultMultiRules = []RuleType{RuleAmountThreshold, RuleNewPayee}
 
 // FraudPattern identifies the specific suspicious behaviour to simulate.
 type FraudPattern int
@@ -125,11 +140,22 @@ var (
 	knownSources = []sourceRef{
 		{model.SourceTypeBank, "HSBC-UK", "HSBC United Kingdom"},
 		{model.SourceTypeBank, "JPM-US", "JPMorgan Chase"},
+		{model.SourceTypeBank, "BARCLAYS-UK", "Barclays"},
+		{model.SourceTypeBank, "DBS-SG", "DBS Bank Singapore"},
+		{model.SourceTypeBank, "HDFC-IN", "HDFC Bank"},
+		{model.SourceTypeBank, "Citi-US", "Citibank"},
 		{model.SourceTypeMerchant, "ACME-POS", "ACME Payments"},
+		{model.SourceTypeMerchant, "STRIPE-EU", "Stripe Europe"},
+		{model.SourceTypeMerchant, "SQUARE-US", "Square"},
+		{model.SourceTypeMerchant, "RAZORPAY-IN", "Razorpay"},
+		{model.SourceTypeMerchant, "SHOPIFY-CA", "Shopify Payments"},
 	}
 
 	knownAccountIDs = []string{
 		"ACC10001", "ACC10002", "ACC10003", "ACC10004", "ACC10005",
+		"ACC10006", "ACC10007", "ACC10008", "ACC10009", "ACC10010",
+		"ACC20011", "ACC20012", "ACC20013", "ACC20014", "ACC20015",
+		"ACC30021", "ACC30022", "ACC30023", "ACC30024", "ACC30025",
 	}
 
 	knownPayees = []payeeRef{
@@ -138,9 +164,40 @@ var (
 		{"PAYEE10003", "Walmart"},
 		{"PAYEE10004", "Apple"},
 		{"PAYEE10005", "Google"},
+		{"PAYEE10006", "Spotify"},
+		{"PAYEE10007", "Uber"},
+		{"PAYEE10008", "Starbucks"},
+		{"PAYEE10009", "IKEA"},
+		{"PAYEE10010", "Tesla"},
+		{"PAYEE10011", "Microsoft"},
+		{"PAYEE10012", "Adobe"},
+		{"PAYEE10013", "Shopify"},
+		{"PAYEE10014", "Target"},
+		{"PAYEE10015", "Costco"},
+		{"PAYEE10016", "Airbnb"},
+		{"PAYEE10017", "Delta Airlines"},
+		{"PAYEE10018", "Shell Fuel"},
+		{"PAYEE10019", "Whole Foods"},
+		{"PAYEE10020", "Best Buy"},
+		{"PAYEE10021", "PayPal Transfer"},
+		{"PAYEE10022", "Wise FX"},
+		{"PAYEE10023", "Local Bakery Co"},
+		{"PAYEE10024", "Metro Transit"},
+		{"PAYEE10025", "City Utilities"},
 	}
 
-	knownCurrencies = []string{"USD", "EUR", "INR"}
+	// Fragments for synthetic “new payee” display names (not in knownPayees).
+	newPayeePrefixes = []string{
+		"Nova", "Apex", "Bright", "Cedar", "Delta", "Echo", "Forge", "Grove",
+		"Harbor", "Ivory", "Jade", "Kite", "Lumen", "Maple", "North", "Orbit",
+		"Prism", "Quill", "Ridge", "Summit",
+	}
+	newPayeeSuffixes = []string{
+		"Labs", "Trading", "Goods", "Services", "Holdings", "Retail",
+		"Partners", "Ventures", "Supply", "Group", "LLC", "Ltd",
+	}
+
+	knownCurrencies = []string{"USD", "EUR", "INR", "GBP", "SGD", "AED"}
 
 	knownTxnTypes = []model.TransactionType{
 		model.TransactionTypeDebit,
@@ -153,6 +210,29 @@ var (
 		{"New York", 40.7128, -74.0060},
 		{"Mumbai", 19.0760, 72.8777},
 		{"Singapore", 1.3521, 103.8198},
+		{"Frankfurt", 50.1109, 8.6821},
+		{"Tokyo", 35.6762, 139.6503},
+		{"Sydney", -33.8688, 151.2093},
+		{"Toronto", 43.6532, -79.3832},
+		{"Dubai", 25.2048, 55.2708},
+		{"São Paulo", -23.5505, -46.6333},
+		{"Berlin", 52.5200, 13.4050},
+		{"Chicago", 41.8781, -87.6298},
+	}
+
+	knownDescriptions = []string{
+		"Regular payment",
+		"Card purchase",
+		"Online order",
+		"Subscription renewal",
+		"ATM withdrawal",
+		"Wire transfer",
+		"POS sale",
+		"Bill payment",
+		"Payroll credit",
+		"Refund",
+		"Peer transfer",
+		"Travel booking",
 	}
 )
 
@@ -160,11 +240,47 @@ var (
 func IsValidScenario(id ScenarioID) bool {
 	switch id {
 	case ScenarioAmountThreshold, ScenarioVelocity, ScenarioNewPayee,
-		ScenarioDailyLimit, ScenarioSoftTenancyMix, ScenarioMVPSeed:
+		ScenarioDailyLimit, ScenarioSoftTenancyMix, ScenarioMVPSeed,
+		ScenarioMultiRule:
 		return true
 	default:
 		return false
 	}
+}
+
+// IsValidRuleType reports whether id is a selectable monitoring rule.
+func IsValidRuleType(id RuleType) bool {
+	switch id {
+	case RuleAmountThreshold, RuleVelocity, RuleNewPayee, RuleDailyLimit:
+		return true
+	default:
+		return false
+	}
+}
+
+// NormalizeMultiRules deduplicates and validates a MULTI_RULE selection.
+// Empty input returns DefaultMultiRules. Requires at least two distinct rules.
+func NormalizeMultiRules(rules []RuleType) ([]RuleType, error) {
+	if len(rules) == 0 {
+		return append([]RuleType(nil), DefaultMultiRules...), nil
+	}
+	seen := make(map[RuleType]bool, len(rules))
+	out := make([]RuleType, 0, len(rules))
+	for _, r := range rules {
+		r = RuleType(strings.ToUpper(strings.TrimSpace(string(r))))
+		if !IsValidRuleType(r) {
+			return nil, fmt.Errorf("unsupported rule %q", r)
+		}
+		if seen[r] {
+			continue
+		}
+		seen[r] = true
+		out = append(out, r)
+	}
+	if len(out) < 2 {
+		return nil, fmt.Errorf("multi-rule requires at least 2 distinct rules, got %d", len(out))
+	}
+	return out, nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,7 +356,8 @@ func (g *Generator) GenerateTimedSequence(mode SimulationMode, opts GenerateOpti
 }
 
 // GenerateScenario builds a deterministic demo pack.
-func (g *Generator) GenerateScenario(scenario ScenarioID) []TimedTransaction {
+// For MULTI_RULE, pass the selected rules (nil/empty → Amount + New Payee).
+func (g *Generator) GenerateScenario(scenario ScenarioID, rules []RuleType) []TimedTransaction {
 	switch scenario {
 	case ScenarioAmountThreshold:
 		return []TimedTransaction{{Transaction: g.scenarioAmountThreshold()}}
@@ -254,6 +371,13 @@ func (g *Generator) GenerateScenario(scenario ScenarioID) []TimedTransaction {
 		return g.scenarioSoftTenancyMix()
 	case ScenarioMVPSeed:
 		return g.scenarioMVPSeed()
+	case ScenarioMultiRule:
+		normalized, err := NormalizeMultiRules(rules)
+		if err != nil {
+			g.logger.Warn("invalid multi-rule selection", "error", err)
+			return nil
+		}
+		return g.scenarioMultiRule(normalized)
 	default:
 		g.logger.Warn("unknown scenario", "scenario", string(scenario))
 		return nil
@@ -325,6 +449,65 @@ func (g *Generator) scenarioAmountThreshold() model.Transaction {
 	return tx
 }
 
+// scenarioMultiRule builds a sequence that should trip every selected rule.
+func (g *Generator) scenarioMultiRule(rules []RuleType) []TimedTransaction {
+	want := map[RuleType]bool{}
+	for _, r := range rules {
+		want[r] = true
+	}
+
+	needBurst := want[RuleVelocity] || want[RuleDailyLimit]
+	count := 1
+	if needBurst {
+		count = 6
+	}
+
+	base := g.now()
+	accountID := "ACC-SCENARIO-MULTI-001"
+	payeeID := "PAYEE10001"
+	payeeName := "Amazon"
+	if want[RuleNewPayee] {
+		payeeID, payeeName = g.inventNewPayee()
+	}
+
+	out := make([]TimedTransaction, count)
+	for i := range out {
+		tx := g.generateNormal(GenerateOptions{})
+		tx.AccountID = accountID
+		tx.PayeeID = payeeID
+		tx.PayeeName = ptrOf(payeeName)
+		tx.Type = model.TransactionTypeTransfer
+		tx.Timestamp = model.LocalDateTime{Time: base.Add(time.Duration(i) * 150 * time.Millisecond)}
+		tx.Description = ptrOf(fmt.Sprintf("Scenario MULTI_RULE — %v", rules))
+		tx.Amount = multiRuleAmount(want, i, count, g)
+
+		delay := time.Duration(0)
+		if i > 0 {
+			delay = 100 * time.Millisecond
+		}
+		out[i] = TimedTransaction{Transaction: tx, DelayBefore: delay}
+	}
+	return out
+}
+
+func multiRuleAmount(want map[RuleType]bool, index, count int, g *Generator) float64 {
+	switch {
+	case want[RuleDailyLimit] && want[RuleAmountThreshold]:
+		// Each leg over amount threshold; sum (6×12k) exceeds daily limit.
+		return 12_000
+	case want[RuleDailyLimit]:
+		// Stay under amount threshold while summing past 50k.
+		return 9_000
+	case want[RuleAmountThreshold] && count == 1:
+		return g.roundedAmount(25_000, 75_000)
+	case want[RuleAmountThreshold] && index == count-1:
+		// Quiet legs first (velocity), then a high-value final txn.
+		return g.roundedAmount(25_000, 75_000)
+	default:
+		return g.roundedAmount(500, 2_000)
+	}
+}
+
 func (g *Generator) scenarioVelocity() []TimedTransaction {
 	const count = 6
 	base := g.now()
@@ -344,12 +527,23 @@ func (g *Generator) scenarioVelocity() []TimedTransaction {
 	return out
 }
 
+func (g *Generator) inventNewPayee() (id string, name string) {
+	g.seq++
+	id = fmt.Sprintf("PAYEE-NEW-%d-%d", g.now().UnixNano(), g.seq)
+	name = fmt.Sprintf("%s %s %d",
+		pick(g.r, newPayeePrefixes),
+		pick(g.r, newPayeeSuffixes),
+		g.seq%1000,
+	)
+	return id, name
+}
+
 func (g *Generator) scenarioNewPayee() model.Transaction {
 	tx := g.generateNormal(GenerateOptions{})
-	g.seq++
+	payeeID, payeeName := g.inventNewPayee()
 	tx.AccountID = "ACC-SCENARIO-PAY-001"
-	tx.PayeeID = fmt.Sprintf("PAYEE-NEW-%d-%d", g.now().UnixNano(), g.seq)
-	tx.PayeeName = ptrOf(fmt.Sprintf("Unseen Payee %d", g.seq))
+	tx.PayeeID = payeeID
+	tx.PayeeName = ptrOf(payeeName)
 	tx.Amount = g.roundedAmount(100, 2_000)
 	tx.Description = ptrOf("Scenario NEW_PAYEE — first transaction to unseen payee")
 	return tx
@@ -472,7 +666,7 @@ func (g *Generator) generateNormal(opts GenerateOptions) model.Transaction {
 		Location:    ptrOf(loc.Name),
 		Latitude:    ptrOf(loc.Latitude),
 		Longitude:   ptrOf(loc.Longitude),
-		Description: ptrOf("Regular payment"),
+		Description: ptrOf(pick(g.r, knownDescriptions)),
 		Status:      model.TransactionStatusCompleted,
 	}
 }
@@ -555,10 +749,10 @@ func (g *Generator) generateRapidSequence(count int, opts GenerateOptions) []mod
 
 func (g *Generator) generateNewPayee(opts GenerateOptions) model.Transaction {
 	tx := g.generateNormal(opts)
-	g.seq++
+	payeeID, payeeName := g.inventNewPayee()
 	tx.AccountID = "ACC-FRAUD-PAY-001"
-	tx.PayeeID = fmt.Sprintf("PAYEE-NEW-%d-%d", g.now().UnixNano(), g.seq)
-	tx.PayeeName = ptrOf(fmt.Sprintf("Unseen Payee %d", g.seq))
+	tx.PayeeID = payeeID
+	tx.PayeeName = ptrOf(payeeName)
 	tx.Amount = g.roundedAmount(100, 2_000)
 	tx.Description = ptrOf("New payee fraud — unseen counterparty")
 	return tx

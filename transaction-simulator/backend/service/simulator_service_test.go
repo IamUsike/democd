@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"sync"
@@ -66,7 +67,7 @@ func (m *mockGenerator) GenerateTimedSequence(mode generator.SimulationMode, opt
 	return []generator.TimedTransaction{{Transaction: tx}}
 }
 
-func (m *mockGenerator) GenerateScenario(scenario generator.ScenarioID) []generator.TimedTransaction {
+func (m *mockGenerator) GenerateScenario(scenario generator.ScenarioID, rules []generator.RuleType) []generator.TimedTransaction {
 	payeeName := "Scenario Payee"
 	tx := model.Transaction{
 		SourceType:  model.SourceTypeBank,
@@ -98,6 +99,11 @@ func (m *mockGenerator) GenerateScenario(scenario generator.ScenarioID) []genera
 			{Transaction: tx},
 			{Transaction: merch, DelayBefore: 5 * time.Millisecond},
 		}
+	case generator.ScenarioMultiRule:
+		if len(rules) >= 2 {
+			tx.Description = ptrOf(fmt.Sprintf("multi:%d", len(rules)))
+		}
+		return []generator.TimedTransaction{{Transaction: tx}}
 	default:
 		return []generator.TimedTransaction{{Transaction: tx}}
 	}
@@ -171,10 +177,14 @@ func TestNewSimulatorService_RequiresDependencies(t *testing.T) {
 func TestStartSimulation_ValidatesRequest(t *testing.T) {
 	svc := newTestService(t, &mockGenerator{}, &mockSender{})
 
+	badFailed := -1
+	badFailedHigh := 101
 	cases := []SimulationRequest{
 		{Kind: generator.KindTraffic, TPS: 0, Duration: 1, Mode: generator.ModeNormal},
 		{Kind: generator.KindTraffic, TPS: 100, Duration: 0, Mode: generator.ModeNormal},
 		{Kind: generator.KindTraffic, TPS: 100, Duration: 1, Mode: generator.SimulationMode("UNKNOWN")},
+		{Kind: generator.KindTraffic, TPS: 10, Duration: 1, Mode: generator.ModeNormal, FailedPercent: &badFailed},
+		{Kind: generator.KindTraffic, TPS: 10, Duration: 1, Mode: generator.ModeNormal, FailedPercent: &badFailedHigh},
 		{Kind: generator.KindScenario},
 		{Kind: generator.KindScenario, Scenario: generator.ScenarioID("NOPE")},
 	}
@@ -182,6 +192,38 @@ func TestStartSimulation_ValidatesRequest(t *testing.T) {
 	for _, tc := range cases {
 		if err := svc.Start(tc); err == nil {
 			t.Fatalf("expected validation error for request %+v", tc)
+		}
+	}
+}
+
+func TestStartTraffic_FailedPercentMarksStatus(t *testing.T) {
+	sender := &mockSender{}
+	svc := newTestService(t, &mockGenerator{}, sender)
+	failedPct := 100
+
+	err := svc.Start(SimulationRequest{
+		Kind:          generator.KindTraffic,
+		TPS:           10,
+		Duration:      2,
+		Mode:          generator.ModeNormal,
+		FailedPercent: &failedPct,
+	})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	waitFor(t, 2*time.Second, func() bool {
+		return !svc.Metrics().Running
+	}, "traffic to finish")
+
+	if sender.sentCount() == 0 {
+		t.Fatal("expected some transactions to be sent")
+	}
+	sender.mu.Lock()
+	defer sender.mu.Unlock()
+	for i, tx := range sender.sent {
+		if tx.Status != model.TransactionStatusFailed {
+			t.Fatalf("tx[%d]: want FAILED status with failedPercent=100, got %s", i, tx.Status)
 		}
 	}
 }

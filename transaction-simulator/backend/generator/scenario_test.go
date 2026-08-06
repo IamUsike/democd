@@ -11,7 +11,7 @@ import (
 
 func TestGenerateScenario_AmountThreshold(t *testing.T) {
 	g := newGen(t)
-	seq := g.GenerateScenario(generator.ScenarioAmountThreshold)
+	seq := g.GenerateScenario(generator.ScenarioAmountThreshold, nil)
 	if len(seq) != 1 {
 		t.Fatalf("AMOUNT_THRESHOLD: want 1 txn, got %d", len(seq))
 	}
@@ -26,7 +26,7 @@ func TestGenerateScenario_AmountThreshold(t *testing.T) {
 
 func TestGenerateScenario_Velocity(t *testing.T) {
 	g := newGen(t)
-	seq := g.GenerateScenario(generator.ScenarioVelocity)
+	seq := g.GenerateScenario(generator.ScenarioVelocity, nil)
 	if len(seq) < 6 {
 		t.Fatalf("VELOCITY: want at least 6 txns (max default 5), got %d", len(seq))
 	}
@@ -46,7 +46,7 @@ func TestGenerateScenario_Velocity(t *testing.T) {
 
 func TestGenerateScenario_NewPayee(t *testing.T) {
 	g := newGen(t)
-	seq := g.GenerateScenario(generator.ScenarioNewPayee)
+	seq := g.GenerateScenario(generator.ScenarioNewPayee, nil)
 	if len(seq) != 1 {
 		t.Fatalf("NEW_PAYEE: want 1 txn, got %d", len(seq))
 	}
@@ -61,7 +61,7 @@ func TestGenerateScenario_NewPayee(t *testing.T) {
 
 func TestGenerateScenario_DailyLimit(t *testing.T) {
 	g := newGen(t)
-	seq := g.GenerateScenario(generator.ScenarioDailyLimit)
+	seq := g.GenerateScenario(generator.ScenarioDailyLimit, nil)
 	if len(seq) < 2 {
 		t.Fatalf("DAILY_LIMIT: want multiple txns, got %d", len(seq))
 	}
@@ -83,7 +83,7 @@ func TestGenerateScenario_DailyLimit(t *testing.T) {
 
 func TestGenerateScenario_SoftTenancyMix(t *testing.T) {
 	g := newGen(t)
-	seq := g.GenerateScenario(generator.ScenarioSoftTenancyMix)
+	seq := g.GenerateScenario(generator.ScenarioSoftTenancyMix, nil)
 	if len(seq) != 2 {
 		t.Fatalf("SOFT_TENANCY_MIX: want 2 txns, got %d", len(seq))
 	}
@@ -101,7 +101,7 @@ func TestGenerateScenario_SoftTenancyMix(t *testing.T) {
 
 func TestGenerateScenario_MVPSeed(t *testing.T) {
 	g := newGen(t)
-	seq := g.GenerateScenario(generator.ScenarioMVPSeed)
+	seq := g.GenerateScenario(generator.ScenarioMVPSeed, nil)
 	if len(seq) != 3 {
 		t.Fatalf("MVP_SEED: want 3 txns, got %d", len(seq))
 	}
@@ -116,9 +116,97 @@ func TestGenerateScenario_MVPSeed(t *testing.T) {
 	}
 }
 
+func TestGenerateScenario_MultiRule(t *testing.T) {
+	g := newGen(t)
+	seq := g.GenerateScenario(generator.ScenarioMultiRule, nil)
+	if len(seq) != 1 {
+		t.Fatalf("MULTI_RULE default: want 1 txn, got %d", len(seq))
+	}
+	tx := seq[0].Transaction
+	if tx.Amount <= 10_000 {
+		t.Errorf("MULTI_RULE default: amount %f must be > 10000 (Amount Threshold)", tx.Amount)
+	}
+	if !strings.HasPrefix(tx.PayeeID, "PAYEE-NEW-") {
+		t.Errorf("MULTI_RULE default: payeeId %q should start with PAYEE-NEW- (New Payee)", tx.PayeeID)
+	}
+	if tx.AccountID != "ACC-SCENARIO-MULTI-001" {
+		t.Errorf("MULTI_RULE: want ACC-SCENARIO-MULTI-001, got %q", tx.AccountID)
+	}
+}
+
+func TestGenerateScenario_MultiRule_VelocityAndDaily(t *testing.T) {
+	g := newGen(t)
+	seq := g.GenerateScenario(generator.ScenarioMultiRule, []generator.RuleType{
+		generator.RuleVelocity,
+		generator.RuleDailyLimit,
+	})
+	if len(seq) != 6 {
+		t.Fatalf("VELOCITY+DAILY_LIMIT: want 6 txns, got %d", len(seq))
+	}
+	var sum float64
+	for i, step := range seq {
+		sum += step.Transaction.Amount
+		if step.Transaction.Amount > 10_000 {
+			t.Errorf("tx[%d]: amount %f should stay under amount threshold", i, step.Transaction.Amount)
+		}
+		if step.Transaction.AccountID != "ACC-SCENARIO-MULTI-001" {
+			t.Errorf("tx[%d]: account mismatch", i)
+		}
+	}
+	if sum <= 50_000 {
+		t.Errorf("sum %f must exceed daily limit 50000", sum)
+	}
+}
+
+func TestGenerateScenario_MultiRule_AmountVelocityNewPayee(t *testing.T) {
+	g := newGen(t)
+	seq := g.GenerateScenario(generator.ScenarioMultiRule, []generator.RuleType{
+		generator.RuleAmountThreshold,
+		generator.RuleVelocity,
+		generator.RuleNewPayee,
+	})
+	if len(seq) != 6 {
+		t.Fatalf("want 6 txns, got %d", len(seq))
+	}
+	last := seq[len(seq)-1].Transaction
+	if last.Amount <= 10_000 {
+		t.Errorf("last txn amount %f must exceed amount threshold", last.Amount)
+	}
+	if !strings.HasPrefix(last.PayeeID, "PAYEE-NEW-") {
+		t.Errorf("payeeId %q should be new", last.PayeeID)
+	}
+}
+
+func TestNormalizeMultiRules(t *testing.T) {
+	got, err := generator.NormalizeMultiRules(nil)
+	if err != nil {
+		t.Fatalf("nil rules: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("default want 2 rules, got %v", got)
+	}
+
+	_, err = generator.NormalizeMultiRules([]generator.RuleType{generator.RuleVelocity})
+	if err == nil {
+		t.Fatal("expected error for single rule")
+	}
+
+	got, err = generator.NormalizeMultiRules([]generator.RuleType{
+		generator.RuleVelocity,
+		generator.RuleVelocity,
+		generator.RuleDailyLimit,
+	})
+	if err != nil {
+		t.Fatalf("dedupe: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("want 2 after dedupe, got %v", got)
+	}
+}
+
 func TestGenerateScenario_Unknown_ReturnsNil(t *testing.T) {
 	g := newGen(t)
-	seq := g.GenerateScenario(generator.ScenarioID("NOPE"))
+	seq := g.GenerateScenario(generator.ScenarioID("NOPE"), nil)
 	if seq != nil {
 		t.Fatalf("unknown scenario: want nil, got %d steps", len(seq))
 	}
@@ -181,9 +269,56 @@ func TestGenerateTimedSequence_SourceTypeFilter(t *testing.T) {
 	}
 }
 
+func TestGenerate_Normal_VariesAcrossPool(t *testing.T) {
+	g := newGen(t)
+	sources := map[string]bool{}
+	payees := map[string]bool{}
+	accounts := map[string]bool{}
+	locations := map[string]bool{}
+	for range 200 {
+		tx := g.Generate(generator.ModeNormal)
+		sources[tx.SourceID] = true
+		payees[tx.PayeeID] = true
+		accounts[tx.AccountID] = true
+		if tx.Location != nil {
+			locations[*tx.Location] = true
+		}
+	}
+	if len(sources) < 5 {
+		t.Fatalf("expected diverse sources, got %d unique", len(sources))
+	}
+	if len(payees) < 10 {
+		t.Fatalf("expected diverse payees, got %d unique", len(payees))
+	}
+	if len(accounts) < 8 {
+		t.Fatalf("expected diverse accounts, got %d unique", len(accounts))
+	}
+	if len(locations) < 5 {
+		t.Fatalf("expected diverse locations, got %d unique", len(locations))
+	}
+}
+
+func TestInventNewPayee_LooksSynthetic(t *testing.T) {
+	g := newGen(t)
+	seq := g.GenerateScenario(generator.ScenarioNewPayee, nil)
+	name := ""
+	if seq[0].Transaction.PayeeName != nil {
+		name = *seq[0].Transaction.PayeeName
+	}
+	if name == "" || name == "Unseen Payee 1" {
+		t.Fatalf("expected invented payee name, got %q", name)
+	}
+	if !strings.HasPrefix(seq[0].Transaction.PayeeID, "PAYEE-NEW-") {
+		t.Fatalf("payee id %q", seq[0].Transaction.PayeeID)
+	}
+}
+
 func TestIsValidScenario(t *testing.T) {
 	if !generator.IsValidScenario(generator.ScenarioVelocity) {
 		t.Error("VELOCITY should be valid")
+	}
+	if !generator.IsValidScenario(generator.ScenarioMultiRule) {
+		t.Error("MULTI_RULE should be valid")
 	}
 	if generator.IsValidScenario(generator.ScenarioID("X")) {
 		t.Error("X should be invalid")

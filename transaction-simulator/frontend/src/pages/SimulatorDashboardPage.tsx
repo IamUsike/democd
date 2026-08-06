@@ -6,6 +6,8 @@ import { useSimulatorApiUrl } from "../hooks/useSimulatorApiUrl";
 import { startSimulation, stopSimulation } from "../services/simulatorService";
 import {
   SCENARIO_PACKS,
+  SELECTABLE_RULES,
+  type RuleType,
   type ScenarioId,
   type SimulationMode,
   type SimulationRequest,
@@ -16,6 +18,8 @@ type ValidationErrors = {
   tps?: string;
   duration?: string;
   fraudMixPercent?: string;
+  failedPercent?: string;
+  multiRules?: string;
 };
 
 const DEFAULT_TRAFFIC = {
@@ -23,13 +27,17 @@ const DEFAULT_TRAFFIC = {
   duration: 30,
   mode: "NORMAL" as SimulationMode,
   fraudMixPercent: 0,
+  failedPercent: 0,
   sourceType: "" as "" | SourceType
 };
+
+const DEFAULT_MULTI_RULES: RuleType[] = ["AMOUNT_THRESHOLD", "NEW_PAYEE"];
 
 function validateTraffic(request: {
   tps: number;
   duration: number;
   fraudMixPercent: number;
+  failedPercent: number;
 }): ValidationErrors {
   const errors: ValidationErrors = {};
 
@@ -45,6 +53,13 @@ function validateTraffic(request: {
     request.fraudMixPercent > 100
   ) {
     errors.fraudMixPercent = "Fraud mix must be between 0 and 100.";
+  }
+  if (
+    !Number.isFinite(request.failedPercent) ||
+    request.failedPercent < 0 ||
+    request.failedPercent > 100
+  ) {
+    errors.failedPercent = "Failed % must be between 0 and 100.";
   }
 
   return errors;
@@ -69,6 +84,8 @@ export function SimulatorDashboardPage(): JSX.Element {
   const [mode, setMode] = useState<SimulationMode>(DEFAULT_TRAFFIC.mode);
   const [sourceType, setSourceType] = useState<"" | SourceType>(DEFAULT_TRAFFIC.sourceType);
   const [fraudMixPercent, setFraudMixPercent] = useState(String(DEFAULT_TRAFFIC.fraudMixPercent));
+  const [failedPercent, setFailedPercent] = useState(String(DEFAULT_TRAFFIC.failedPercent));
+  const [multiRules, setMultiRules] = useState<RuleType[]>(DEFAULT_MULTI_RULES);
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [activeScenario, setActiveScenario] = useState<ScenarioId | null>(null);
@@ -88,9 +105,10 @@ export function SimulatorDashboardPage(): JSX.Element {
       duration: toSafeNumber(duration),
       mode,
       sourceType: sourceType === "" ? null : sourceType,
-      fraudMixPercent: toSafeNumber(fraudMixPercent)
+      fraudMixPercent: toSafeNumber(fraudMixPercent),
+      failedPercent: toSafeNumber(failedPercent)
     }),
-    [tps, duration, mode, sourceType, fraudMixPercent]
+    [tps, duration, mode, sourceType, fraudMixPercent, failedPercent]
   );
 
   async function runStart(request: SimulationRequest, scenarioHint: ScenarioId | null): Promise<void> {
@@ -113,7 +131,8 @@ export function SimulatorDashboardPage(): JSX.Element {
     const errors = validateTraffic({
       tps: toSafeNumber(tps),
       duration: toSafeNumber(duration),
-      fraudMixPercent: toSafeNumber(fraudMixPercent)
+      fraudMixPercent: toSafeNumber(fraudMixPercent),
+      failedPercent: toSafeNumber(failedPercent)
     });
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -122,7 +141,27 @@ export function SimulatorDashboardPage(): JSX.Element {
 
   async function handleStartScenario(scenario: ScenarioId): Promise<void> {
     setValidationErrors({});
+    if (scenario === "MULTI_RULE") {
+      if (multiRules.length < 2) {
+        setValidationErrors({ multiRules: "Select at least two rules." });
+        return;
+      }
+      await runStart({ kind: "SCENARIO", scenario, rules: multiRules }, scenario);
+      return;
+    }
     await runStart({ kind: "SCENARIO", scenario }, scenario);
+  }
+
+  function toggleMultiRule(rule: RuleType): void {
+    setMultiRules((previous) => {
+      if (previous.includes(rule)) {
+        return previous.filter((item) => item !== rule);
+      }
+      return [...previous, rule];
+    });
+    setValidationErrors((prev) => ({ ...prev, multiRules: undefined }));
+    setApiError("");
+    setSuccessMessage("");
   }
 
   async function handleStopSimulation(): Promise<void> {
@@ -198,11 +237,29 @@ export function SimulatorDashboardPage(): JSX.Element {
                 <div className="pack-copy">
                   <p className="pack-name">{pack.label}</p>
                   <p className="pack-expected">{pack.expected}</p>
+                  {pack.id === "MULTI_RULE" ? (
+                    <div className="rule-checks" role="group" aria-label="Rules to combine">
+                      {SELECTABLE_RULES.map((rule) => (
+                        <label key={rule.id} className="rule-check">
+                          <input
+                            type="checkbox"
+                            checked={multiRules.includes(rule.id)}
+                            disabled={isBusy}
+                            onChange={() => toggleMultiRule(rule.id)}
+                          />
+                          <span>{rule.label}</span>
+                        </label>
+                      ))}
+                      {validationErrors.multiRules ? (
+                        <p className="field-error">{validationErrors.multiRules}</p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={isBusy}
+                  disabled={isBusy || (pack.id === "MULTI_RULE" && multiRules.length < 2)}
                   onClick={() => {
                     void handleStartScenario(pack.id);
                   }}
@@ -294,7 +351,7 @@ export function SimulatorDashboardPage(): JSX.Element {
               </select>
             </div>
 
-            <div className="field span-2">
+            <div className="field">
               <label htmlFor="fraud-mix-input">Fraud mix % (with NORMAL)</label>
               <input
                 id="fraud-mix-input"
@@ -313,6 +370,28 @@ export function SimulatorDashboardPage(): JSX.Element {
               />
               {validationErrors.fraudMixPercent ? (
                 <p className="field-error">{validationErrors.fraudMixPercent}</p>
+              ) : null}
+            </div>
+
+            <div className="field">
+              <label htmlFor="failed-pct-input">Failed txn % (status FAILED)</label>
+              <input
+                id="failed-pct-input"
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={failedPercent}
+                disabled={isBusy}
+                onChange={(event) => {
+                  setFailedPercent(event.target.value);
+                  setValidationErrors((prev) => ({ ...prev, failedPercent: undefined }));
+                  setApiError("");
+                  setSuccessMessage("");
+                }}
+              />
+              {validationErrors.failedPercent ? (
+                <p className="field-error">{validationErrors.failedPercent}</p>
               ) : null}
             </div>
           </div>

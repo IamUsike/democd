@@ -23,7 +23,7 @@ const (
 // TransactionGenerator is the minimal contract required from the generator.
 type TransactionGenerator interface {
 	GenerateTimedSequence(mode generator.SimulationMode, opts generator.GenerateOptions) []generator.TimedTransaction
-	GenerateScenario(scenario generator.ScenarioID) []generator.TimedTransaction
+	GenerateScenario(scenario generator.ScenarioID, rules []generator.RuleType) []generator.TimedTransaction
 }
 
 // TransactionSender is the minimal contract required from the client.
@@ -38,8 +38,10 @@ type SimulationRequest struct {
 	Duration        int                      `json:"duration"`
 	Mode            generator.SimulationMode `json:"mode"`
 	Scenario        generator.ScenarioID     `json:"scenario"`
+	Rules           []generator.RuleType     `json:"rules"`
 	SourceType      *model.SourceType        `json:"sourceType"`
 	FraudMixPercent *int                     `json:"fraudMixPercent"`
+	FailedPercent   *int                     `json:"failedPercent"`
 }
 
 // SimulationMetrics is a thread-safe snapshot of the current or latest run.
@@ -262,6 +264,11 @@ func (s *SimulatorService) validateRequest(request SimulationRequest) error {
 		if !generator.IsValidScenario(request.Scenario) {
 			return fmt.Errorf("simulator service: unsupported scenario %q", request.Scenario)
 		}
+		if request.Scenario == generator.ScenarioMultiRule {
+			if _, err := generator.NormalizeMultiRules(request.Rules); err != nil {
+				return fmt.Errorf("simulator service: %v", err)
+			}
+		}
 		return nil
 	case generator.KindTraffic:
 		if request.TPS <= 0 {
@@ -277,6 +284,12 @@ func (s *SimulatorService) validateRequest(request SimulationRequest) error {
 			p := *request.FraudMixPercent
 			if p < 0 || p > 100 {
 				return errors.New("simulator service: fraudMixPercent must be between 0 and 100")
+			}
+		}
+		if request.FailedPercent != nil {
+			p := *request.FailedPercent
+			if p < 0 || p > 100 {
+				return errors.New("simulator service: failedPercent must be between 0 and 100")
 			}
 		}
 		if request.SourceType != nil {
@@ -295,7 +308,18 @@ func (s *SimulatorService) runScenario(ctx *stoppableContext, run *simulationRun
 	defer s.finishRun(run)
 
 	s.generatorMu.Lock()
-	steps := s.generator.GenerateScenario(run.request.Scenario)
+	var steps []generator.TimedTransaction
+	if run.request.Scenario == generator.ScenarioMultiRule {
+		rules, err := generator.NormalizeMultiRules(run.request.Rules)
+		if err != nil {
+			s.generatorMu.Unlock()
+			s.logger.Warn("multi-rule validation failed at run", "error", err)
+			return
+		}
+		steps = s.generator.GenerateScenario(run.request.Scenario, rules)
+	} else {
+		steps = s.generator.GenerateScenario(run.request.Scenario, nil)
+	}
 	s.generatorMu.Unlock()
 
 	if len(steps) == 0 {
@@ -401,17 +425,21 @@ func (s *SimulatorService) runGeneratorWorker(
 					return
 				}
 
+				tx := step.Transaction
+				s.applyFailedStatus(&tx, request.FailedPercent)
+
 				s.generated.Add(1)
 				s.logger.Debug("transaction generated",
 					"worker", workerID,
-					"accountId", step.Transaction.AccountID,
+					"accountId", tx.AccountID,
 					"mode", string(mode),
+					"status", string(tx.Status),
 				)
 
 				select {
 				case <-ctx.Done():
 					return
-				case transactions <- step.Transaction:
+				case transactions <- tx:
 				}
 			}
 		}
@@ -433,6 +461,18 @@ func (s *SimulatorService) pickTrafficMode(request SimulationRequest) generator.
 		return generator.ModeFraud
 	}
 	return generator.ModeNormal
+}
+
+// applyFailedStatus marks the txn FAILED with roughly failedPercent probability.
+// Scenario packs never call this — they stay COMPLETED for reliable rule demos.
+func (s *SimulatorService) applyFailedStatus(tx *model.Transaction, failedPercent *int) {
+	if tx == nil || failedPercent == nil || *failedPercent <= 0 {
+		return
+	}
+	roll := int(time.Now().UnixNano()%100) + 1
+	if roll <= *failedPercent {
+		tx.Status = model.TransactionStatusFailed
+	}
 }
 
 func (s *SimulatorService) runSenderWorker(

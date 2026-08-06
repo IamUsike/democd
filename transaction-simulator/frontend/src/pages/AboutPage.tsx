@@ -28,6 +28,10 @@ const PACKS = [
   { id: "VELOCITY", tip: "Six quick posts on one account — fires Velocity." },
   { id: "NEW_PAYEE", tip: "Fresh payee id — fires New Payee." },
   { id: "DAILY_LIMIT", tip: "Burst summing past 50k under the amount threshold — fires Daily Limit." },
+  {
+    id: "MULTI_RULE",
+    tip: "Pick ≥2 rules on the Simulator page; the pack builds a sequence that should trip all of them."
+  },
   { id: "SOFT_TENANCY_MIX", tip: "BANK + MERCHANT normals — no alert; good for source filters." },
   { id: "MVP_SEED", tip: "Classic 3-txn demo path (2 quiet + 1 over threshold)." }
 ] as const;
@@ -67,15 +71,11 @@ export function AboutPage(): JSX.Element {
         </section>
 
         <section className="panel panel-pad">
-          <h2>Scenario packs vs continuous traffic</h2>
+          <h2>Scenario packs</h2>
           <p>
-            <strong>Packs</strong> are deterministic sequences aligned to a single rule (or a quiet
-            tenancy mix). Use them in live demos.
-          </p>
-          <p>
-            <strong>Traffic</strong> is TPS-paced. NORMAL stays under the amount threshold so it
-            stays quiet; FRAUD emits full multi-txn patterns (velocity, daily limit, new payee,
-            high amount). Optional source filter and fraud-mix % shape the stream.
+            Deterministic sequences for live demos. Single-rule packs fire one expected alert type.
+            <strong> Multi-rule hit</strong> lets you check which rules to combine (at least two);
+            defaults to Amount + New Payee if you leave the defaults selected.
           </p>
           <ul>
             {PACKS.map((pack) => (
@@ -83,6 +83,45 @@ export function AboutPage(): JSX.Element {
                 <code>{pack.id}</code> — {pack.tip}
               </li>
             ))}
+          </ul>
+        </section>
+
+        <section className="panel panel-pad">
+          <h2>Continuous traffic controls</h2>
+          <p>
+            Use this for a live stream, not for precise rule demos. Metrics show HTTP success/fail
+            of posts to the monitoring API — not alert outcomes.
+          </p>
+          <ul>
+            <li>
+              <strong>TPS / duration</strong> — how fast and how long to emit traffic.
+            </li>
+            <li>
+              <strong>Mode NORMAL</strong> — amounts stay under the default amount threshold (~10k)
+              so the stream stays quiet unless you add fraud mix.
+            </li>
+            <li>
+              <strong>Mode FRAUD</strong> — every emission is a rule-aligned fraud pattern (full
+              multi-txn sequences for velocity / daily limit / etc.). Fraud mix % is ignored.
+            </li>
+            <li>
+              <strong>Fraud mix %</strong> — only applies when mode is <code>NORMAL</code>. Each
+              emission has roughly that percent chance of being generated as a FRAUD pattern
+              instead of a normal quiet txn. Example: <code>10</code> ≈ one in ten posts looks
+              suspicious. This is <em>not</em> “% of alerts that fail” and not HTTP error
+              injection — load/error rates stay in k6.
+            </li>
+            <li>
+              <strong>Failed txn %</strong> — chance each continuous-traffic transaction is posted
+              with <code>status: FAILED</code> instead of <code>COMPLETED</code>. Useful for
+              transaction-list filters and KPIs by status. Scenario packs always stay{" "}
+              <code>COMPLETED</code> so rule demos remain reliable. Note: the monitoring API still
+              evaluates rules on FAILED txns the same way.
+            </li>
+            <li>
+              <strong>Source filter</strong> — force <code>BANK</code> or <code>MERCHANT</code> on
+              every generated txn (soft tenancy demo).
+            </li>
           </ul>
         </section>
 
@@ -119,6 +158,15 @@ export function AboutPage(): JSX.Element {
             <code>MERCHANT</code>), <code>sourceId</code>, and <code>sourceName</code>. There is one
             database; feeds are distinguished by those fields — not separate schemas.
           </p>
+        </section>
+
+        <section className="panel panel-pad">
+          <h2>What this tool does not do</h2>
+          <ul>
+            <li>Alert lifecycle (ack / investigate / close) — use the operator dashboard.</li>
+            <li>HTTP failure injection or “% failed alerts” — use k6 for load/error evidence.</li>
+            <li>Database reset / wipe — ops / seed scripts, not the simulator UI.</li>
+          </ul>
         </section>
       </div>
     </>

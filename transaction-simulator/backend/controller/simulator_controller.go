@@ -42,13 +42,15 @@ func NewSimulatorController(
 
 // startSimulationRequest is the JSON body for POST /api/simulator/start.
 type startSimulationRequest struct {
-	Kind            string  `json:"kind"`
-	TPS             int     `json:"tps"`
-	Duration        int     `json:"duration"`
-	Mode            string  `json:"mode"`
-	Scenario        string  `json:"scenario"`
-	SourceType      *string `json:"sourceType"`
-	FraudMixPercent *int    `json:"fraudMixPercent"`
+	Kind            string   `json:"kind"`
+	TPS             int      `json:"tps"`
+	Duration        int      `json:"duration"`
+	Mode            string   `json:"mode"`
+	Scenario        string   `json:"scenario"`
+	Rules           []string `json:"rules"`
+	SourceType      *string  `json:"sourceType"`
+	FraudMixPercent *int     `json:"fraudMixPercent"`
+	FailedPercent   *int     `json:"failedPercent"`
 }
 
 // statusResponse is the JSON body for GET /api/simulator/status.
@@ -125,6 +127,7 @@ func mapStartRequest(req startSimulationRequest) (service.SimulationRequest, str
 		TPS:             req.TPS,
 		Duration:        req.Duration,
 		FraudMixPercent: req.FraudMixPercent,
+		FailedPercent:   req.FailedPercent,
 	}
 
 	if req.SourceType != nil {
@@ -145,6 +148,17 @@ func mapStartRequest(req startSimulationRequest) (service.SimulationRequest, str
 			return service.SimulationRequest{}, "unsupported scenario"
 		}
 		out.Scenario = scenario
+		if scenario == generator.ScenarioMultiRule {
+			rules := make([]generator.RuleType, 0, len(req.Rules))
+			for _, r := range req.Rules {
+				rules = append(rules, generator.RuleType(strings.ToUpper(strings.TrimSpace(r))))
+			}
+			normalized, err := generator.NormalizeMultiRules(rules)
+			if err != nil {
+				return service.SimulationRequest{}, err.Error()
+			}
+			out.Rules = normalized
+		}
 		return out, ""
 
 	case generator.KindTraffic:
@@ -166,6 +180,12 @@ func mapStartRequest(req startSimulationRequest) (service.SimulationRequest, str
 			p := *req.FraudMixPercent
 			if p < 0 || p > 100 {
 				return service.SimulationRequest{}, "fraudMixPercent must be between 0 and 100"
+			}
+		}
+		if req.FailedPercent != nil {
+			p := *req.FailedPercent
+			if p < 0 || p > 100 {
+				return service.SimulationRequest{}, "failedPercent must be between 0 and 100"
 			}
 		}
 		return out, ""

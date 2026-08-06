@@ -167,13 +167,15 @@ curl -sS -X POST http://localhost:8090/api/simulator/start \
     "duration": 30,
     "mode": "NORMAL",
     "sourceType": "BANK",
-    "fraudMixPercent": 10
+    "fraudMixPercent": 10,
+    "failedPercent": 5
   }'
 ```
 
 - `kind` omitted → `TRAFFIC` (backward compatible with `{tps,duration,mode}`).
 - `NORMAL` amounts stay under the default amount threshold (~10k) so quiet traffic does not spam alerts.
 - `FRAUD` emits **full** multi-txn sequences (velocity, daily limit, new payee, high amount) — not just the first leg.
+- `failedPercent` — roughly that % of continuous-traffic txns are posted with `status: FAILED` (scenario packs stay `COMPLETED`).
 - Impossible travel is **not** selected for random FRAUD traffic (no matching rule in the monolith).
 
 ### Start — demo scenario pack
@@ -184,12 +186,25 @@ curl -sS -X POST http://localhost:8090/api/simulator/start \
   -d '{"kind":"SCENARIO","scenario":"AMOUNT_THRESHOLD"}'
 ```
 
+Multi-rule with an explicit combo (omit `rules` to default to Amount + New Payee):
+
+```bash
+curl -sS -X POST http://localhost:8090/api/simulator/start \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "kind": "SCENARIO",
+    "scenario": "MULTI_RULE",
+    "rules": ["AMOUNT_THRESHOLD", "VELOCITY", "NEW_PAYEE"]
+  }'
+```
+
 | Scenario | What it posts | Expected |
 |----------|---------------|----------|
 | `AMOUNT_THRESHOLD` | 1 txn over threshold | OPEN — Amount |
 | `VELOCITY` | 6 quick same-account txns | OPEN — Velocity |
 | `NEW_PAYEE` | 1 txn to a fresh payee id | OPEN — New payee |
 | `DAILY_LIMIT` | 6×9000 same account (sum > 50k) | OPEN — Daily limit |
+| `MULTI_RULE` | Select ≥2 rules via `rules` (default Amount + New Payee) | OPEN — selected combo |
 | `SOFT_TENANCY_MIX` | BANK + MERCHANT under threshold | No alert (filter demo) |
 | `MVP_SEED` | Port of `scripts/seed-demo.sh` | OPEN — Amount |
 

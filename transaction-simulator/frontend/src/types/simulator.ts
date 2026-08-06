@@ -10,7 +10,21 @@ export type ScenarioId =
   | "NEW_PAYEE"
   | "DAILY_LIMIT"
   | "SOFT_TENANCY_MIX"
-  | "MVP_SEED";
+  | "MVP_SEED"
+  | "MULTI_RULE";
+
+export type RuleType =
+  | "AMOUNT_THRESHOLD"
+  | "VELOCITY"
+  | "NEW_PAYEE"
+  | "DAILY_LIMIT";
+
+export const SELECTABLE_RULES: { id: RuleType; label: string }[] = [
+  { id: "AMOUNT_THRESHOLD", label: "Amount threshold" },
+  { id: "VELOCITY", label: "Velocity" },
+  { id: "NEW_PAYEE", label: "New payee" },
+  { id: "DAILY_LIMIT", label: "Daily limit" }
+];
 
 export interface SimulationRequest {
   kind?: SimulationKind;
@@ -18,8 +32,10 @@ export interface SimulationRequest {
   duration?: number;
   mode?: SimulationMode;
   scenario?: ScenarioId;
+  rules?: RuleType[];
   sourceType?: SourceType | null;
   fraudMixPercent?: number | null;
+  failedPercent?: number | null;
 }
 
 export interface SimulationStatus {
@@ -61,6 +77,11 @@ export const SCENARIO_PACKS: ScenarioPackMeta[] = [
     id: "DAILY_LIMIT",
     label: "Daily limit",
     expected: "OPEN alert — DAILY_LIMIT"
+  },
+  {
+    id: "MULTI_RULE",
+    label: "Multi-rule hit",
+    expected: "OPEN alert — pick ≥2 rules below"
   },
   {
     id: "SOFT_TENANCY_MIX",
