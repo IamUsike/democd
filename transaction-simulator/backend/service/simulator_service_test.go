@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"sync"
@@ -17,7 +18,7 @@ type mockGenerator struct {
 	count atomic.Uint64
 }
 
-func (m *mockGenerator) Generate(mode generator.SimulationMode) model.Transaction {
+func (m *mockGenerator) GenerateTimedSequence(mode generator.SimulationMode, opts generator.GenerateOptions) []generator.TimedTransaction {
 	current := m.count.Add(1)
 	payeeName := "Amazon"
 	location := "London"
@@ -29,8 +30,11 @@ func (m *mockGenerator) Generate(mode generator.SimulationMode) model.Transactio
 	if mode == generator.ModeFraud {
 		accountID = "ACC-FRAUD-001"
 	}
+	if opts.SourceType != nil && *opts.SourceType == model.SourceTypeMerchant {
+		accountID = "ACC-MERCH-001"
+	}
 
-	return model.Transaction{
+	tx := model.Transaction{
 		SourceType:  model.SourceTypeBank,
 		SourceID:    "HSBC-UK",
 		SourceName:  "HSBC United Kingdom",
@@ -47,7 +51,65 @@ func (m *mockGenerator) Generate(mode generator.SimulationMode) model.Transactio
 		Description: &description,
 		Status:      model.TransactionStatusCompleted,
 	}
+	if opts.SourceType != nil {
+		tx.SourceType = *opts.SourceType
+	}
+
+	if mode == generator.ModeFraud {
+		second := tx
+		second.Amount = float64(current) + 0.5
+		return []generator.TimedTransaction{
+			{Transaction: tx},
+			{Transaction: second, DelayBefore: 5 * time.Millisecond},
+		}
+	}
+
+	return []generator.TimedTransaction{{Transaction: tx}}
 }
+
+func (m *mockGenerator) GenerateScenario(scenario generator.ScenarioID, rules []generator.RuleType) []generator.TimedTransaction {
+	payeeName := "Scenario Payee"
+	tx := model.Transaction{
+		SourceType:  model.SourceTypeBank,
+		SourceID:    "HSBC-UK",
+		SourceName:  "HSBC United Kingdom",
+		AccountID:   "ACC-SCENARIO",
+		PayeeID:     "PAYEE-SCENARIO",
+		PayeeName:   &payeeName,
+		Amount:      25000,
+		Currency:    "USD",
+		Type:        model.TransactionTypeTransfer,
+		Timestamp:   model.NowLocal(),
+		Description: ptrOf(string(scenario)),
+		Status:      model.TransactionStatusCompleted,
+	}
+
+	switch scenario {
+	case generator.ScenarioVelocity:
+		return []generator.TimedTransaction{
+			{Transaction: tx},
+			{Transaction: tx, DelayBefore: 5 * time.Millisecond},
+			{Transaction: tx, DelayBefore: 5 * time.Millisecond},
+		}
+	case generator.ScenarioSoftTenancyMix:
+		merch := tx
+		merch.SourceType = model.SourceTypeMerchant
+		merch.Amount = 100
+		return []generator.TimedTransaction{
+			{Transaction: tx},
+			{Transaction: merch, DelayBefore: 5 * time.Millisecond},
+		}
+	case generator.ScenarioMultiRule:
+		if len(rules) >= 2 {
+			tx.Description = ptrOf(fmt.Sprintf("multi:%d", len(rules)))
+		}
+		return []generator.TimedTransaction{{Transaction: tx}}
+	default:
+		return []generator.TimedTransaction{{Transaction: tx}}
+	}
+}
+
+func ptrOf[T any](v T) *T { return &v }
 
 type mockSender struct {
 	mu           sync.Mutex
@@ -115,15 +177,53 @@ func TestNewSimulatorService_RequiresDependencies(t *testing.T) {
 func TestStartSimulation_ValidatesRequest(t *testing.T) {
 	svc := newTestService(t, &mockGenerator{}, &mockSender{})
 
+	badFailed := -1
+	badFailedHigh := 101
 	cases := []SimulationRequest{
-		{TPS: 0, Duration: 1, Mode: generator.ModeNormal},
-		{TPS: 100, Duration: 0, Mode: generator.ModeNormal},
-		{TPS: 100, Duration: 1, Mode: generator.SimulationMode("UNKNOWN")},
+		{Kind: generator.KindTraffic, TPS: 0, Duration: 1, Mode: generator.ModeNormal},
+		{Kind: generator.KindTraffic, TPS: 100, Duration: 0, Mode: generator.ModeNormal},
+		{Kind: generator.KindTraffic, TPS: 100, Duration: 1, Mode: generator.SimulationMode("UNKNOWN")},
+		{Kind: generator.KindTraffic, TPS: 10, Duration: 1, Mode: generator.ModeNormal, FailedPercent: &badFailed},
+		{Kind: generator.KindTraffic, TPS: 10, Duration: 1, Mode: generator.ModeNormal, FailedPercent: &badFailedHigh},
+		{Kind: generator.KindScenario},
+		{Kind: generator.KindScenario, Scenario: generator.ScenarioID("NOPE")},
 	}
 
 	for _, tc := range cases {
 		if err := svc.Start(tc); err == nil {
 			t.Fatalf("expected validation error for request %+v", tc)
+		}
+	}
+}
+
+func TestStartTraffic_FailedPercentMarksStatus(t *testing.T) {
+	sender := &mockSender{}
+	svc := newTestService(t, &mockGenerator{}, sender)
+	failedPct := 100
+
+	err := svc.Start(SimulationRequest{
+		Kind:          generator.KindTraffic,
+		TPS:           10,
+		Duration:      2,
+		Mode:          generator.ModeNormal,
+		FailedPercent: &failedPct,
+	})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	waitFor(t, 2*time.Second, func() bool {
+		return !svc.Metrics().Running
+	}, "traffic to finish")
+
+	if sender.sentCount() == 0 {
+		t.Fatal("expected some transactions to be sent")
+	}
+	sender.mu.Lock()
+	defer sender.mu.Unlock()
+	for i, tx := range sender.sent {
+		if tx.Status != model.TransactionStatusFailed {
+			t.Fatalf("tx[%d]: want FAILED status with failedPercent=100, got %s", i, tx.Status)
 		}
 	}
 }
@@ -143,6 +243,63 @@ func TestStartSimulation_SetsRunningAndCompletes(t *testing.T) {
 	waitFor(t, time.Second, func() bool {
 		return !svc.Metrics().Running
 	}, "simulation to finish automatically")
+}
+
+func TestStartScenario_SendsAllSteps(t *testing.T) {
+	sender := &mockSender{}
+	svc := newTestService(t, &mockGenerator{}, sender)
+
+	err := svc.Start(SimulationRequest{
+		Kind:     generator.KindScenario,
+		Scenario: generator.ScenarioVelocity,
+	})
+	if err != nil {
+		t.Fatalf("Start scenario: %v", err)
+	}
+
+	waitFor(t, time.Second, func() bool {
+		return !svc.Metrics().Running
+	}, "scenario to finish")
+
+	metrics := svc.Metrics()
+	if metrics.Kind != string(generator.KindScenario) {
+		t.Fatalf("want kind SCENARIO, got %q", metrics.Kind)
+	}
+	if metrics.Scenario != string(generator.ScenarioVelocity) {
+		t.Fatalf("want scenario VELOCITY, got %q", metrics.Scenario)
+	}
+	if metrics.TransactionsGenerated != 3 {
+		t.Fatalf("want 3 generated, got %d", metrics.TransactionsGenerated)
+	}
+	if sender.sentCount() != 3 {
+		t.Fatalf("want 3 sent, got %d", sender.sentCount())
+	}
+}
+
+func TestStartTraffic_FraudEmitsFullSequence(t *testing.T) {
+	sender := &mockSender{}
+	svc := newTestService(t, &mockGenerator{}, sender)
+
+	err := svc.Start(SimulationRequest{
+		Kind:     generator.KindTraffic,
+		TPS:      5,
+		Duration: 2,
+		Mode:     generator.ModeFraud,
+	})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	waitFor(t, 2*time.Second, func() bool {
+		return !svc.Metrics().Running
+	}, "fraud traffic to finish")
+
+	if sender.sentCount() < 2 {
+		t.Fatalf("expected multi-txn fraud sequences to be sent, got %d", sender.sentCount())
+	}
+	if svc.Metrics().TransactionsGenerated < 2 {
+		t.Fatal("expected generated count to include full fraud sequences")
+	}
 }
 
 func TestStopSimulation_StopsRunningWorkersSafely(t *testing.T) {
@@ -280,4 +437,3 @@ func waitFor(t *testing.T, timeout time.Duration, condition func() bool, descrip
 	}
 	t.Fatalf("timed out waiting for %s", description)
 }
-

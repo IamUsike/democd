@@ -55,12 +55,12 @@ make run
 go run ./cmd
 ```
 
-Server starts on `http://localhost:8080` by default (or use `SERVER_PORT` env var).
+Server starts on `http://localhost:8090` by default (override with `SERVER_PORT`).
 
 ### 5. Verify
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8090/health
 ```
 
 Expected response:
@@ -145,12 +145,81 @@ make clean   — remove build artefacts
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SERVER_PORT` | `8090` | HTTP listen port |
+| `SERVER_PORT` | `8090` | HTTP listen port (local default; Docker compose may map `8080`) |
 | `SERVER_READ_TIMEOUT` | `10s` | HTTP read timeout |
 | `SERVER_WRITE_TIMEOUT` | `10s` | HTTP write timeout |
 | `SERVER_IDLE_TIMEOUT` | `60s` | HTTP idle timeout |
 | `LOG_LEVEL` | `info` | `debug \| info \| warn \| error` |
 | `LOG_FORMAT` | `json` | `json \| text` |
-| `MONITORING_API_BASE_URL` | `http://localhost:8081` | Target monitoring API |
-| `MONITORING_API_TIMEOUT` | `30s` | Per-request HTTP timeout |
+| `TRANSACTION_API_URL` | *(required)* | Full ingest URL, e.g. `http://localhost:8081/api/v1/transactions` |
+| `TRANSACTION_API_TIMEOUT` | `30s` | Per-request HTTP timeout |
+
+## Simulator API
+
+### Start — continuous traffic
+
+```bash
+curl -sS -X POST http://localhost:8090/api/simulator/start \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "kind": "TRAFFIC",
+    "tps": 50,
+    "duration": 30,
+    "mode": "NORMAL",
+    "sourceType": "BANK",
+    "fraudMixPercent": 10,
+    "failedPercent": 5
+  }'
+```
+
+- `kind` omitted → `TRAFFIC` (backward compatible with `{tps,duration,mode}`).
+- `NORMAL` amounts stay under the default amount threshold (~10k) so quiet traffic does not spam alerts.
+- `FRAUD` emits **full** multi-txn sequences (velocity, daily limit, new payee, high amount) — not just the first leg.
+- `failedPercent` — roughly that % of continuous-traffic txns are posted with `status: FAILED` (scenario packs stay `COMPLETED`).
+- Impossible travel is **not** selected for random FRAUD traffic (no matching rule in the monolith).
+
+### Start — demo scenario pack
+
+```bash
+curl -sS -X POST http://localhost:8090/api/simulator/start \
+  -H 'Content-Type: application/json' \
+  -d '{"kind":"SCENARIO","scenario":"AMOUNT_THRESHOLD"}'
+```
+
+Multi-rule with an explicit combo (omit `rules` to default to Amount + New Payee):
+
+```bash
+curl -sS -X POST http://localhost:8090/api/simulator/start \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "kind": "SCENARIO",
+    "scenario": "MULTI_RULE",
+    "rules": ["AMOUNT_THRESHOLD", "VELOCITY", "NEW_PAYEE"]
+  }'
+```
+
+| Scenario | What it posts | Expected |
+|----------|---------------|----------|
+| `AMOUNT_THRESHOLD` | 1 txn over threshold | OPEN — Amount |
+| `VELOCITY` | 6 quick same-account txns | OPEN — Velocity |
+| `NEW_PAYEE` | 1 txn to a fresh payee id | OPEN — New payee |
+| `DAILY_LIMIT` | 6×9000 same account (sum > 50k) | OPEN — Daily limit |
+| `MULTI_RULE` | Select ≥2 rules via `rules` (default Amount + New Payee) | OPEN — selected combo |
+| `SOFT_TENANCY_MIX` | BANK + MERCHANT under threshold | No alert (filter demo) |
+| `MVP_SEED` | Port of `scripts/seed-demo.sh` | OPEN — Amount |
+
+### Status / stop
+
+```bash
+curl -sS http://localhost:8090/api/simulator/status
+curl -sS -X POST http://localhost:8090/api/simulator/stop
+```
+
+Status includes `kind`, `scenario`, and `mode` when a run is active or just finished.
+
+## Scope notes
+
+- This service **only ingests transactions**. Alert acknowledge / investigate / close / dismiss stay in the operator dashboard.
+- Keep `scripts/seed-demo.sh` for a minimal MVP walkthrough and k6 scripts for load evidence — they are complementary, not replaced.
+
 
