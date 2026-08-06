@@ -87,11 +87,41 @@ func main() {
 	slog.Info("Server stopped cleanly")
 }
 
+// allowedOrigins lists the browser origins permitted to call this API.
+var allowedOrigins = map[string]bool{
+	"http://localhost:5173": true,
+	"http://localhost:5177": true,
+}
+
+// corsMiddleware adds Access-Control-Allow-* headers for allowed origins and
+// handles OPTIONS preflight requests so the browser does not block API calls.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Vary", "Origin")
+		}
+
+		// Handle preflight — respond immediately without forwarding.
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // buildRouter wires all middleware and route handlers onto a chi.Router.
 func buildRouter() chi.Router {
 	r := chi.NewRouter()
 
 	// ── Middleware stack ────────────────────────────────────────────────────
+	r.Use(corsMiddleware)         // CORS — must be first so preflight gets headers
 	r.Use(middleware.RequestID)   // adds X-Request-Id header
 	r.Use(middleware.RealIP)      // reads X-Forwarded-For / X-Real-IP
 	r.Use(middleware.Logger)      // structured request logs
