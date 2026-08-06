@@ -18,9 +18,12 @@ export function DashboardPage() {
 
   return (
     <main className="page-frame">
-      <header className="page-header">
-        <h2>Dashboard</h2>
-        <p>Transaction volume, alert counts, and calculated analytics.</p>
+      <header className="page-header dashboard-brand-header">
+        <div className="dashboard-title-group">
+          <div className="dashboard-badge">AGILE-ish</div>
+          <h2>Transaction & Alert Control Center</h2>
+        </div>
+        <p>Real-time transaction volume, rule evaluation metrics, and active alert lifecycle.</p>
       </header>
 
       {warning && (

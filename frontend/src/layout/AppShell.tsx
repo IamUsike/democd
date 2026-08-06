@@ -12,7 +12,11 @@ export function AppShell() {
     <div className="app-shell">
       <aside className="app-sidebar">
         <div className="brand-header">
-          <h1 className="app-name">AGILE-ish</h1>
+          <div className="brand-logo-icon">⚡</div>
+          <div className="brand-text">
+            <h1 className="app-name">AGILE<span className="brand-highlight">-ish</span></h1>
+            <span className="brand-tag">TXN MONITORING</span>
+          </div>
         </div>
 
         <nav className="app-nav" aria-label="Primary">
