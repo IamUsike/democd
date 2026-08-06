@@ -15,12 +15,14 @@ cp .env.example .env
 npm run dev
 ```
 
+Open http://localhost:5173 — **Simulator** and **About** in the top nav.
+
 Default API URL: `http://localhost:8090` (`VITE_SIMULATOR_API_URL`).
 
-## What you can do
+## Pages
 
-1. **Demo scenario packs** — one-click sequences that fire Amount / Velocity / New Payee / Daily Limit (or soft-tenancy mix / MVP seed).
-2. **Continuous traffic** — TPS + duration + NORMAL/FRAUD, optional BANK/MERCHANT filter and fraud mix %.
+- **Simulator** — scenario packs, continuous traffic, live metrics strip
+- **About** — how to use it, pack vs traffic, monitoring rules & soft tenancy
 
 Alert lifecycle actions are **not** here — use the main operator dashboard after packs create OPEN alerts.
 
