@@ -8,6 +8,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JPA Specifications for {@code GET /transactions}.
+ * {@code afterId} supports delta polling (only newer transaction ids).
+ * {@code q} fuzzy-matches account, source, payee, description, and id text.
+ */
 public final class TransactionSpecifications {
 
 	private TransactionSpecifications() {
@@ -39,6 +44,7 @@ public final class TransactionSpecifications {
 			if (to != null) {
 				predicates.add(cb.lessThanOrEqualTo(root.get("timestamp"), to));
 			}
+			// Live feed: only rows newer than the client's last known id.
 			if (afterId != null) {
 				predicates.add(cb.greaterThan(root.get("transactionId"), afterId));
 			}

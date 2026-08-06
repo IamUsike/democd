@@ -5,9 +5,14 @@ import { AlertDetail } from '../components/AlertDetail';
 import { useAlerts } from '../hooks/useAlerts';
 import type { AlertFilters, AlertStatus } from '../types/alert';
 
+/**
+ * Alerts workspace: server-side filters + paginated list + detail pane.
+ * KPI tiles deep-link here via ?status= / ?severity= query params.
+ */
 export function AlertsPage() {
   const [searchParams] = useSearchParams();
 
+  // Seed filters from URL (dashboard KPI clicks); empty status = API "active only" default.
   const initialFilters: AlertFilters = {
     status: (searchParams.get('status') as AlertFilters['status']) || '',
     severity: (searchParams.get('severity') as AlertFilters['severity']) || '',
@@ -30,12 +35,14 @@ export function AlertsPage() {
     changeStatus,
   } = useAlerts(initialFilters);
 
+  // Local draft so typing stays snappy; hook debounces the actual API `q`.
   const [searchDraft, setSearchDraft] = useState(filters.q ?? '');
 
   async function onChangeStatus(alertId: number, status: AlertStatus, notes?: string) {
     await changeStatus(alertId, status, notes);
   }
 
+  // Any filter change resets to page 0 unless the patch itself sets page.
   function onFilterChange(patch: Partial<AlertFilters>) {
     setFilters((prev) => ({
       ...prev,
@@ -57,6 +64,7 @@ export function AlertsPage() {
         </p>
       )}
 
+      {/* Structured filters + one fuzzy search (covers account/source/rule — no separate ID boxes). */}
       <div className="filters alerts-filters">
         <label>
           Status
@@ -106,24 +114,6 @@ export function AlertsPage() {
         </label>
 
         <label>
-          Source ID
-          <input
-            value={filters.sourceId ?? ''}
-            onChange={(event) => onFilterChange({ sourceId: event.target.value })}
-            placeholder="HSBC-UK"
-          />
-        </label>
-
-        <label>
-          Account ID
-          <input
-            value={filters.accountId ?? ''}
-            onChange={(event) => onFilterChange({ accountId: event.target.value })}
-            placeholder="ACC1001"
-          />
-        </label>
-
-        <label>
           Sort
           <select
             value={filters.sort ?? 'createdAt,desc'}
@@ -145,7 +135,7 @@ export function AlertsPage() {
               setSearchDraft(value);
               onFilterChange({ q: value });
             }}
-            placeholder="Account / source / rule"
+            placeholder="Account, source, or rule (debounced)"
           />
         </label>
       </div>

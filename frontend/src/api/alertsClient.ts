@@ -2,6 +2,7 @@ import { apiGet, apiPatch } from './http';
 import type { Alert, AlertFilters, AlertStatusUpdateRequest } from '../types/alert';
 import type { PageResponse } from '../types/page';
 
+/** Build query string; omit empty values so the API can apply defaults. */
 function toQueryString(filters: AlertFilters): string {
   const params = new URLSearchParams();
 
@@ -21,7 +22,7 @@ function toQueryString(filters: AlertFilters): string {
 
 /**
  * Fetch a page of alerts with optional filters.
- * Omitting status uses the API default (active statuses only).
+ * Omitting status → API default (active: OPEN | ACKNOWLEDGED | INVESTIGATING).
  * Pass status=ALL for full history.
  */
 export async function getAlerts(filters: AlertFilters = {}): Promise<PageResponse<Alert>> {
