@@ -5,6 +5,7 @@ import com.example.txnmonitor.transaction.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -42,15 +44,23 @@ public class TransactionController {
 
     @GetMapping
     @Operation(
-            summary = "Get all transactions",
-            description = "Returns all transactions, with optional source/account filters."
+            summary = "Get transactions",
+            description = "Returns a paginated transaction list. Use afterId to poll only newer rows "
+                    + "(delta feed). Default sort is timestamp,desc; afterId defaults to transactionId,asc."
     )
-    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getTransactions(
+    public ResponseEntity<ApiResponse<PageResponse<TransactionResponse>>> getTransactions(
             @RequestParam(required = false) String sourceType,
             @RequestParam(required = false) String sourceId,
-            @RequestParam(required = false) String accountId) {
-        List<TransactionResponse> transactions =
-                transactionService.getTransactions(sourceType, sourceId, accountId);
+            @RequestParam(required = false) String accountId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) Long afterId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort) {
+        PageResponse<TransactionResponse> transactions = transactionService.getTransactions(
+                sourceType, sourceId, accountId, q, from, to, afterId, page, size, sort);
         return ResponseEntity.ok(ApiResponse.ok("Transactions retrieved successfully.", transactions));
     }
 

@@ -8,15 +8,20 @@ export function TransactionsPage() {
     sourceType: '',
     sourceId: '',
     accountId: '',
+    q: '',
+    sort: 'timestamp,desc',
+    page: 0,
+    size: 50,
   });
 
-  const [quickSearch, setQuickSearch] = useState('');
   const [pinnedTransactionId, setPinnedTransactionId] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [paused, setPaused] = useState(false);
 
   const {
     transactions,
+    totalCount,
+    hasNext,
     loading,
     warning,
     lastUpdatedAt,
@@ -32,7 +37,7 @@ export function TransactionsPage() {
     <main className="page-frame transactions-page">
       <header className="page-header">
         <h2>Transactions</h2>
-        <p>Filter by source and account</p>
+        <p>Paginated list with delta poll for new rows</p>
       </header>
 
       {warning && (
@@ -44,19 +49,20 @@ export function TransactionsPage() {
       <TransactionsPanel
         transactions={transactions}
         filters={filters}
-        quickSearch={quickSearch}
         pinnedTransactionId={pinnedTransactionId}
         autoRefresh={autoRefresh}
         paused={paused}
         lastUpdatedAt={lastUpdatedAt}
         newTransactionIds={newTransactionIds}
         loading={loading}
+        totalCount={totalCount}
+        hasNext={hasNext}
         onFilterChange={setFilters}
-        onQuickSearchChange={setQuickSearch}
         onPinnedTransactionIdChange={setPinnedTransactionId}
         onAutoRefreshChange={setAutoRefresh}
         onPausedChange={setPaused}
         onRefreshNow={refreshNow}
+        onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
       />
     </main>
   );

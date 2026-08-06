@@ -5,7 +5,8 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Phase 2 — additional rules **complete**; QA load test + login + client UI asks in progress  
+**Phase:** Phase 2 — additional rules **complete**; QA load test + login + client UI asks in progress;
+list pagination / UI smoothness shipped
 **Last updated:** 06 August 2026  
 **Currently working on:**  
 - **shreya (A):** E2E / k6 load testing (QA-1), results write-up  
@@ -53,6 +54,10 @@ evaluate-on-record.
 - [x] End-to-end MVP path ready: seed over-threshold → OPEN alert →
   acknowledge/close from UI (mark live room demo done when presented;
   runbook in `docs/MVP_PRESENTATION.md`)
+- [x] Server-side pagination + filters/sort on `GET /alerts` and
+      `GET /transactions`; alerts default to active statuses; transaction
+      delta poll via `afterId`; virtualized lists + debounced search in UI
+      (plan: `.cursor/plans/008-list-pagination-ui-smoothness.md`)
 
 
 

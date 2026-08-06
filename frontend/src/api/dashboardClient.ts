@@ -46,12 +46,12 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 }
 
 export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
-  const [transactions, alerts] = await Promise.all([
-    getTransactions({}),
-    getAlerts(),
+  const [transactionsPage, alertsPage] = await Promise.all([
+    getTransactions({ page: 0, size: 200, sort: 'timestamp,desc' }),
+    getAlerts({ status: 'ALL', page: 0, size: 200, sort: 'createdAt,desc' }),
   ]);
 
-  return aggregateAnalytics(transactions, alerts);
+  return aggregateAnalytics(transactionsPage.items, alertsPage.items);
 }
 
 export function getDemoDashboardAnalytics(): DashboardAnalytics {

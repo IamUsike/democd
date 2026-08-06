@@ -1,14 +1,31 @@
 import { apiGet, apiPatch } from './http';
-import type { Alert, AlertStatusUpdateRequest } from '../types/alert';
+import type { Alert, AlertFilters, AlertStatusUpdateRequest } from '../types/alert';
+import type { PageResponse } from '../types/page';
+
+function toQueryString(filters: AlertFilters): string {
+  const params = new URLSearchParams();
+
+  if (filters.sourceType) params.set('sourceType', filters.sourceType);
+  if (filters.sourceId) params.set('sourceId', filters.sourceId);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.severity) params.set('severity', filters.severity);
+  if (filters.accountId) params.set('accountId', filters.accountId);
+  if (filters.q) params.set('q', filters.q);
+  if (filters.sort) params.set('sort', filters.sort);
+  if (filters.page != null) params.set('page', String(filters.page));
+  if (filters.size != null) params.set('size', String(filters.size));
+
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
 
 /**
- * Fetch alerts, optionally filtered by status.
- * Maps to: GET /api/v1/alerts?status={status}
- * Passing no status (or 'ALL') returns all alerts.
+ * Fetch a page of alerts with optional filters.
+ * Omitting status uses the API default (active statuses only).
+ * Pass status=ALL for full history.
  */
-export async function getAlerts(status?: string): Promise<Alert[]> {
-  const query = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
-  const envelope = await apiGet<Alert[]>(`/api/v1/alerts${query}`);
+export async function getAlerts(filters: AlertFilters = {}): Promise<PageResponse<Alert>> {
+  const envelope = await apiGet<PageResponse<Alert>>(`/api/v1/alerts${toQueryString(filters)}`);
   return envelope.data;
 }
 

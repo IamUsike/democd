@@ -1,6 +1,7 @@
 package com.example.txnmonitor.alert;
 
 import com.example.txnmonitor.api.AlertResponse;
+import com.example.txnmonitor.api.PageResponse;
 import com.example.txnmonitor.common.exception.AlertNotFoundException;
 import com.example.txnmonitor.common.exception.InvalidAlertTransitionException;
 import com.example.txnmonitor.rule.RuleMatch;
@@ -150,19 +151,29 @@ class AlertServiceTest {
 	}
 
 	@Test
-	void getAlerts_withSourceFilter_delegatesToRepository() {
+	void getAlerts_withSourceFilter_returnsPageWithoutTransactionIds() {
 		Alert alert = openAlert(1L);
-		when(alertRepository.findBySourceTypeAndSourceIdOrderByCreatedAtDesc("BANK", "HSBC-UK"))
-				.thenReturn(List.of(alert));
-		when(alertTransactionRepository.findByAlertIdIn(List.of(1L)))
-				.thenReturn(List.of(new AlertTransaction(1L, 42L)));
+		when(alertRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
+				.thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(alert)));
 
-		List<AlertResponse> results = alertService.getAlerts("BANK", "HSBC-UK", null);
+		PageResponse<AlertResponse> results = alertService.getAlerts(
+				"BANK", "HSBC-UK", null, null, null, null, null, null, 0, 50, null);
 
-		assertEquals(1, results.size());
-		assertEquals(42L, results.get(0).getTransactionId());
-		assertEquals("Triggers when a transaction amount exceeds the configured threshold.",
-				results.get(0).getRuleDescription());
+		assertEquals(1, results.items().size());
+		assertEquals(1, results.totalCount());
+		assertTrue(results.items().get(0).getTransactionIds().isEmpty());
+	}
+
+	@Test
+	void resolveStatuses_blank_defaultsToActive() {
+		assertEquals(
+				List.of("OPEN", "ACKNOWLEDGED", "INVESTIGATING"),
+				alertService.resolveStatuses(null));
+	}
+
+	@Test
+	void resolveStatuses_all_meansNoStatusFilter() {
+		assertEquals(null, alertService.resolveStatuses("ALL"));
 	}
 
 	private Transaction sampleTransaction() {
