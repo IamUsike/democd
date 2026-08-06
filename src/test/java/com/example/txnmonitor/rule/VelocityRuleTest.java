@@ -46,7 +46,7 @@ class VelocityRuleTest {
 		assertEquals(1, matches.size());
 		RuleMatch match = matches.get(0);
 		assertEquals("VELOCITY", match.ruleType());
-		assertEquals("MEDIUM", match.severity());
+		assertEquals("LOW", match.severity());
 		assertEquals(TXN_ID, match.transactionId());
 		assertTrue(match.reason().contains("6"));
 		verify(context).countRecentTransactions("ACC-1", since);

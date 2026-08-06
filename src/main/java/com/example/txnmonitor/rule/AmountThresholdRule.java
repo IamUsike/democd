@@ -12,7 +12,7 @@ import java.util.Objects;
 public final class AmountThresholdRule implements ConfigurableRule {
 
 	public static final String RULE_TYPE = "AMOUNT_THRESHOLD";
-	public static final String SEVERITY = "HIGH";
+	public static final String SEVERITY = "MEDIUM";
 
 	private volatile BigDecimal threshold;
 	private volatile boolean enabled = true;

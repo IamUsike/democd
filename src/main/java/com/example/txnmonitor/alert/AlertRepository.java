@@ -2,6 +2,7 @@ package com.example.txnmonitor.alert;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,4 +24,10 @@ public interface AlertRepository extends JpaRepository<Alert, Long>, JpaSpecific
 	long countByStatus(String status);
 
 	long countBySeverity(String severity);
+
+	@Query("SELECT a.status, COUNT(a) FROM Alert a GROUP BY a.status")
+	List<Object[]> countGroupedByStatus();
+
+	@Query("SELECT a.severity, COUNT(a) FROM Alert a GROUP BY a.severity")
+	List<Object[]> countGroupedBySeverity();
 }

@@ -12,7 +12,7 @@ import java.util.Objects;
 public final class DailyLimitRule implements ConfigurableRule {
 
 	public static final String RULE_TYPE = "DAILY_LIMIT";
-	public static final String SEVERITY = "HIGH";
+	public static final String SEVERITY = "MEDIUM";
 	private static final String DEBIT_TYPE = "DEBIT";
 
 	private volatile BigDecimal dailyLimit;

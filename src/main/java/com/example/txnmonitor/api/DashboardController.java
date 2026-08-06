@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Comparator;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/dashboard")
 @Tag(name = "Dashboard", description = "Dashboard KPI aggregations")
@@ -35,5 +38,32 @@ public class DashboardController {
 				alertRepository.countByStatus("CLOSED"),
 				alertRepository.countBySeverity("HIGH"));
 		return ResponseEntity.ok(ApiResponse.ok("Dashboard summary retrieved successfully.", summary));
+	}
+
+	@GetMapping("/analytics")
+	@Operation(
+			summary = "Dashboard analytics",
+			description = "Returns full-table group counts for dashboard graphs (not a page sample).")
+	public ResponseEntity<ApiResponse<DashboardAnalyticsResponse>> getAnalytics() {
+		DashboardAnalyticsResponse analytics = new DashboardAnalyticsResponse(
+				toGraphPoints(transactionRepository.countGroupedByType()),
+				toGraphPoints(transactionRepository.countGroupedByStatus()),
+				toGraphPoints(alertRepository.countGroupedByStatus()),
+				toGraphPoints(alertRepository.countGroupedBySeverity()));
+		return ResponseEntity.ok(ApiResponse.ok("Dashboard analytics retrieved successfully.", analytics));
+	}
+
+	private static List<GraphPointResponse> toGraphPoints(List<Object[]> rows) {
+		return rows.stream()
+				.map(row -> {
+					Object rawLabel = row[0];
+					String label = rawLabel == null || rawLabel.toString().isBlank()
+							? "UNKNOWN"
+							: rawLabel.toString();
+					long value = ((Number) row[1]).longValue();
+					return new GraphPointResponse(label, value);
+				})
+				.sorted(Comparator.comparingLong(GraphPointResponse::getValue).reversed())
+				.toList();
 	}
 }

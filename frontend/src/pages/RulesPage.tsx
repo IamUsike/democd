@@ -12,10 +12,10 @@ const RULE_ICONS: Record<string, string> = {
 };
 
 const SEVERITY_META: Record<string, { label: string; cls: string }> = {
-  AMOUNT_THRESHOLD: { label: 'HIGH',   cls: 'severity high'   },
-  VELOCITY:         { label: 'MEDIUM', cls: 'severity medium' },
-  NEW_PAYEE:        { label: 'MEDIUM', cls: 'severity medium' },
-  DAILY_LIMIT:      { label: 'HIGH',   cls: 'severity high'   },
+  AMOUNT_THRESHOLD: { label: 'MEDIUM', cls: 'severity medium' },
+  VELOCITY:         { label: 'LOW',    cls: 'severity low'    },
+  NEW_PAYEE:        { label: 'LOW',    cls: 'severity low'    },
+  DAILY_LIMIT:      { label: 'MEDIUM', cls: 'severity medium' },
 };
 
 /* ── RuleCard ──────────────────────────────────────────────────────────── */

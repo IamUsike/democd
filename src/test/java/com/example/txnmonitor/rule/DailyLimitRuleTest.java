@@ -45,7 +45,7 @@ class DailyLimitRuleTest {
 		assertEquals(1, matches.size());
 		RuleMatch match = matches.get(0);
 		assertEquals("DAILY_LIMIT", match.ruleType());
-		assertEquals("HIGH", match.severity());
+		assertEquals("MEDIUM", match.severity());
 		assertEquals(TXN_ID, match.transactionId());
 		verify(context).sumDebitAmountOnDate("ACC-1", LocalDate.of(2026, 8, 5));
 	}

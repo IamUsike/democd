@@ -19,6 +19,7 @@ export function useDashboardAnalytics() {
 
     try {
       const next = await getDashboardAnalytics();
+      setInfoMessage('Graphs use full database totals (not a page sample).');
       setAnalytics(next);
       setLastCalculatedAt(new Date());
       setSource('LIVE');

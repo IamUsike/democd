@@ -11,7 +11,7 @@ import java.util.Objects;
 public final class NewPayeeRule implements ConfigurableRule {
 
 	public static final String RULE_TYPE = "NEW_PAYEE";
-	public static final String SEVERITY = "MEDIUM";
+	public static final String SEVERITY = "LOW";
 
 	private volatile boolean enabled = true;
 
