@@ -23,5 +23,8 @@ export type TransactionFilters = {
   sourceType?: SourceType | '';
   sourceId?: string;
   accountId?: string;
+  q?: string;
+  sort?: string;
+  page?: number;
+  size?: number;
 };
-
