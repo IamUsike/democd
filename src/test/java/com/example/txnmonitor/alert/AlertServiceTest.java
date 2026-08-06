@@ -51,7 +51,20 @@ class AlertServiceTest {
 	}
 
 	@Test
+	void createFromMatches_duplicateRuleForSameTransaction_skipsSecondAlert() {
+		when(alertRepository.existsByTransactionIdAndRuleType(1L, "AMOUNT_THRESHOLD")).thenReturn(true);
+
+		List<AlertResponse> created = alertService.createFromMatches(
+				sampleTransaction(),
+				List.of(new RuleMatch("AMOUNT_THRESHOLD", "HIGH", "over threshold", 1L)));
+
+		assertTrue(created.isEmpty());
+		verify(alertRepository, never()).save(any());
+	}
+
+	@Test
 	void createFromMatches_amountThresholdMatch_persistsAlertAndLink() {
+		when(alertRepository.existsByTransactionIdAndRuleType(1L, "AMOUNT_THRESHOLD")).thenReturn(false);
 		when(alertRepository.save(any(Alert.class))).thenAnswer(invocation -> {
 			Alert alert = invocation.getArgument(0);
 			alert.setAlertId(201L);
@@ -84,6 +97,7 @@ class AlertServiceTest {
 
 	@Test
 	void createFromMatches_velocityMatch_setsDisplayName() {
+		when(alertRepository.existsByTransactionIdAndRuleType(1L, "VELOCITY")).thenReturn(false);
 		when(alertRepository.save(any(Alert.class))).thenAnswer(invocation -> {
 			Alert alert = invocation.getArgument(0);
 			alert.setAlertId(202L);

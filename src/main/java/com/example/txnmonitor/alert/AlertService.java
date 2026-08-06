@@ -48,6 +48,9 @@ public class AlertService {
 		LocalDateTime now = LocalDateTime.now();
 
 		for (RuleMatch match : matches) {
+			if (alertRepository.existsByTransactionIdAndRuleType(transaction.getTransactionId(), match.ruleType())) {
+				continue;
+			}
 			Alert alert = new Alert();
 			alert.setRuleType(match.ruleType());
 			alert.setSeverity(match.severity());
