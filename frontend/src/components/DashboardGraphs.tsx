@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { DashboardAnalytics, GraphPoint } from '../types/dashboard';
 
 type DashboardGraphsProps = {
@@ -9,6 +10,16 @@ type DashboardGraphsProps = {
   onCalculate: () => void;
   onShowDemo: () => void;
 };
+
+const TXN_TYPE_COLORS = [
+  '#38bdf8', // Sky blue (PAYMENT)
+  '#818cf8', // Indigo/Violet (TRANSFER)
+  '#2dd4bf', // Teal (REFUND)
+  '#c084fc', // Purple (DEBIT)
+  '#fb7185', // Coral pink (CREDIT / OTHER)
+  '#f472b6', // Pink
+  '#34d399', // Emerald
+];
 
 const COLOR_PALETTE: Record<string, string> = {
   // Severity Level Colors
@@ -30,19 +41,17 @@ const COLOR_PALETTE: Record<string, string> = {
   FAILED: '#ef4444',
   REJECTED: '#ef4444',
 
-  // Transaction Types / Sources
-  PAYMENT: '#3b82f6',
-  TRANSFER: '#6366f1',
-  REFUND: '#06b6d4',
-  DEBIT: '#8b5cf6',
-  CREDIT: '#10b981',
+  // Institution Sources
   BANK: '#3b82f6',
   MERCHANT: '#ec4899',
 };
 
 const FALLBACK_COLORS = ['#3b82f6', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
-function getPointColor(label: string, index: number): string {
+function getPointColor(title: string, label: string, index: number): string {
+  if (title === 'Transactions by Type') {
+    return TXN_TYPE_COLORS[index % TXN_TYPE_COLORS.length];
+  }
   const upperKey = label.trim().toUpperCase();
   return COLOR_PALETTE[upperKey] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 }
@@ -69,68 +78,120 @@ function percentageShares(values: number[]): number[] {
 }
 
 function GraphBlock({ title, points }: { title: string; points: GraphPoint[] }) {
+  const [activeLabel, setActiveLabel] = useState<string | null>(null);
   const validPoints = points.filter((point) => point.value > 0);
   const total = validPoints.reduce((sum, point) => sum + point.value, 0);
   const percentages = percentageShares(validPoints.map((point) => point.value));
-  const radius = 52;
-  const size = 120;
+  const radius = 50;
+  const size = 130;
   const circumference = 2 * Math.PI * radius;
 
   let cumulative = 0;
+  const activePoint = validPoints.find((p) => p.label === activeLabel);
+  const activeIndex = validPoints.findIndex((p) => p.label === activeLabel);
 
   return (
     <article className="analytics-graph-block">
-      <h3>{title}</h3>
+      <div className="analytics-graph-header">
+        <h3>{title}</h3>
+        <span className="analytics-graph-count">{total} total</span>
+      </div>
       {total === 0 ? (
-        <p className="muted">No data available.</p>
+        <p className="muted analytics-empty-state">No data available</p>
       ) : (
         <div className="analytics-pie-layout">
-          <svg className="analytics-pie" viewBox={`0 0 ${size} ${size}`} role="img" aria-label={title}>
-            <circle
-              className="analytics-pie-base"
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              strokeWidth="14"
-              fill="none"
-            />
-            <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-              {validPoints.map((point, index) => {
-                const sliceSize = (point.value / total) * circumference;
-                const sliceOffset = cumulative;
-                cumulative += sliceSize;
+          <div className="analytics-donut-wrapper">
+            <svg className="analytics-pie" viewBox={`0 0 ${size} ${size}`} role="img" aria-label={title}>
+              <circle
+                className="analytics-pie-base"
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                strokeWidth="12"
+                fill="none"
+              />
+              <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+                {validPoints.map((point, index) => {
+                  const sliceSize = (point.value / total) * circumference;
+                  const sliceOffset = cumulative;
+                  cumulative += sliceSize;
+                  const isHovered = activeLabel === point.label;
+                  const color = getPointColor(title, point.label, index);
 
-                return (
-                  <circle
-                    key={point.label}
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    strokeWidth="14"
-                    fill="none"
-                    stroke={getPointColor(point.label, index)}
-                    strokeDasharray={`${sliceSize} ${circumference - sliceSize}`}
-                    strokeDashoffset={-sliceOffset}
-                    strokeLinecap="butt"
-                  />
-                );
-              })}
-            </g>
-          </svg>
+                  return (
+                    <circle
+                      key={point.label}
+                      cx={size / 2}
+                      cy={size / 2}
+                      r={radius}
+                      strokeWidth={isHovered ? 17 : 13}
+                      fill="none"
+                      stroke={color}
+                      strokeDasharray={`${sliceSize} ${circumference - sliceSize}`}
+                      strokeDashoffset={-sliceOffset}
+                      strokeLinecap="butt"
+                      className={`analytics-pie-slice ${isHovered ? 'active' : ''}`}
+                      onMouseEnter={() => setActiveLabel(point.label)}
+                      onMouseLeave={() => setActiveLabel(null)}
+                      style={{
+                        transition: 'stroke-width 0.2s ease, opacity 0.2s ease',
+                        opacity: activeLabel === null || isHovered ? 1 : 0.45,
+                        cursor: 'pointer',
+                      }}
+                    />
+                  );
+                })}
+              </g>
+            </svg>
+            <div className="analytics-donut-center">
+              {activePoint ? (
+                <>
+                  <span className="donut-center-pct">{percentages[activeIndex]}%</span>
+                  <span className="donut-center-sub" style={{ color: getPointColor(title, activePoint.label, activeIndex) }}>
+                    {activePoint.label}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="donut-center-val">{total}</span>
+                  <span className="donut-center-sub">TOTAL</span>
+                </>
+              )}
+            </div>
+          </div>
 
           <div className="analytics-legend">
-            {validPoints.map((point, index) => (
-              <div key={point.label} className="analytics-legend-row">
-                <span
-                  className="analytics-legend-dot"
-                  style={{ backgroundColor: getPointColor(point.label, index) }}
-                  aria-hidden="true"
-                />
-                <span className="analytics-legend-label">{point.label}</span>
-                <span className="analytics-legend-value">{point.value}</span>
-                <span className="analytics-legend-pct">{percentages[index]}%</span>
-              </div>
-            ))}
+            {validPoints.map((point, index) => {
+              const isHovered = activeLabel === point.label;
+              const color = getPointColor(title, point.label, index);
+
+              return (
+                <div
+                  key={point.label}
+                  className={`analytics-legend-row ${isHovered ? 'active' : ''}`}
+                  onMouseEnter={() => setActiveLabel(point.label)}
+                  onMouseLeave={() => setActiveLabel(null)}
+                  style={{
+                    opacity: activeLabel === null || isHovered ? 1 : 0.4,
+                    transition: 'opacity 0.2s ease, transform 0.15s ease',
+                  }}
+                >
+                  <span
+                    className="analytics-legend-dot"
+                    style={{
+                      backgroundColor: color,
+                      boxShadow: isHovered ? `0 0 8px ${color}` : 'none',
+                    }}
+                    aria-hidden="true"
+                  />
+                  <span className="analytics-legend-label">{point.label}</span>
+                  <span className="analytics-legend-value">{point.value}</span>
+                  <span className="analytics-legend-pct" style={{ color: isHovered ? color : 'var(--text-secondary)' }}>
+                    {percentages[index]}%
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
