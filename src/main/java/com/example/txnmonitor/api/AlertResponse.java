@@ -12,6 +12,7 @@ public class AlertResponse {
 	private String status;
 	private String ruleTriggered;
 	private String ruleType;
+	private List<String> ruleTypes;
 	private String accountId;
 	private String sourceType;
 	private String sourceId;
@@ -82,6 +83,14 @@ public class AlertResponse {
 
 	public void setRuleType(String ruleType) {
 		this.ruleType = ruleType;
+	}
+
+	public List<String> getRuleTypes() {
+		return ruleTypes;
+	}
+
+	public void setRuleTypes(List<String> ruleTypes) {
+		this.ruleTypes = ruleTypes;
 	}
 
 	public String getAccountId() {

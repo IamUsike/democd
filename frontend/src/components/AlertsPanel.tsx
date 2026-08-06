@@ -90,7 +90,15 @@ export function AlertsPanel({
                       <strong className="alert-item-id">#{alert.alertId}</strong>
                       <StatusIndicator status={alert.status} />
                     </div>
-                    <p className="alert-item-rule">{alert.ruleTriggered}</p>
+                    {alert.ruleTypes && alert.ruleTypes.length > 1 ? (
+                      <ul className="alert-item-rules">
+                        {alert.ruleTypes.map((ruleType) => (
+                          <li key={ruleType}>{ruleType.replace(/_/g, ' ')}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="alert-item-rule">{alert.ruleTriggered}</p>
+                    )}
                     {alert.failingReason && (
                       <p className="alert-item-reason">{alert.failingReason}</p>
                     )}

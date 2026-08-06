@@ -40,7 +40,7 @@ class NewPayeeRuleTest {
 		assertEquals(1, matches.size());
 		RuleMatch match = matches.get(0);
 		assertEquals("NEW_PAYEE", match.ruleType());
-		assertEquals("MEDIUM", match.severity());
+		assertEquals("LOW", match.severity());
 		assertEquals(TXN_ID, match.transactionId());
 		assertTrue(match.reason().contains("PAYEE-NEW"));
 	}

@@ -11,7 +11,7 @@ import java.util.Objects;
 public final class VelocityRule implements ConfigurableRule {
 
 	public static final String RULE_TYPE = "VELOCITY";
-	public static final String SEVERITY = "MEDIUM";
+	public static final String SEVERITY = "LOW";
 
 	private volatile int maxTransactions;
 	private volatile int windowMinutes;

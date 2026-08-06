@@ -884,7 +884,8 @@ tbody tr:hover {
   box-sizing: border-box;
 }
 
-.detail-grid p {
+.detail-grid p,
+.detail-grid .detail-field {
   margin: 0;
   color: var(--text-primary);
   font-size: 0.85rem;
@@ -1341,6 +1342,21 @@ tbody tr:hover {
   text-overflow: ellipsis;
 }
 
+.alert-item-rules {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 0.15rem;
+}
+
+.alert-item-rules li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .alert-item-reason {
   margin: 0;
   font-size: 0.76rem;
@@ -1398,6 +1414,22 @@ tbody tr:hover {
   font-size: 0.87rem;
   color: var(--text-primary);
   line-height: 1.5;
+}
+
+.alert-multi-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.87rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.alert-multi-list-inline {
+  display: inline-grid;
+  margin-left: 0.25rem;
+  color: var(--text-secondary);
 }
 
 /* ── Rule description ── */

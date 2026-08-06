@@ -1,0 +1,8 @@
+ALTER TABLE alerts
+    MODIFY COLUMN rule_type VARCHAR(255) NOT NULL;
+
+ALTER TABLE alerts
+    MODIFY COLUMN rule_description VARCHAR(2000) NULL;
+
+ALTER TABLE alerts
+    MODIFY COLUMN failing_reason VARCHAR(4000) NULL;

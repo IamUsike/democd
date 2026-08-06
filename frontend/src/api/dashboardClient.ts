@@ -1,6 +1,4 @@
 import { apiGet } from './http';
-import { getAlerts } from './alertsClient';
-import { getTransactions } from './transactionsClient';
 import { demoAlerts, demoTransactions } from '../data/demoData';
 import type { Alert } from '../types/alert';
 import type { Transaction } from '../types/transaction';
@@ -45,13 +43,10 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   return envelope.data;
 }
 
+/** Full-table GROUP BY counts from the API — not a page sample. */
 export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
-  const [transactionsPage, alertsPage] = await Promise.all([
-    getTransactions({ page: 0, size: 200, sort: 'timestamp,desc' }),
-    getAlerts({ status: 'ALL', page: 0, size: 200, sort: 'createdAt,desc' }),
-  ]);
-
-  return aggregateAnalytics(transactionsPage.items, alertsPage.items);
+  const envelope = await apiGet<DashboardAnalytics>('/api/v1/dashboard/analytics');
+  return envelope.data;
 }
 
 export function getDemoDashboardAnalytics(): DashboardAnalytics {

@@ -14,6 +14,7 @@ export type Alert = {
   severity: AlertSeverity;
   status: AlertStatus;
   ruleType?: string;
+  ruleTypes?: string[];
   ruleTriggered: string;
   accountId?: string | null;
   sourceType?: 'BANK' | 'MERCHANT' | null;

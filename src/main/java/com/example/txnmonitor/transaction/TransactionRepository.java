@@ -42,4 +42,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
             @Param("type") String type,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+
+    @Query("SELECT t.type, COUNT(t) FROM Transaction t GROUP BY t.type")
+    List<Object[]> countGroupedByType();
+
+    @Query("SELECT t.status, COUNT(t) FROM Transaction t GROUP BY t.status")
+    List<Object[]> countGroupedByStatus();
 }
