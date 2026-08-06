@@ -1,4 +1,4 @@
-.PHONY: run build tidy lint clean test help
+.PHONY: run build tidy lint clean test integration-test test-short help
 
 ## run: start the simulator in development mode (reads .env)
 run:
@@ -12,9 +12,17 @@ build:
 tidy:
 	go mod tidy
 
-## test: run all unit tests
+## test: run all unit tests + integration tests
 test:
 	go test ./... -v -race -timeout 60s
+
+## integration-test: run only integration tests
+integration-test:
+	go test ./test -v -race -timeout 60s
+
+## test-short: run tests, skipping long-running integration tests
+test-short:
+	go test ./... -short -v -timeout 30s
 
 ## lint: run golangci-lint (must be installed separately)
 lint:

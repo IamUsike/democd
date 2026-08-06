@@ -11,13 +11,20 @@ import (
 
 // SimulatorController manages simulation lifecycle via REST endpoints.
 type SimulatorController struct {
-	svc    *service.SimulatorService
+	svc    simulatorService
 	logger *slog.Logger
+}
+
+// simulatorService is the minimal contract used by the controller.
+type simulatorService interface {
+	Start(request service.SimulationRequest) error
+	Stop() error
+	Metrics() service.SimulationMetrics
 }
 
 // NewSimulatorController returns a ready-to-use SimulatorController.
 func NewSimulatorController(
-	svc *service.SimulatorService,
+	svc simulatorService,
 	logger *slog.Logger,
 ) *SimulatorController {
 	if logger == nil {

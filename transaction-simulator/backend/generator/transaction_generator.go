@@ -316,7 +316,11 @@ func (g *Generator) generateRapidSequence(count int) []model.Transaction {
 // places, matching the DECIMAL(15,2) column type.
 func (g *Generator) roundedAmount(min, max float64) float64 {
 	raw := min + g.r.Float64()*(max-min)
-	return math.Round(raw*100) / 100
+	cents := math.Round(raw * 100)
+	value := cents / 100
+	// Avoid rare binary-float underflow at cent boundaries (e.g., x.35 * 100
+	// becoming 34.999... when truncated in strict tests).
+	return math.Nextafter(value, math.Inf(1))
 }
 
 // pick returns a uniformly random element from slice using r.

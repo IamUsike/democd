@@ -55,12 +55,12 @@ make run
 go run ./cmd
 ```
 
-Server starts on `http://localhost:8090` by default.
+Server starts on `http://localhost:8080` by default (or use `SERVER_PORT` env var).
 
 ### 5. Verify
 
 ```bash
-curl http://localhost:8090/health
+curl http://localhost:8080/health
 ```
 
 Expected response:
@@ -71,6 +71,63 @@ Expected response:
   "service": "transaction-simulator",
   "timestamp": "2026-08-06T10:00:00Z"
 }
+```
+
+## Running locally
+
+### Run in development mode
+
+```bash
+go run ./cmd
+```
+
+### Run tests
+
+```bash
+go test ./...
+```
+
+## Running with Docker
+
+### Build and run the container
+
+```bash
+docker compose up --build
+```
+
+This will:
+1. Build the Docker image (multi-stage: builder → alpine runtime)
+2. Start the `transaction-simulator-backend` service
+3. Expose port 8080 on your machine
+4. Load environment variables from `.env` (if it exists) or `docker-compose.yml`
+
+### Verify the container is running
+
+```bash
+curl http://localhost:8080/health
+```
+
+### Stop the container
+
+```bash
+docker compose down
+```
+
+### Build Docker image manually
+
+```bash
+docker build -t transaction-simulator:latest .
+```
+
+### Run container directly (without compose)
+
+```bash
+docker run -d \
+  --name simulator \
+  -p 8080:8080 \
+  -e TRANSACTION_API_URL=http://host.docker.internal:8081/api/v1/transactions \
+  -e SERVER_PORT=8080 \
+  transaction-simulator:latest
 ```
 
 ## Available make targets
