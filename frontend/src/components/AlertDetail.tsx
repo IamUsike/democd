@@ -68,6 +68,18 @@ export function AlertDetail({ alert, loading = false, updating, onChangeStatus }
       ? [alert.transactionId]
       : [];
 
+  const ruleTypes = alert.ruleTypes?.length
+    ? alert.ruleTypes
+    : alert.ruleType
+      ? alert.ruleType.split(',').map((part) => part.trim()).filter(Boolean)
+      : [];
+  const failingReasons = alert.failingReason
+    ? alert.failingReason.split(' | ').map((part) => part.trim()).filter(Boolean)
+    : [];
+  const ruleDescriptions = alert.ruleDescription
+    ? alert.ruleDescription.split(' | ').map((part) => part.trim()).filter(Boolean)
+    : [];
+
   return (
     <section className="card alert-detail">
       <header className="section-header">
@@ -77,10 +89,25 @@ export function AlertDetail({ alert, loading = false, updating, onChangeStatus }
 
       {loading && <p className="muted">Refreshing detail…</p>}
 
-      {alert.failingReason && (
+      {failingReasons.length > 0 && (
         <div className="alert-failing-reason">
-          <p className="alert-fr-label">Failing Reason</p>
-          <p className="alert-fr-text">{alert.failingReason}</p>
+          <p className="alert-fr-label">
+            {failingReasons.length > 1 ? 'Failing Reasons' : 'Failing Reason'}
+          </p>
+          {failingReasons.length > 1 ? (
+            <ul className="alert-multi-list">
+              {failingReasons.map((reason, index) => (
+                <li key={`${reason}-${index}`}>
+                  {ruleTypes[index] ? (
+                    <strong>{ruleTypes[index].replace(/_/g, ' ')}: </strong>
+                  ) : null}
+                  {reason}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="alert-fr-text">{failingReasons[0]}</p>
+          )}
         </div>
       )}
 
@@ -88,9 +115,18 @@ export function AlertDetail({ alert, loading = false, updating, onChangeStatus }
         <p>
           <strong>Status</strong> <StatusIndicator status={alert.status} />
         </p>
-        <p>
-          <strong>Rule</strong> <span>{alert.ruleTriggered}</span>
-        </p>
+        <div className="detail-field">
+          <strong>{ruleTypes.length > 1 ? 'Rules' : 'Rule'}</strong>{' '}
+          {ruleTypes.length > 1 ? (
+            <ul className="alert-multi-list alert-multi-list-inline">
+              {ruleTypes.map((ruleType) => (
+                <li key={ruleType}>{ruleType.replace(/_/g, ' ')}</li>
+              ))}
+            </ul>
+          ) : (
+            <span>{alert.ruleTriggered}</span>
+          )}
+        </div>
         <p>
           <strong>Account</strong>{' '}
           <span className="cell-data">{alert.accountId ?? '—'}</span>
@@ -110,10 +146,25 @@ export function AlertDetail({ alert, loading = false, updating, onChangeStatus }
         </p>
       </div>
 
-      {alert.ruleDescription && (
+      {ruleDescriptions.length > 0 && (
         <div className="alert-rule-desc">
-          <p className="alert-rd-label">Rule Description</p>
-          <p className="alert-rd-text">{alert.ruleDescription}</p>
+          <p className="alert-rd-label">
+            {ruleDescriptions.length > 1 ? 'Rule Descriptions' : 'Rule Description'}
+          </p>
+          {ruleDescriptions.length > 1 ? (
+            <ul className="alert-multi-list">
+              {ruleDescriptions.map((description, index) => (
+                <li key={`${description}-${index}`}>
+                  {ruleTypes[index] ? (
+                    <strong>{ruleTypes[index].replace(/_/g, ' ')}: </strong>
+                  ) : null}
+                  {description}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="alert-rd-text">{ruleDescriptions[0]}</p>
+          )}
         </div>
       )}
 

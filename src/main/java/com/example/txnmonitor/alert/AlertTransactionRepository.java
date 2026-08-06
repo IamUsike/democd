@@ -11,4 +11,6 @@ public interface AlertTransactionRepository extends JpaRepository<AlertTransacti
 	List<AlertTransaction> findByAlertId(Long alertId);
 
 	List<AlertTransaction> findByAlertIdIn(List<Long> alertIds);
+
+	boolean existsByTransactionId(Long transactionId);
 }

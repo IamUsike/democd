@@ -53,6 +53,7 @@ class AlertServiceTest {
 
 	@Test
 	void createFromMatches_amountThresholdMatch_persistsAlertAndLink() {
+		when(alertTransactionRepository.existsByTransactionId(1L)).thenReturn(false);
 		when(alertRepository.save(any(Alert.class))).thenAnswer(invocation -> {
 			Alert alert = invocation.getArgument(0);
 			alert.setAlertId(201L);
@@ -61,11 +62,14 @@ class AlertServiceTest {
 
 		List<AlertResponse> created = alertService.createFromMatches(
 				sampleTransaction(),
-				List.of(new RuleMatch("AMOUNT_THRESHOLD", "HIGH", "over threshold", 1L)));
+				List.of(new RuleMatch("AMOUNT_THRESHOLD", "MEDIUM", "over threshold", 1L)));
 
 		assertEquals(1, created.size());
 		assertEquals(201L, created.get(0).getAlertId());
 		assertEquals("OPEN", created.get(0).getStatus());
+		assertEquals("MEDIUM", created.get(0).getSeverity());
+		assertEquals("AMOUNT_THRESHOLD", created.get(0).getRuleType());
+		assertEquals(List.of("AMOUNT_THRESHOLD"), created.get(0).getRuleTypes());
 		assertEquals("Amount Threshold Rule", created.get(0).getRuleTriggered());
 		assertEquals("Triggers when a transaction amount exceeds the configured threshold.",
 				created.get(0).getRuleDescription());
@@ -85,6 +89,7 @@ class AlertServiceTest {
 
 	@Test
 	void createFromMatches_velocityMatch_setsDisplayName() {
+		when(alertTransactionRepository.existsByTransactionId(1L)).thenReturn(false);
 		when(alertRepository.save(any(Alert.class))).thenAnswer(invocation -> {
 			Alert alert = invocation.getArgument(0);
 			alert.setAlertId(202L);
@@ -93,8 +98,10 @@ class AlertServiceTest {
 
 		List<AlertResponse> created = alertService.createFromMatches(
 				sampleTransaction(),
-				List.of(new RuleMatch("VELOCITY", "MEDIUM", "too fast", 1L)));
+				List.of(new RuleMatch("VELOCITY", "LOW", "too fast", 1L)));
 
+		assertEquals("LOW", created.get(0).getSeverity());
+		assertEquals(List.of("VELOCITY"), created.get(0).getRuleTypes());
 		assertEquals("Velocity Rule", created.get(0).getRuleTriggered());
 		assertEquals("Triggers when an account performs more than allowed transactions within a specific time window.",
 				created.get(0).getRuleDescription());
@@ -102,7 +109,8 @@ class AlertServiceTest {
 	}
 
 	@Test
-	void createFromMatches_multipleMatches_escalatesSeverityToHigh() {
+	void createFromMatches_multipleMatches_createsSingleAlertWithEscalatedSeverity() {
+		when(alertTransactionRepository.existsByTransactionId(1L)).thenReturn(false);
 		when(alertRepository.save(any(Alert.class))).thenAnswer(invocation -> {
 			Alert alert = invocation.getArgument(0);
 			alert.setAlertId(300L);
@@ -112,14 +120,38 @@ class AlertServiceTest {
 		List<AlertResponse> created = alertService.createFromMatches(
 				sampleTransaction(),
 				List.of(
-						new RuleMatch("VELOCITY", "MEDIUM", "too fast", 1L),
-						new RuleMatch("NEW_PAYEE", "MEDIUM", "new payee", 1L)
+						new RuleMatch("VELOCITY", "LOW", "too fast", 1L),
+						new RuleMatch("NEW_PAYEE", "LOW", "new payee", 1L)
 				));
 
-		assertEquals(2, created.size());
-		assertEquals("HIGH", created.get(0).getSeverity());
-		assertEquals("HIGH", created.get(1).getSeverity());
-		assertTrue(created.get(0).getFailingReason().contains("[MULTIPLE RULES TRIGGERED: 2 rules matched]"));
+		assertEquals(1, created.size());
+		AlertResponse alert = created.get(0);
+		assertEquals("HIGH", alert.getSeverity());
+		assertEquals("NEW_PAYEE,VELOCITY", alert.getRuleType());
+		assertEquals(List.of("NEW_PAYEE", "VELOCITY"), alert.getRuleTypes());
+		assertEquals("New Payee Rule + Velocity Rule", alert.getRuleTriggered());
+		assertTrue(alert.getFailingReason().contains("new payee"));
+		assertTrue(alert.getFailingReason().contains("too fast"));
+		assertTrue(alert.getRuleDescription().contains(
+				"Triggers when a transaction is made to a newly added payee."));
+		assertTrue(alert.getRuleDescription().contains(
+				"Triggers when an account performs more than allowed transactions within a specific time window."));
+
+		verify(alertRepository).save(any(Alert.class));
+		verify(alertTransactionRepository).save(any(AlertTransaction.class));
+	}
+
+	@Test
+	void createFromMatches_alertAlreadyLinkedToTransaction_skipsPersist() {
+		when(alertTransactionRepository.existsByTransactionId(1L)).thenReturn(true);
+
+		List<AlertResponse> created = alertService.createFromMatches(
+				sampleTransaction(),
+				List.of(new RuleMatch("AMOUNT_THRESHOLD", "MEDIUM", "over threshold", 1L)));
+
+		assertTrue(created.isEmpty());
+		verify(alertRepository, never()).save(any());
+		verify(alertTransactionRepository, never()).save(any());
 	}
 
 	@Test

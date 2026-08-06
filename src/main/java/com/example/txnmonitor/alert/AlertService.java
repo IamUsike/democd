@@ -14,13 +14,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class AlertService {
@@ -53,36 +55,40 @@ public class AlertService {
 		if (matches == null || matches.isEmpty()) {
 			return List.of();
 		}
-
-		List<AlertResponse> created = new ArrayList<>();
-		LocalDateTime now = LocalDateTime.now();
-
-		boolean multipleMatches = matches.size() > 1;
-
-		for (RuleMatch match : matches) {
-			Alert alert = new Alert();
-			alert.setRuleType(match.ruleType());
-			// If multiple rules fire for a single transaction, escalate severity to HIGH
-			alert.setSeverity(multipleMatches ? "HIGH" : match.severity());
-			alert.setRuleDescription(ruleDescriptionForRuleType(match.ruleType()));
-			String reason = resolveFailingReason(match, transaction);
-			if (multipleMatches) {
-				reason += " [MULTIPLE RULES TRIGGERED: " + matches.size() + " rules matched]";
-			}
-			alert.setFailingReason(reason);
-			alert.setStatus(AlertStatus.OPEN.name());
-			alert.setAccountId(transaction.getAccountId());
-			alert.setSourceType(transaction.getSourceType());
-			alert.setSourceId(transaction.getSourceId());
-			alert.setSourceName(transaction.getSourceName());
-			alert.setCreatedAt(now);
-
-			Alert saved = alertRepository.save(alert);
-			alertTransactionRepository.save(new AlertTransaction(saved.getAlertId(), transaction.getTransactionId()));
-			created.add(toResponse(saved, List.of(transaction.getTransactionId())));
+		if (alertTransactionRepository.existsByTransactionId(transaction.getTransactionId())) {
+			return List.of();
 		}
 
-		return created;
+		List<RuleMatch> ordered = matches.stream()
+				.sorted(Comparator.comparing(RuleMatch::ruleType))
+				.toList();
+
+		boolean multipleMatches = ordered.size() > 1;
+		List<String> ruleTypes = ordered.stream().map(RuleMatch::ruleType).toList();
+		String severity = multipleMatches ? "HIGH" : ordered.get(0).severity();
+		String ruleType = String.join(",", ruleTypes);
+		String ruleDescription = ordered.stream()
+				.map(match -> ruleDescriptionForRuleType(match.ruleType()))
+				.collect(Collectors.joining(" | "));
+		String failingReason = ordered.stream()
+				.map(match -> resolveFailingReason(match, transaction))
+				.collect(Collectors.joining(" | "));
+
+		Alert alert = new Alert();
+		alert.setRuleType(ruleType);
+		alert.setSeverity(severity);
+		alert.setRuleDescription(ruleDescription);
+		alert.setFailingReason(failingReason);
+		alert.setStatus(AlertStatus.OPEN.name());
+		alert.setAccountId(transaction.getAccountId());
+		alert.setSourceType(transaction.getSourceType());
+		alert.setSourceId(transaction.getSourceId());
+		alert.setSourceName(transaction.getSourceName());
+		alert.setCreatedAt(LocalDateTime.now());
+
+		Alert saved = alertRepository.save(alert);
+		alertTransactionRepository.save(new AlertTransaction(saved.getAlertId(), transaction.getTransactionId()));
+		return List.of(toResponse(saved, List.of(transaction.getTransactionId())));
 	}
 
 	public PageResponse<AlertResponse> getAlerts(
@@ -179,6 +185,7 @@ public class AlertService {
 	}
 
 	private AlertResponse toResponse(Alert alert, List<Long> transactionIds) {
+		List<String> ruleTypes = parseRuleTypes(alert.getRuleType());
 		AlertResponse response = new AlertResponse();
 		response.setAlertId(alert.getAlertId());
 		response.setTransactionIds(transactionIds);
@@ -186,7 +193,8 @@ public class AlertService {
 		response.setSeverity(alert.getSeverity());
 		response.setStatus(alert.getStatus());
 		response.setRuleType(alert.getRuleType());
-		response.setRuleTriggered(displayRuleName(alert.getRuleType()));
+		response.setRuleTypes(ruleTypes);
+		response.setRuleTriggered(displayRuleNames(ruleTypes));
 		response.setAccountId(alert.getAccountId());
 		response.setSourceType(alert.getSourceType());
 		response.setSourceId(alert.getSourceId());
@@ -200,6 +208,22 @@ public class AlertService {
 		response.setRuleDescription(alert.getRuleDescription());
 		response.setFailingReason(alert.getFailingReason());
 		return response;
+	}
+
+	private List<String> parseRuleTypes(String ruleType) {
+		if (!hasText(ruleType)) {
+			return List.of();
+		}
+		return Arrays.stream(ruleType.split(","))
+				.map(String::trim)
+				.filter(part -> !part.isEmpty())
+				.toList();
+	}
+
+	private String displayRuleNames(List<String> ruleTypes) {
+		return ruleTypes.stream()
+				.map(this::displayRuleName)
+				.collect(Collectors.joining(" + "));
 	}
 
 	private String displayRuleName(String ruleType) {

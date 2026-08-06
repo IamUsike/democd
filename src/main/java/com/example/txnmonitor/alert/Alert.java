@@ -19,7 +19,7 @@ public class Alert {
 	@Column(name = "alert_id")
 	private Long alertId;
 
-	@Column(name = "rule_type", nullable = false, length = 64)
+	@Column(name = "rule_type", nullable = false, length = 255)
 	private String ruleType;
 
 	@Column(name = "account_id", nullable = false, length = 64)
@@ -58,10 +58,10 @@ public class Alert {
 	@Column(name = "resolution_notes", length = 1000)
 	private String resolutionNotes;
 
-	@Column(name = "rule_description", length = 500)
+	@Column(name = "rule_description", length = 2000)
 	private String ruleDescription;
 
-	@Column(name = "failing_reason", length = 1000)
+	@Column(name = "failing_reason", length = 4000)
 	private String failingReason;
 
 	public Alert() {
