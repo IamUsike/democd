@@ -9,6 +9,7 @@ export function DashboardPage() {
     analytics,
     loading: analyticsLoading,
     warning: analyticsWarning,
+    infoMessage: analyticsInfo,
     lastCalculatedAt,
     source,
     calculateGraphs,
@@ -41,6 +42,7 @@ export function DashboardPage() {
         loading={analyticsLoading}
         lastCalculatedAt={lastCalculatedAt}
         source={source}
+        infoMessage={analyticsInfo}
         onCalculate={calculateGraphs}
         onShowDemo={calculateDemoGraphs}
       />

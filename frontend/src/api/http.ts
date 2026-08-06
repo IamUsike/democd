@@ -51,7 +51,16 @@ export async function apiPut<TRequest, TResponse>(
   });
 
   if (!response.ok) {
-    throw new Error(`PUT ${path} failed with status ${response.status}`);
+    let detail = `PUT ${path} failed with status ${response.status}`;
+    try {
+      const errBody = (await response.json()) as { message?: string };
+      if (errBody.message) {
+        detail = errBody.message;
+      }
+    } catch {
+      // keep status-based message
+    }
+    throw new Error(detail);
   }
 
   return (await response.json()) as ApiEnvelope<TResponse>;

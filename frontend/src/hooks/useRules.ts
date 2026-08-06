@@ -34,8 +34,10 @@ export function useRules() {
       setRules((prev) => prev.map((r) => (r.ruleType === ruleType ? updated : r)));
       setSuccessMsg(`${updated.name} updated successfully.`);
       setTimeout(() => setSuccessMsg(null), 3000);
-    } catch {
-      setError(`Failed to save changes for ${ruleType}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : `Failed to save changes for ${ruleType}.`;
+      setError(message);
+      throw err;
     } finally {
       setSaving(null);
     }

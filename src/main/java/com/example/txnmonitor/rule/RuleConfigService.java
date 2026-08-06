@@ -2,6 +2,7 @@ package com.example.txnmonitor.rule;
 
 import com.example.txnmonitor.api.RuleConfigResponse;
 import com.example.txnmonitor.api.RuleConfigUpdateRequest;
+import com.example.txnmonitor.common.exception.InvalidRuleConfigException;
 import com.example.txnmonitor.common.exception.RuleNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,35 +53,89 @@ public class RuleConfigService {
 		RuleConfig config = ruleConfigRepository.findById(key)
 				.orElseThrow(() -> new RuleNotFoundException(ruleType));
 
-		// Apply enabled flag
+		rejectForeignParameters(key, request);
+
 		if (request.getEnabled() != null) {
 			config.setEnabled(request.getEnabled());
 		}
 
-		// Apply numeric params (only those present in the request)
-		if (request.getAmountThreshold() != null) {
-			config.setAmountThreshold(request.getAmountThreshold());
-		}
-		if (request.getVelocityMaxTransactions() != null) {
-			config.setVelocityMaxTransactions(request.getVelocityMaxTransactions());
-		}
-		if (request.getVelocityWindowMinutes() != null) {
-			config.setVelocityWindowMinutes(request.getVelocityWindowMinutes());
-		}
-		if (request.getDailyLimit() != null) {
-			config.setDailyLimit(request.getDailyLimit());
+		switch (key) {
+			case "AMOUNT_THRESHOLD" -> {
+				if (request.getAmountThreshold() != null) {
+					config.setAmountThreshold(request.getAmountThreshold());
+				}
+			}
+			case "VELOCITY" -> {
+				if (request.getVelocityMaxTransactions() != null) {
+					config.setVelocityMaxTransactions(request.getVelocityMaxTransactions());
+				}
+				if (request.getVelocityWindowMinutes() != null) {
+					config.setVelocityWindowMinutes(request.getVelocityWindowMinutes());
+				}
+			}
+			case "DAILY_LIMIT" -> {
+				if (request.getDailyLimit() != null) {
+					config.setDailyLimit(request.getDailyLimit());
+				}
+			}
+			case "NEW_PAYEE" -> {
+				// enable/disable only — no numeric params
+			}
+			default -> {
+				// unknown types still only allow enabled (already applied)
+			}
 		}
 
 		config.setUpdatedAt(LocalDateTime.now());
 		RuleConfig saved = ruleConfigRepository.save(config);
 
-		// Propagate to the live rule bean — no switch, no coupling to concrete types
 		ConfigurableRule liveRule = rulesByType.get(saved.getRuleType());
 		if (liveRule != null) {
 			liveRule.applyConfig(saved);
 		}
 
 		return toResponse(saved);
+	}
+
+	/**
+	 * Rejects numeric fields that do not belong to the target rule type so the DB
+	 * row cannot be polluted by cross-type PUT payloads.
+	 */
+	private void rejectForeignParameters(String ruleType, RuleConfigUpdateRequest request) {
+		switch (ruleType) {
+			case "AMOUNT_THRESHOLD" -> {
+				rejectIfPresent(ruleType, "velocityMaxTransactions", request.getVelocityMaxTransactions());
+				rejectIfPresent(ruleType, "velocityWindowMinutes", request.getVelocityWindowMinutes());
+				rejectIfPresent(ruleType, "dailyLimit", request.getDailyLimit());
+			}
+			case "VELOCITY" -> {
+				rejectIfPresent(ruleType, "amountThreshold", request.getAmountThreshold());
+				rejectIfPresent(ruleType, "dailyLimit", request.getDailyLimit());
+			}
+			case "DAILY_LIMIT" -> {
+				rejectIfPresent(ruleType, "amountThreshold", request.getAmountThreshold());
+				rejectIfPresent(ruleType, "velocityMaxTransactions", request.getVelocityMaxTransactions());
+				rejectIfPresent(ruleType, "velocityWindowMinutes", request.getVelocityWindowMinutes());
+			}
+			case "NEW_PAYEE" -> {
+				rejectIfPresent(ruleType, "amountThreshold", request.getAmountThreshold());
+				rejectIfPresent(ruleType, "velocityMaxTransactions", request.getVelocityMaxTransactions());
+				rejectIfPresent(ruleType, "velocityWindowMinutes", request.getVelocityWindowMinutes());
+				rejectIfPresent(ruleType, "dailyLimit", request.getDailyLimit());
+			}
+			default -> {
+				rejectIfPresent(ruleType, "amountThreshold", request.getAmountThreshold());
+				rejectIfPresent(ruleType, "velocityMaxTransactions", request.getVelocityMaxTransactions());
+				rejectIfPresent(ruleType, "velocityWindowMinutes", request.getVelocityWindowMinutes());
+				rejectIfPresent(ruleType, "dailyLimit", request.getDailyLimit());
+			}
+		}
+	}
+
+	private static void rejectIfPresent(String ruleType, String field, Object value) {
+		if (value != null) {
+			throw new InvalidRuleConfigException(field + " is not valid for rule type " + ruleType);
+		}
 	}
 
 	private RuleConfigResponse toResponse(RuleConfig config) {
