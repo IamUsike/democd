@@ -15,8 +15,7 @@ CREATE TABLE transactions (
   longitude      DECIMAL(10,7) NULL,
   description    VARCHAR(255) NULL,
   status         VARCHAR(20)  NOT NULL,
-  CONSTRAINT chk_txn_amount_positive CHECK (amount > 0),
-  CONSTRAINT chk_txn_source_type CHECK (source_type IN ('BANK', 'MERCHANT'))
+  CONSTRAINT chk_txn_amount_positive CHECK (amount > 0)
 );
 
 CREATE INDEX idx_txn_account_timestamp ON transactions (account_id, `timestamp`);

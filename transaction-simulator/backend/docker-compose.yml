@@ -1,0 +1,95 @@
+version: '3.9'
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Transaction Simulator Backend
+  # Generates synthetic transactions and submits to Transaction Monitoring API
+  # ─────────────────────────────────────────────────────────────────────────
+  transaction-simulator-backend:
+    image: transaction-simulator:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Optional: build-time arguments
+        # VERSION: ${VERSION:-dev}
+
+    container_name: transaction-simulator-backend
+
+    # ── Environment Variables ────────────────────────────────────────────────
+    # These override defaults in config/config.go. In production, use secrets
+    # management (Docker Secrets, Kubernetes Secrets, HashiCorp Vault, etc.).
+    environment:
+      # Required: URL of the Transaction Monitoring API ingest endpoint
+      TRANSACTION_API_URL: ${TRANSACTION_API_URL:-http://localhost:8081/api/v1/transactions}
+
+      # Optional: Server port (default: 8090). Set to 8080 for standard Docker.
+      SERVER_PORT: ${SERVER_PORT:-8080}
+
+      # Optional: HTTP timeouts
+      SERVER_READ_TIMEOUT: ${SERVER_READ_TIMEOUT:-10s}
+      SERVER_WRITE_TIMEOUT: ${SERVER_WRITE_TIMEOUT:-10s}
+      SERVER_IDLE_TIMEOUT: ${SERVER_IDLE_TIMEOUT:-60s}
+
+      # Optional: Logging configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+
+      # Optional: Outbound request timeout
+      TRANSACTION_API_TIMEOUT: ${TRANSACTION_API_TIMEOUT:-30s}
+
+    # ── Port Mapping ───────────────────────────────────────────────────────
+    # host:container — expose 8080 to the Docker host (or reverse proxy)
+    ports:
+      - "${SIMULATOR_PORT:-8080}:${SERVER_PORT:-8080}"
+
+    # ── Networking ──────────────────────────────────────────────────────────
+    # Connect to the default Docker network; services can reference each other
+    # by container name (e.g., transaction-simulator-backend:8080)
+    networks:
+      - monitoring-network
+
+    # ── Resource Limits (Optional but recommended for production) ────────────
+    # Prevent resource exhaustion from runaway processes
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    # ── Restart Policy ───────────────────────────────────────────────────────
+    restart: unless-stopped
+
+    # ── Logging ──────────────────────────────────────────────────────────────
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # ── Health Check (optional) ──────────────────────────────────────────────
+    # Defined in Dockerfile; can override here if needed
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${SERVER_PORT:-8080}/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    # ── Dependency (if monitoring backend is also in this compose file) ─────
+    # Uncomment and adjust if transaction-monitoring-backend is in the same compose:
+    # depends_on:
+    #   transaction-monitoring-backend:
+    #     condition: service_healthy
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared network for service-to-service communication
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  monitoring-network:
+    driver: bridge
+    name: monitoring-network
+
