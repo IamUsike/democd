@@ -2,12 +2,15 @@ import { AlertsPanel } from '../components/AlertsPanel';
 import { AlertDetail } from '../components/AlertDetail';
 import { useAlerts } from '../hooks/useAlerts';
 import type { AlertStatus } from '../types/alert';
+import type { StatusFilter } from '../hooks/useAlerts';
 
 export function AlertsPage() {
   const {
     alerts,
     selectedAlert,
     selectedAlertId,
+    statusFilter,
+    setStatusFilter,
     loading,
     warning,
     updating,
@@ -23,7 +26,7 @@ export function AlertsPage() {
     <main className="page-frame">
       <header className="page-header">
         <h2>Alerts</h2>
-        <p>Review and update alert lifecycle</p>
+        <p>Filter, inspect and manage alert lifecycle transitions</p>
       </header>
 
       {warning && (
@@ -37,9 +40,15 @@ export function AlertsPage() {
           alerts={alerts}
           selectedAlertId={selectedAlertId}
           loading={loading}
+          statusFilter={statusFilter}
+          onStatusFilter={(s: StatusFilter) => setStatusFilter(s)}
           onSelect={selectAlert}
         />
-        <AlertDetail alert={selectedAlert} updating={updating} onChangeStatus={onChangeStatus} />
+        <AlertDetail
+          alert={selectedAlert}
+          updating={updating}
+          onChangeStatus={onChangeStatus}
+        />
       </div>
     </main>
   );
