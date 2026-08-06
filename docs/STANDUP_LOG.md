@@ -9,7 +9,19 @@ Keep entries short — one to three lines each. Add a blank line between days.
 
 ## Sprint 2
 
-### 06 August 2026
+### 06 August 2026 — EOD / board refresh
+
+> **shreya:** Yesterday–today: k6 Pass 1–3 + EXPLAIN; wrote `docs/load-test-results.md` + `LOAD_TEST_GUIDE.md`. Today/next: alert simulator; unit-test sweep support. Not blocked (Linux↔Linux :8081 is network/SG — see results doc).
+
+> **sathwik:** Yesterday–today: pagination + `afterId` (stop full-list poll); search-bar fixes; E2E/benchmark support; starting **queue + DB VM migration**. Login/superadmin still open if not merged. Blocked only by Linux↔Linux connectivity for DB split — diagnose with `nc`, not app logs.
+
+> **Rameez:** Yesterday–today: interactive dashboard graphs; rules UI + explanations; severity colours; alert status filter/sort; failing reason in UI; virtual alert scroll; multi-rule alert display; UI theme polish. Next: presentation dry-run with script. Not blocked.
+
+**Checklist snapshot (06 Aug):** interactive dashboard ✅ · edit rules ✅ · rule explanations ✅ · alert status filter/sort ✅ · failing reason ✅ · E2E/benchmarks ✅ · pagination/delta poll ✅ · virtual alert scroll ✅ · multi-rule alerts ✅ · severity ✅ · search fixes ✅ · theme ✅ · “Mark suspicious” ❌ not needed · queue+DB VM 🚧 sathwik · alert simulator 🚧 shreya · final unit tests 🚧 · final presentation → `PRESENTATION_SCRIPT.md`
+
+---
+
+### 06 August 2026 — morning stand-up
 
 > **shreya:** Yesterday: QA/E2E on VM; k6 Pass 1–2 (write ramp + mixed); load-test guide, seed volume, EXPLAIN checks. Today: Pass 3 soak @ 140 VUs; capture `rule.evaluate` after Actuator redeploy; fill `load-test-results.md`. Pair with sathwik on deploy if needed.
 

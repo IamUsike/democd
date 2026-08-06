@@ -41,11 +41,13 @@ Client / instructor feedback sessions. Add a new dated section after each meetin
 
 | Action | Owner | Target | Status |
 |--------|-------|--------|--------|
-| Capture above items on kanban / milestones as ready stories | Team | Next stand-up | Done 06 Aug (`KANBAN.md` Ready + milestones) |
-| Prioritize severity + status filter/sort for next UI pass | Rameez | Sprint 2 | Ready |
-| Plan rules view/edit + explanations + failing reason on alert | sathwik + Rameez | Sprint 2 | Ready |
-| Sketch dashboard graph(s) (what series, which endpoint) | Rameez + shreya | Sprint 2 | Ready |
+| Capture above items on kanban / milestones as ready stories | Team | Next stand-up | Done 06 Aug |
+| Prioritize severity + status filter/sort for next UI pass | Rameez | Sprint 2 | **Done** 06 Aug |
+| Plan rules view/edit + explanations + failing reason on alert | sathwik + Rameez | Sprint 2 | **Done** 06 Aug |
+| Sketch dashboard graph(s) (what series, which endpoint) | Rameez + shreya | Sprint 2 | **Done** (interactive dashboard) |
+| Load-test write-up for GitHub | shreya | Sprint 2 | **Done** (`docs/load-test-results.md`) |
+| Final presentation script | ALL | Sprint 2 | **Done** (`docs/PRESENTATION_SCRIPT.md`) |
 
 ---
 
-*Last updated: 06 August 2026 — follow-ups reflected on kanban / milestones*
+*Last updated: 06 August 2026 EOD — client asks largely closed; Phase 3 + simulator remain*

@@ -5,13 +5,16 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Phase 2 — additional rules **complete**; QA load test + login + client UI asks in progress;
-list pagination / UI smoothness shipped
-**Last updated:** 06 August 2026  
+**Phase:** Sprint 2 wrap — client UI asks + load evidence **largely done**; Phase 3 infra + simulator + unit-test sweep in progress  
+**Last updated:** 06 August 2026 (EOD)  
 **Currently working on:**  
-- **shreya (A):** E2E / k6 load testing (QA-1), results write-up  
-- **sathwik (B):** login + superadmin; Actuator/deploy support *(slightly broader B + infra)*  
-- **Rameez (C):** severity colors + alert status filter/sort (client Ready)
+- **shreya (A):** alert / traffic simulator; support final unit tests  
+- **sathwik (B):** queue + DB VM migration; confirm login gate  
+- **Rameez (C):** presentation dry-run; any residual UI polish  
+
+**Closed today (checklist):** interactive dashboard · rules edit/explain · alert status filter/sort · failing reason · severity · E2E/benchmarks write-up · pagination/`afterId` · virtual alert scroll · multi-rule alerts · search fixes · UI theme · “Mark suspicious” dropped  
+
+**Talk track:** [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) · **Load numbers:** [`docs/load-test-results.md`](docs/load-test-results.md)
 
 ---
 
@@ -66,16 +69,19 @@ evaluate-on-record.
 - [x] `VelocityRule` (N transactions within T minutes)
 - [x] `NewPayeeRule` (first transaction to an unseen payee)
 - [x] `DailyLimitRule` (cumulative daily amount)
-- [ ] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
+- [x] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
 - [x] Rules table / parameters + management UI (view; create/edit so
   operators can set thresholds — stretch to full authoring)
 - [x] Rule explanations in UI (what each rule checks)
 - [x] Failing reason on alerts (why the rule matched) visible in list/detail
-- [ ] Alert list filter + sort by status in UI
+- [x] Alert list filter + sort by status in UI
 - [x] Dashboard graphs (trends / counts over time)
 - [ ] Additional team-authored custom rules as needed for the demo
-- [ ] QA: E2E + load test write-up (`docs/LOAD_TEST_GUIDE.md` / `load-test-results.md`)
+- [x] QA: E2E + load test write-up (`docs/LOAD_TEST_GUIDE.md` / `docs/load-test-results.md`)
 - [ ] Login page + superadmin (single-operator gate)
+- [ ] Alert / traffic simulator for live demo (shreya)
+- [ ] Final unit-test sweep
+- [x] Presentation talk track (`docs/PRESENTATION_SCRIPT.md`)
 
 
 ## Phase 3 — scale-out (MTTD at volume)

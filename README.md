@@ -107,11 +107,16 @@ does not need stage changes for Option A.
 
 ## Docs
 
-- [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md) — presentation talk track + in-depth system explanation
+- [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) — final presentation talk track
+- [`docs/MVP_PRESENTATION.md`](docs/MVP_PRESENTATION.md) — deeper MVP talk track + system explanation
+- [`docs/LOAD_TEST_GUIDE.md`](docs/LOAD_TEST_GUIDE.md) — Windows k6 → Linux VM runbook
+- [`docs/load-test-results.md`](docs/load-test-results.md) — Pass 1–3 results + EXPLAIN / soak evidence
+- [`scripts/k6/`](scripts/k6/) — `post-only.js`, `mixed.js`, `soak.js`
 - [`Project_milestones.md`](Project_milestones.md) — build order and status
 - [`docs/MVP_STATUS.md`](docs/MVP_STATUS.md) — current repo progress (MVP demo-ready)
 - [`docs/KANBAN.md`](docs/KANBAN.md) — live sprint board
 - [`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md) — daily stand-up notes
+- [`docs/SPRINT_RETROSPECTIVE.md`](docs/SPRINT_RETROSPECTIVE.md) — sprint retros
 - [`docs/STORYLINE_AND_KANBAN.md`](docs/STORYLINE_AND_KANBAN.md) — product storyline + story IDs
 - [`docs/TEAM_WORK_SPLIT.md`](docs/TEAM_WORK_SPLIT.md) — ownership split
 - [`docs/DFD-MVP.md`](docs/DFD-MVP.md) — data flows (every txn → rule engine in MVP)

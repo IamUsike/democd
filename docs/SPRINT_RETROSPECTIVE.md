@@ -2,6 +2,96 @@
 
 ---
 
+# Sprint Retrospective — Sprint 2 (day 3 / 06 August)
+
+**Project:** Transaction Monitoring & Alerts Dashboard  
+**Sprint dates:** 05 August 2026 – 11 August 2026  
+**Retrospective date:** 06 August 2026 (end of day)  
+**Format:** Start / Stop / Continue + Action Items  
+**Attendees:** sathwik, shreya, Rameez
+
+---
+
+## 1. Sprint Goal (are we on track?)
+
+Mid-sprint goal (05 Aug) was: prove MVP under load, ship login, land severity + status filter + rules visibility.
+
+**Verdict: Client UI + detection UX largely closed; load evidence written; Phase 3 infra started.**
+
+---
+
+## 2. What we shipped (06 August)
+
+| Owner | Shipped |
+|-------|---------|
+| **Rameez** | Interactive dashboard graphs; rules edit/view + explanations; severity colours; alert status filter/sort; failing reason in UI; virtual alert scroll; multi-rule alert UX; theme polish |
+| **sathwik** | Pagination + stop full-list polling (`afterId`); search-bar fixes; E2E/benchmark support; started queue + DB VM migration |
+| **shreya** | k6 Pass 1–3 + EXPLAIN; `docs/load-test-results.md` + `LOAD_TEST_GUIDE.md`; alert simulator in progress |
+| **ALL** | Presentation talk track → `docs/PRESENTATION_SCRIPT.md` |
+
+### Explicitly not doing
+
+- Rename alert action to “Mark suspicious” — **not needed**
+
+### Evidence / ops notes
+
+- Load soak @ 140 VUs: p95 1.13 s, 0.09% timeouts; `rule.evaluate` mean ~53→126 ms → **co-located JVM+MySQL** (see `load-test-results.md`).
+- Linux A → Linux B `:8081` fails even with `nc`, while Windows → Linux works → **network/SG**, not the app.
+
+---
+
+## 3. Milestone status (end of 06 Aug)
+
+| Area | Status |
+|------|--------|
+| Interactive dashboard / graphs | ✅ |
+| Rules edit + explanations | ✅ |
+| Alert status filter/sort + severity + failing reason | ✅ |
+| Pagination / delta poll / virtual scroll / search fixes | ✅ |
+| Multi-rule alerts UX | ✅ |
+| QA load-test write-up | ✅ (`load-test-results.md`) |
+| Queue + DB VM migration | 🚧 sathwik |
+| Alert simulator | 🚧 shreya |
+| Final unit-test sweep | 🚧 |
+| Login + superadmin | 🚧 / confirm merge |
+| Final presentation | 🟢 Ready to rehearse (`PRESENTATION_SCRIPT.md`) |
+
+---
+
+## 4. What went well ✅ (Continue)
+
+- Client asks from 05 Aug meeting mostly landed in one day (UI + API already partially ready).
+- Load test produced a clear Phase 3 story (co-location), not just “it was slow.”
+- Role split still clear: Rameez UX, sathwik infra/pagination, shreya QA/results.
+
+## 5. What went wrong ❌ (Stop / watch)
+
+- Linux↔Linux connectivity burned time — validate with `nc` before deep app debugging.
+- Login / simulator / unit-test sweep still open while presentation approaches — protect demo path.
+
+## 6. What to try next 💡 (Start)
+
+- Finish **queue + DB VM** slice; re-run Pass 3 soak for before/after.
+- Ship **alert simulator** for live demo traffic.
+- Dry-run **PRESENTATION_SCRIPT.md** once with the three owners.
+- Final unit-test pass on rules + lifecycle + dashboard analytics.
+
+## 7. Action items (owner + due)
+
+| # | Action | Owner | Due |
+|---|--------|-------|-----|
+| 1 | Queue + MySQL on separate VM; document connectivity | sathwik | 07–08 Aug |
+| 2 | Alert / traffic simulator ready for demo | shreya | 07 Aug |
+| 3 | Final unit-test sweep (rules, lifecycle, analytics) | ALL | 07 Aug |
+| 4 | Confirm login/superadmin status or defer explicitly | sathwik | 07 Aug |
+| 5 | Presentation dry-run with script | ALL | 07 Aug |
+
+---
+
+*Sprint 2 day-3 retro recorded: 06 August 2026*
+
+---
+
 # Sprint Retrospective — Sprint 2 (mid-sprint / day 2)
 
 **Project:** Transaction Monitoring & Alerts Dashboard  

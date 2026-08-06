@@ -2,7 +2,7 @@
 
 **Update this file daily.** Move cards between columns as work progresses.  
 Commit message when updating: `chore: kanban update [date]`  
-**Milestones:** [`Project_milestones.md`](../Project_milestones.md) · **Stand-ups:** [`STANDUP_LOG.md`](./STANDUP_LOG.md) · **Stories:** [`STORYLINE_AND_KANBAN.md`](./STORYLINE_AND_KANBAN.md) · **User stories (TMD):** [`USER_STORIES.md`](./USER_STORIES.md) · **Meetings:** [`MEETING_NOTES.md`](./MEETING_NOTES.md) · **Retros:** [`SPRINT_RETROSPECTIVE.md`](./SPRINT_RETROSPECTIVE.md) · **Presentation:** [`MVP_PRESENTATION.md`](./MVP_PRESENTATION.md)
+**Milestones:** [`Project_milestones.md`](../Project_milestones.md) · **Stand-ups:** [`STANDUP_LOG.md`](./STANDUP_LOG.md) · **Stories:** [`STORYLINE_AND_KANBAN.md`](./STORYLINE_AND_KANBAN.md) · **User stories (TMD):** [`USER_STORIES.md`](./USER_STORIES.md) · **Meetings:** [`MEETING_NOTES.md`](./MEETING_NOTES.md) · **Retros:** [`SPRINT_RETROSPECTIVE.md`](./SPRINT_RETROSPECTIVE.md) · **Presentation:** [`PRESENTATION_SCRIPT.md`](./PRESENTATION_SCRIPT.md) · **Load test:** [`load-test-results.md`](./load-test-results.md)
 
 ---
 
@@ -40,6 +40,14 @@ Commit message when updating: `chore: kanban update [date]`
 | [T-2] Improve rule test coverage + doc workflow | Rameez | Coverage docs added |
 | Docker/nginx deployment | sathwik + shreya | compose; shreya env example |
 | Jenkins CI update | sathwik | Neueda repo; QA branch tip-offs with shreya |
+| [C-8] Severity colours in alert UI | Rameez | Client ask 05 Aug |
+| [C-9] Alert status filter + sort in UI | Rameez | API + UI |
+| [C-10] Failing reason in alert list/detail | Rameez + shreya | Backend + UI |
+| [C-11] Virtual scroll on alerts list | Rameez | `@tanstack/react-virtual` |
+| [C-12] Multi-rule alert display | Rameez | Combined rule types / severity |
+| [A/B] Pagination + `afterId` delta poll (no full-list poll) | sathwik | List smoothness |
+| [A/B] Debounced / fixed search bars | sathwik | |
+| [QA-1] E2E + k6 Pass 1–3 + write-up | shreya (+ sathwik) | `docs/load-test-results.md` |
 
 ---
 
@@ -53,7 +61,9 @@ Commit message when updating: `chore: kanban update [date]`
 ### 🚧 IN PROGRESS
 | Story | Owner | Branch | Started |
 |-------|-------|--------|---------|
-| [QA-1] End-to-end + rule testing + k6 load test | shreya | `e2e_k6_testing` / `dev` | 05 Aug |
+| Queue + DB VM migration (Phase 3) | sathwik | `feature/phase3-scale-out` / related | 06 Aug |
+| Alert / traffic simulator | shreya | `simulator` / related | 06 Aug |
+| Final unit-test sweep | ALL | `dev` | 06 Aug |
 | Login page + superadmin user | sathwik | `dev` | 05 Aug |
 
 ---
@@ -61,16 +71,17 @@ Commit message when updating: `chore: kanban update [date]`
 ### 🟢 READY
 | Story | Owner | Depends on / notes |
 |-------|-------|-------------------|
-| Severity levels (HIGH/MEDIUM/LOW) in UI | Rameez | Client ask 05 Aug |
-| Alert status filter + sort in UI | Rameez | API has status filter; client ask 05 Aug |
+| Final presentation dry-run | ALL | Script: `PRESENTATION_SCRIPT.md` |
+| Re-run k6 Pass 3 after DB split | shreya + sathwik | Baseline in `load-test-results.md` |
 
 ---
 
 ### 🔵 BACKLOG
 | Story | Owner | Notes |
 |-------|-------|-------|
-| Queue + extract rule engine | sathwik + shreya | Phase 3 |
+| Extract rule engine + horizontal workers | sathwik + shreya | Phase 3 remaining |
 | TLS / masking / audit hardening | ALL | Phase 4 |
+| “Mark suspicious” rename | — | **Dropped — not needed** |
 
 ---
 
