@@ -76,29 +76,38 @@ class TransactionControllerTest {
 
     @Test
     void getAllTransactionsReturnsOk() throws Exception {
-        transactionService.transactionsToReturn = List.of(sampleResponse());
+        transactionService.pageToReturn = PageResponse.of(List.of(sampleResponse()), 1, 0, 50);
 
         mockMvc.perform(get("/api/v1/transactions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].transactionId").value(1L));
+                .andExpect(jsonPath("$.data.items[0].transactionId").value(1L))
+                .andExpect(jsonPath("$.data.totalCount").value(1))
+                .andExpect(jsonPath("$.data.hasNext").value(false));
     }
 
     @Test
     void getTransactionsWithSourceFiltersReturnsOk() throws Exception {
-        transactionService.transactionsToReturn = List.of(sampleResponse());
+        transactionService.pageToReturn = PageResponse.of(List.of(sampleResponse()), 1, 0, 50);
 
         mockMvc.perform(get("/api/v1/transactions")
                         .param("sourceType", "BANK")
                         .param("sourceId", "HSBC-UK")
-                        .param("accountId", "ACC-1"))
+                        .param("accountId", "ACC-1")
+                        .param("afterId", "100")
+                        .param("q", "acme")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .param("sort", "timestamp,desc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].sourceType").value("BANK"))
-                .andExpect(jsonPath("$.data[0].sourceId").value("HSBC-UK"));
+                .andExpect(jsonPath("$.data.items[0].sourceType").value("BANK"))
+                .andExpect(jsonPath("$.data.items[0].sourceId").value("HSBC-UK"));
 
         assertEquals("BANK", transactionService.lastSourceType);
         assertEquals("HSBC-UK", transactionService.lastSourceId);
         assertEquals("ACC-1", transactionService.lastFilterAccountId);
+        assertEquals(100L, transactionService.lastAfterId);
+        assertEquals("acme", transactionService.lastQ);
     }
 
     @Test
@@ -224,6 +233,7 @@ class TransactionControllerTest {
         private TransactionResponse savedResponse;
         private TransactionResponse transactionToReturn;
         private List<TransactionResponse> transactionsToReturn = List.of();
+        private PageResponse<TransactionResponse> pageToReturn = PageResponse.of(List.of(), 0, 0, 50);
         private TransactionRequest lastSavedRequest;
         private Long lastRequestedId;
         private String lastAccountId;
@@ -232,6 +242,8 @@ class TransactionControllerTest {
         private String lastSourceType;
         private String lastSourceId;
         private String lastFilterAccountId;
+        private String lastQ;
+        private Long lastAfterId;
         private boolean throwNotFound;
         private boolean throwUnexpectedError;
 
@@ -251,11 +263,23 @@ class TransactionControllerTest {
         }
 
         @Override
-        public List<TransactionResponse> getTransactions(String sourceType, String sourceId, String accountId) {
+        public PageResponse<TransactionResponse> getTransactions(
+                String sourceType,
+                String sourceId,
+                String accountId,
+                String q,
+                java.time.LocalDateTime from,
+                java.time.LocalDateTime to,
+                Long afterId,
+                Integer page,
+                Integer size,
+                String sort) {
             this.lastSourceType = sourceType;
             this.lastSourceId = sourceId;
             this.lastFilterAccountId = accountId;
-            return transactionsToReturn;
+            this.lastQ = q;
+            this.lastAfterId = afterId;
+            return pageToReturn;
         }
 
         @Override

@@ -1,91 +1,136 @@
+import { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Alert } from '../types/alert';
-import type { StatusFilter } from '../hooks/useAlerts';
-import { ALL_STATUSES } from '../hooks/useAlerts';
 import { StatusIndicator } from './StatusIndicator';
-
-const STATUS_LABELS: Record<string, string> = {
-  ALL: 'All',
-  OPEN: 'Open',
-  ACKNOWLEDGED: 'Acknowledged',
-  INVESTIGATING: 'Investigating',
-  CLOSED: 'Closed',
-  DISMISSED: 'Dismissed',
-};
 
 type AlertsPanelProps = {
   alerts: Alert[];
   selectedAlertId: number | null;
   loading: boolean;
-  statusFilter: StatusFilter;
-  onStatusFilter: (status: StatusFilter) => void;
+  totalCount: number;
+  page: number;
+  hasNext: boolean;
   onSelect: (alertId: number) => void;
+  onPageChange: (page: number) => void;
 };
 
 export function AlertsPanel({
   alerts,
   selectedAlertId,
   loading,
-  statusFilter,
-  onStatusFilter,
+  totalCount,
+  page,
+  hasNext,
   onSelect,
+  onPageChange,
 }: AlertsPanelProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: loading && alerts.length === 0 ? 8 : alerts.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 88,
+    overscan: 6,
+  });
+
   return (
     <section className="card alerts-panel">
       <header className="section-header">
         <h2>Alerts</h2>
         <span className="muted">
-          {loading ? 'Loading…' : `${alerts.length} result${alerts.length !== 1 ? 's' : ''}`}
+          {loading ? 'Loading…' : `${totalCount.toLocaleString()} total`}
         </span>
       </header>
 
-      {/* ── Status filter tabs ── */}
-      <div className="status-tabs" role="tablist" aria-label="Filter alerts by status">
-        {ALL_STATUSES.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            aria-selected={statusFilter === tab}
-            className={`status-tab${statusFilter === tab ? ' active' : ''}`}
-            onClick={() => onStatusFilter(tab)}
+      <div className="alerts-list virtual-list" ref={parentRef}>
+        {loading && alerts.length === 0 ? (
+          <div
+            className="virtual-list-inner"
+            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
           >
-            {STATUS_LABELS[tab]}
-          </button>
-        ))}
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => (
+              <div
+                key={virtualRow.key}
+                className="skeleton-row alert-skeleton"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className="virtual-list-inner"
+            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const alert = alerts[virtualRow.index];
+              if (!alert) return null;
+              return (
+                <button
+                  key={alert.alertId}
+                  type="button"
+                  className={`alert-item${selectedAlertId === alert.alertId ? ' active' : ''}`}
+                  onClick={() => onSelect(alert.alertId)}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <div className="alert-item-main">
+                    <div className="alert-item-header">
+                      <strong className="alert-item-id">#{alert.alertId}</strong>
+                      <StatusIndicator status={alert.status} />
+                    </div>
+                    <p className="alert-item-rule">{alert.ruleTriggered}</p>
+                    {alert.failingReason && (
+                      <p className="alert-item-reason">{alert.failingReason}</p>
+                    )}
+                  </div>
+                  <div className="alert-item-meta">
+                    <span className={`severity ${alert.severity.toLowerCase()}`}>
+                      {alert.severity}
+                    </span>
+                    <span className="alert-item-time muted">
+                      {new Date(alert.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {!loading && alerts.length === 0 && (
+          <p className="muted alerts-empty">No alerts match filters.</p>
+        )}
       </div>
 
-      {/* ── Alert list ── */}
-      <div className="alerts-list">
-        {alerts.map((alert) => (
-          <button
-            key={alert.alertId}
-            type="button"
-            className={`alert-item${selectedAlertId === alert.alertId ? ' active' : ''}`}
-            onClick={() => onSelect(alert.alertId)}
-          >
-            <div className="alert-item-main">
-              <div className="alert-item-header">
-                <strong className="alert-item-id">#{alert.alertId}</strong>
-                <StatusIndicator status={alert.status} />
-              </div>
-              <p className="alert-item-rule">{alert.ruleTriggered}</p>
-              {alert.failingReason && (
-                <p className="alert-item-reason">{alert.failingReason}</p>
-              )}
-            </div>
-            <div className="alert-item-meta">
-              <span className={`severity ${alert.severity.toLowerCase()}`}>
-                {alert.severity}
-              </span>
-              <span className="alert-item-time muted">
-                {new Date(alert.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-          </button>
-        ))}
-        {!loading && alerts.length === 0 && (
-          <p className="muted alerts-empty">No alerts match this filter.</p>
-        )}
+      <div className="pager">
+        <button
+          type="button"
+          className="feed-button"
+          disabled={page <= 0 || loading}
+          onClick={() => onPageChange(page - 1)}
+        >
+          Previous
+        </button>
+        <span className="muted">Page {page + 1}</span>
+        <button
+          type="button"
+          className="feed-button"
+          disabled={!hasNext || loading}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </button>
       </div>
     </section>
   );

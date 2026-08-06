@@ -33,3 +33,15 @@ export type AlertStatusUpdateRequest = {
   status: AlertStatus;
   notes?: string;
 };
+
+export type AlertFilters = {
+  sourceType?: 'BANK' | 'MERCHANT' | '';
+  sourceId?: string;
+  status?: AlertStatus | 'ALL' | '';
+  severity?: AlertSeverity | '';
+  accountId?: string;
+  q?: string;
+  sort?: string;
+  page?: number;
+  size?: number;
+};

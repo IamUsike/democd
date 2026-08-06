@@ -9,11 +9,13 @@ React + TypeScript operator dashboard for Phase 1 MVP.
 - Dark Obsidian & Slate theme with multi-color accents (Indigo, Cyan, Emerald, Amber, Rose/Crimson)
 - Zero horizontal scroll layout with responsive data tables
 - KPI strip (`GET /api/v1/dashboard`)
-- Transactions list with source/account filters (`GET /api/v1/transactions`)
-- High-ingestion controls on Transactions page (auto-refresh, pause/resume, manual refresh, quick search, pin by ID, new-row highlight)
-- Active alerts list (`GET /api/v1/alerts`)
-- Alert detail view (`GET /api/v1/alerts/{id}`)
+- **Paginated** transactions list with server filters/sort/search (`GET /api/v1/transactions`)
+- High-ingestion controls: auto-refresh via `afterId` delta poll, pause/resume, manual page refresh, pin by ID, new-row highlight
+- Virtualized transaction rows (`@tanstack/react-virtual`) + skeleton loading
+- **Paginated** alerts list with status/severity/source filters (default: active only)
+- Alert detail lazy-loaded (`GET /api/v1/alerts/{id}`) including triggering transactions
 - Lifecycle action buttons (`PATCH /api/v1/alerts/{id}/status`)
+- Debounced search on both list screens
 - Typed API client modules (`api/transactionsClient`, `api/alertsClient`, `api/dashboardClient`)
 - Hook-based local state (no global state library)
 

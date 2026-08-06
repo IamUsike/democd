@@ -501,6 +501,94 @@ tbody tr:hover {
   min-width: 0;
 }
 
+.alerts-list.virtual-list {
+  display: block;
+  position: relative;
+  height: min(60vh, 520px);
+  overflow: auto;
+}
+
+.virtual-list-inner {
+  position: relative;
+  width: 100%;
+}
+
+.virtual-table-wrap {
+  height: min(60vh, 520px);
+  overflow: auto;
+}
+
+.virtual-table {
+  margin-bottom: 0;
+}
+
+.virtual-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.virtual-table-row {
+  display: grid;
+  grid-template-columns: 0.7fr 1.4fr 1fr 1.2fr 1fr 0.8fr 0.9fr 1.2fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border-bottom: var(--border-width) solid var(--border);
+  box-sizing: border-box;
+  background: var(--surface);
+  font-size: 0.85rem;
+}
+
+.virtual-table-row:hover {
+  background: var(--surface-raised);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.skeleton-row {
+  border-radius: var(--radius);
+  background: linear-gradient(
+    90deg,
+    var(--surface-raised) 0%,
+    var(--border) 50%,
+    var(--surface-raised) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.alert-skeleton {
+  margin-bottom: 0.5rem;
+}
+
+.table-skeleton {
+  opacity: 0.7;
+}
+
+.detail-skeleton {
+  height: 1.1rem;
+  margin-bottom: 0.65rem;
+}
+
+.alerts-filters {
+  margin-bottom: 1rem;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .alert-item {
   width: 100%;
   box-sizing: border-box;

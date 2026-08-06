@@ -42,9 +42,9 @@ Implements MVP frontend scope:
 - Dark Obsidian & Slate theme with multi-color accents & zero horizontal scroll layout
 - Live API clients only (no sample-data fallback)
 - KPI strip (`GET /api/v1/dashboard`)
-- Transaction list with source filters (`GET /api/v1/transactions`)
-- Frontend-only high-ingestion controls (auto-refresh, pause/resume, pin row, quick search, new-row highlight)
-- Active alerts list + detail (`GET /api/v1/alerts`, `GET /api/v1/alerts/{id}`)
+- Transaction list with server-side pagination, filters, sort, and `afterId` delta poll (`GET /api/v1/alerts` / `transactions`)
+- High-ingestion controls (auto-refresh new rows only, pause/resume, pin row, debounced search, new-row highlight, virtualized lists)
+- Paginated alerts list + lazy detail (`GET /api/v1/alerts`, `GET /api/v1/alerts/{id}`)
 - Lifecycle actions (`PATCH /api/v1/alerts/{id}/status`)
 
 ### Seed demo data

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getTransactions } from '../api/transactionsClient';
 import type { Transaction, TransactionFilters } from '../types/transaction';
+import { useDebouncedValue } from './useDebouncedValue';
 
 type UseTransactionsOptions = {
   autoRefresh: boolean;
@@ -8,22 +9,53 @@ type UseTransactionsOptions = {
   refreshIntervalMs?: number;
 };
 
+const DEFAULT_SIZE = 50;
+const MAX_FEED_BUFFER = 200;
+
 export function useTransactions(
   filters: TransactionFilters,
   options: UseTransactionsOptions,
 ) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [newTransactionIds, setNewTransactionIds] = useState<number[]>([]);
   const [refreshToken, setRefreshToken] = useState(0);
-  const previousIdsRef = useRef<Set<number>>(new Set());
+  const maxIdRef = useRef(0);
+
+  const debouncedQ = useDebouncedValue(filters.q ?? '', 300);
+  const page = filters.page ?? 0;
+  const size = filters.size ?? DEFAULT_SIZE;
+
+  const baseQuery = useMemo(
+    () => ({
+      sourceType: filters.sourceType || undefined,
+      sourceId: filters.sourceId?.trim() || undefined,
+      accountId: filters.accountId?.trim() || undefined,
+      q: debouncedQ.trim() || undefined,
+      sort: filters.sort || 'timestamp,desc',
+      page,
+      size,
+    }),
+    [
+      filters.sourceType,
+      filters.sourceId,
+      filters.accountId,
+      filters.sort,
+      debouncedQ,
+      page,
+      size,
+    ],
+  );
 
   const refreshNow = useCallback(() => {
     setRefreshToken((value) => value + 1);
   }, []);
 
+  // Full page load (filters / page / manual refresh)
   useEffect(() => {
     let cancelled = false;
 
@@ -31,65 +63,91 @@ export function useTransactions(
       setLoading(true);
       setWarning(null);
       try {
-        const items = await getTransactions(filters);
-        if (cancelled) {
-          return;
-        }
+        const result = await getTransactions(baseQuery);
+        if (cancelled) return;
 
-        const previousIds = previousIdsRef.current;
-        const currentIds = new Set(items.map((txn) => txn.transactionId));
-        const addedIds = previousIds.size === 0
-          ? []
-          : items
-              .filter((txn) => !previousIds.has(txn.transactionId))
-              .map((txn) => txn.transactionId);
-
-        setTransactions(items);
-        setNewTransactionIds(addedIds);
+        setTransactions(result.items);
+        setTotalCount(result.totalCount);
+        setHasNext(result.hasNext);
+        setNewTransactionIds([]);
         setLastUpdatedAt(new Date());
-        previousIdsRef.current = currentIds;
+        maxIdRef.current = result.items.reduce(
+          (max, txn) => Math.max(max, txn.transactionId),
+          0,
+        );
       } catch {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setTransactions([]);
+        setTotalCount(0);
+        setHasNext(false);
         setNewTransactionIds([]);
         setWarning('Unable to load transactions from the API.');
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [baseQuery, refreshToken]);
 
+  // Delta poll via afterId — does not re-fetch the full page
+  useEffect(() => {
     if (!options.autoRefresh || options.paused) {
-      return () => {
-        cancelled = true;
-      };
+      return undefined;
     }
 
     const intervalId = window.setInterval(() => {
-      void load();
+      void (async () => {
+        const afterId = maxIdRef.current;
+        if (afterId <= 0) return;
+
+        try {
+          const result = await getTransactions({
+            ...baseQuery,
+            page: 0,
+            afterId,
+            sort: 'transactionId,asc',
+          });
+          if (result.items.length === 0) {
+            setLastUpdatedAt(new Date());
+            return;
+          }
+
+          const addedIds = result.items.map((txn) => txn.transactionId);
+          setNewTransactionIds(addedIds);
+          setTransactions((prev) => {
+            const merged = [...result.items.slice().reverse(), ...prev];
+            const deduped: Transaction[] = [];
+            const seen = new Set<number>();
+            for (const txn of merged) {
+              if (seen.has(txn.transactionId)) continue;
+              seen.add(txn.transactionId);
+              deduped.push(txn);
+            }
+            return deduped.slice(0, MAX_FEED_BUFFER);
+          });
+          setTotalCount((prev) => prev + result.items.length);
+          maxIdRef.current = Math.max(
+            maxIdRef.current,
+            ...result.items.map((txn) => txn.transactionId),
+          );
+          setLastUpdatedAt(new Date());
+        } catch {
+          setWarning('Unable to poll new transactions from the API.');
+        }
+      })();
     }, options.refreshIntervalMs ?? 3000);
 
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [
-    filters.sourceType,
-    filters.sourceId,
-    filters.accountId,
-    options.autoRefresh,
-    options.paused,
-    options.refreshIntervalMs,
-    refreshToken,
-  ]);
+    return () => window.clearInterval(intervalId);
+  }, [options.autoRefresh, options.paused, options.refreshIntervalMs, baseQuery]);
 
   return {
     transactions,
+    totalCount,
+    hasNext,
     loading,
     warning,
     lastUpdatedAt,

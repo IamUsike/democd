@@ -1,61 +1,52 @@
-# Frontend/Backend Handoff — High Ingestion Visibility (Frontend-Only)
+# Frontend/Backend Handoff — List pagination & smooth UI at volume
 
-## Scope of this change
+## Scope
 
-This update is **frontend-only**.
+Cross-stack change (backend + frontend) so alerts/transactions lists stay
+usable under load-test volumes.
 
-- No backend code changed
-- No database migrations changed
-- No API contract changed
+Plan: [`.cursor/plans/008-list-pagination-ui-smoothness.md`](../.cursor/plans/008-list-pagination-ui-smoothness.md)
 
-The goal is to help operators avoid missing transactions during high-ingestion bursts.
+## API contract (breaking)
 
-## What frontend now does
+`GET /api/v1/alerts` and `GET /api/v1/transactions` now return a page
+envelope in `data`:
 
-On `Transactions` page:
+```json
+{
+  "items": [],
+  "totalCount": 0,
+  "page": 0,
+  "size": 50,
+  "hasNext": false
+}
+```
 
-- Auto-refresh toggle (3s polling)
-- Pause/Resume feed control
-- Manual `Refresh now` button
-- Quick client-side search across visible rows
-- Pin transaction by `transactionId` (keeps row at top)
-- Visual highlight for newly arrived rows between refreshes
-- Last updated timestamp shown near result count
+See [`API_ENDPOINT.md`](API_ENDPOINT.md) sections 3.2 and 4.1.
 
-## API expectations (unchanged)
+### Alerts defaults
 
-Frontend still uses existing endpoint and params:
+- Omit `status` → active only (`OPEN`, `ACKNOWLEDGED`, `INVESTIGATING`)
+- `status=ALL` → full history
+- List responses omit linked transaction IDs; detail via `GET /alerts/{id}`
 
-- `GET /api/v1/transactions`
-- Optional filters: `sourceType`, `sourceId`, `accountId`
-- Expected response: existing `ApiResponse` envelope with transaction list in `data`
+### Transactions delta poll
 
-## Why this helps under load
+- Initial / paged browse: `page`, `size`, filters, `sort`
+- Live feed: poll with `afterId={maxSeenId}` (no full-page re-fetch)
 
-Even if many rows arrive quickly, operators can:
+## Frontend behavior
 
-- Pause feed to inspect a stable table
-- Pin a critical transaction so it stays visible
-- Quickly search for account/source/payee text
-- Notice newly ingested rows immediately
+- Paginated alerts + transactions with Previous/Next
+- Server-side filters, sort, debounced `q`
+- Transaction auto-refresh uses `afterId` only
+- Virtualized lists (`@tanstack/react-virtual`)
+- Skeleton rows while loading; alert detail lazy-loaded
 
-## Backend teammate context
+## Files (high level)
 
-No backend action is required for this UI update to work.
+**Backend:** `PageResponse`, `PageRequestFactory`, alert/transaction
+specifications + service/controller updates, tests.
 
-Optional future backend improvements (not part of this change):
-
-- Server-side pagination and sorting for very large datasets
-- Server-side full-text search
-- Cursor-based pagination for near-real-time feeds
-
-## Files changed in this frontend-only update
-
-- `frontend/src/hooks/useTransactions.ts`
-- `frontend/src/pages/TransactionsPage.tsx`
-- `frontend/src/components/TransactionsPanel.tsx`
-- `frontend/src/App.css`
-- `frontend/README.md`
-- `README.md`
-- `docs/FRONTEND_BACKEND_HANDOFF.md`
-
+**Frontend:** typed clients/hooks, `AlertsPage` / `TransactionsPage`
+panels, CSS for virtual lists + skeletons.
