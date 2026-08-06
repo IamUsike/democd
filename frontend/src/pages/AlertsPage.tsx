@@ -1,10 +1,18 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AlertsPanel } from '../components/AlertsPanel';
 import { AlertDetail } from '../components/AlertDetail';
 import { useAlerts } from '../hooks/useAlerts';
 import type { AlertFilters, AlertStatus } from '../types/alert';
 
 export function AlertsPage() {
+  const [searchParams] = useSearchParams();
+
+  const initialFilters: AlertFilters = {
+    status: (searchParams.get('status') as AlertFilters['status']) || '',
+    severity: (searchParams.get('severity') as AlertFilters['severity']) || '',
+  };
+
   const {
     alerts,
     selectedAlert,
@@ -20,7 +28,7 @@ export function AlertsPage() {
     setPage,
     selectAlert,
     changeStatus,
-  } = useAlerts();
+  } = useAlerts(initialFilters);
 
   const [searchDraft, setSearchDraft] = useState(filters.q ?? '');
 
