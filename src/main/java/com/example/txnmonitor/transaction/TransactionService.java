@@ -1,20 +1,29 @@
 package com.example.txnmonitor.transaction;
 
 import com.example.txnmonitor.alert.AlertService;
+import com.example.txnmonitor.api.PageResponse;
 import com.example.txnmonitor.api.TransactionRequest;
 import com.example.txnmonitor.api.TransactionResponse;
+import com.example.txnmonitor.common.PageRequestFactory;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
 import com.example.txnmonitor.rule.RuleEngine;
 import com.example.txnmonitor.rule.RuleEvaluationContext;
 import com.example.txnmonitor.rule.RuleMatch;
 import com.example.txnmonitor.rule.TransactionSnapshot;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class TransactionService {
+
+    private static final Set<String> SORTABLE = Set.of("timestamp", "transactionId", "amount", "status");
 
     private final TransactionRepository transactionRepository;
     private final RuleEngine ruleEngine;
@@ -47,22 +56,33 @@ public class TransactionService {
                 .toList();
     }
 
-    public List<TransactionResponse> getTransactions(String sourceType, String sourceId, String accountId) {
-        if (hasText(sourceType) && hasText(sourceId) && hasText(accountId)) {
-            return transactionRepository.findBySourceTypeAndSourceIdAndAccountId(sourceType, sourceId, accountId)
-                    .stream()
-                    .map(this::toResponse)
-                    .toList();
+    public PageResponse<TransactionResponse> getTransactions(
+            String sourceType,
+            String sourceId,
+            String accountId,
+            String q,
+            LocalDateTime from,
+            LocalDateTime to,
+            Long afterId,
+            Integer page,
+            Integer size,
+            String sort) {
+        String effectiveSort = sort;
+        if (!PageRequestFactory.hasText(effectiveSort) && afterId != null) {
+            effectiveSort = "transactionId,asc";
         }
-        if (hasText(sourceType) && hasText(sourceId)) {
-            return transactionRepository.findBySourceTypeAndSourceId(sourceType, sourceId).stream()
-                    .map(this::toResponse)
-                    .toList();
-        }
-        if (hasText(accountId)) {
-            return searchByAccountId(accountId);
-        }
-        return getAllTransactions();
+        Sort sortSpec = PageRequestFactory.parseSort(effectiveSort, "timestamp", SORTABLE);
+        Pageable pageable = PageRequestFactory.create(page, size, sortSpec);
+
+        Page<Transaction> result = transactionRepository.findAll(
+                TransactionSpecifications.withFilters(sourceType, sourceId, accountId, q, from, to, afterId),
+                pageable);
+
+        List<TransactionResponse> items = result.getContent().stream()
+                .map(this::toResponse)
+                .toList();
+
+        return PageResponse.of(items, result.getTotalElements(), result.getNumber(), result.getSize());
     }
 
     public TransactionResponse getTransactionById(Long id) {
@@ -139,9 +159,4 @@ public class TransactionService {
                 transaction.getStatus()
         );
     }
-
-    private boolean hasText(String value) {
-        return Objects.nonNull(value) && !value.isBlank();
-    }
 }
-

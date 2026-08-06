@@ -168,21 +168,20 @@ class TransactionServiceTest {
     @Test
     void searchMethodsDelegateToRepository() {
         List<Transaction> transactions = List.of(new Transaction());
+        when(transactionRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(transactions));
         when(transactionRepository.findByAccountId("ACC-1")).thenReturn(transactions);
-        when(transactionRepository.findBySourceTypeAndSourceId("BANK", "HSBC-UK")).thenReturn(transactions);
-        when(transactionRepository.findBySourceTypeAndSourceIdAndAccountId("BANK", "HSBC-UK", "ACC-1"))
-                .thenReturn(transactions);
         when(transactionRepository.findByStatus("NEW")).thenReturn(transactions);
         when(transactionRepository.findByType("TRANSFER")).thenReturn(transactions);
 
-        assertEquals(1, transactionService.getTransactions("BANK", "HSBC-UK", null).size());
-        assertEquals(1, transactionService.getTransactions("BANK", "HSBC-UK", "ACC-1").size());
+        assertEquals(1, transactionService.getTransactions("BANK", "HSBC-UK", null, null, null, null, null, 0, 50, null).items().size());
+        assertEquals(1, transactionService.getTransactions("BANK", "HSBC-UK", "ACC-1", null, null, null, null, 0, 50, null).items().size());
         assertEquals(1, transactionService.searchByAccountId("ACC-1").size());
         assertEquals(1, transactionService.searchByStatus("NEW").size());
         assertEquals(1, transactionService.searchByType("TRANSFER").size());
 
-        verify(transactionRepository).findBySourceTypeAndSourceId("BANK", "HSBC-UK");
-        verify(transactionRepository).findBySourceTypeAndSourceIdAndAccountId("BANK", "HSBC-UK", "ACC-1");
+        verify(transactionRepository, org.mockito.Mockito.times(2))
+                .findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class));
         verify(transactionRepository).findByAccountId("ACC-1");
         verify(transactionRepository).findByStatus("NEW");
         verify(transactionRepository).findByType("TRANSFER");
