@@ -111,7 +111,7 @@ Local/dev compose still runs MySQL + RabbitMQ + API + frontend together.
 For production-like deploy (MySQL on a **separate VM**):
 
 ```bash
-DB_URL=jdbc:mysql://<DB_VM_IP>:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
+DB_URL=jdbc:mysql://<DB_VM_IP>:8081/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
 DB_PASS=<password> \
 VITE_API_BASE_URL=http://<APP_VM_IP>:8081 \
   docker compose -f docker-compose.prod.yml up -d --build

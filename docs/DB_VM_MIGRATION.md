@@ -14,7 +14,7 @@ this are already in the repo — this guide is the **ops runbook**.
 ┌─────────────────────────────┐       ┌─────────────────────────────┐
 │  App VM                     │       │  DB VM                      │
 │  ─────────                  │       │  ──────                     │
-│  • springboot-app  :8081    │ JDBC  │  • MySQL 8         :3306    │
+│  • springboot-app  :8081    │ JDBC  │  • MySQL 8         :8081    │
 │  • rabbitmq        :5672    │──────▶│  • txnmonitor database      │
 │  • frontend nginx  :8082    │       │  • Flyway schema (auto)     │
 └─────────────────────────────┘       └─────────────────────────────┘
@@ -23,8 +23,12 @@ this are already in the repo — this guide is the **ops runbook**.
     Operators / k6 / seed script
 ```
 
-Security group / firewall: **only the app VM private IP** may reach DB VM port
-`3306`. Do not expose MySQL to the public internet.
+Security group / firewall: **only the app VM private IP** may reach MySQL on
+**TCP 8081**. Do not expose MySQL to the public internet.
+
+**Why 8081?** Inbound `3306` is blocked on our VMs. Port `8081` is open.
+That is fine because the API uses `:8081` only on the **app** VM; on the **DB**
+VM MySQL owns `:8081`. Local laptop compose still uses MySQL `:3306` inside Docker.
 
 ---
 
@@ -67,32 +71,47 @@ GRANT ALL PRIVILEGES ON txnmonitor.* TO 'txnmonitor'@'%';
 FLUSH PRIVILEGES;
 ```
 
-### 1.3 Bind MySQL to the private network
+### 1.3 Bind MySQL on port 8081
 
 Edit `/etc/mysql/mysql.conf.d/mysqld.cnf` (path may vary):
 
 ```ini
 bind-address = 0.0.0.0
+port = 8081
 ```
 
-Restart:
+Restart and confirm:
 
 ```bash
 sudo systemctl restart mysql
+sudo ss -tlnp | grep 8081   # should show mysqld listening
 ```
 
-### 1.4 Firewall — app VM only
+### 1.4 Firewall — app VM only to port 8081
 
 Replace `<APP_VM_PRIVATE_IP>` with your app server's private IP:
 
 ```bash
-# ufw example
-sudo ufw allow from <APP_VM_PRIVATE_IP> to any port 3306
+sudo ufw allow from <APP_VM_PRIVATE_IP> to any port 8081
 sudo ufw enable
 ```
 
-Cloud consoles (AWS SG, Azure NSG, etc.): inbound TCP 3306 **source =
-app VM security group / IP only**.
+Cloud consoles (AWS SG, Azure NSG, etc.): inbound TCP **8081** —
+**source = app VM security group / IP only**.
+
+### Docker MySQL on the DB VM (optional)
+
+Map host `8081` → container `3306`:
+
+```bash
+docker run -d --name mysql-txnmonitor --restart always \
+  -e MYSQL_ROOT_PASSWORD='<password>' \
+  -e MYSQL_DATABASE=txnmonitor \
+  -p 8081:3306 \
+  mysql:8
+```
+
+Then use `:8081` in `DB_URL` the same way.
 
 ### 1.5 Optional MySQL tuning (DB VM)
 
@@ -163,10 +182,10 @@ On the **app VM**:
 # install client if needed
 sudo apt install -y mysql-client
 
-mysql -h <DB_VM_PRIVATE_IP> -u root -p -e "SELECT 1;"
+mysql -h <DB_VM_PRIVATE_IP> -P 8081 -u root -p -e "SELECT 1;"
 ```
 
-If this fails, fix firewall/bind-address before continuing.
+If this fails, fix firewall / `port = 8081` / bind-address before continuing.
 
 ---
 
@@ -179,14 +198,14 @@ The repo provides `docker-compose.prod.yml` — RabbitMQ + API + frontend only.
 On the app VM, create `.env` next to the repo (or export in shell / Jenkins):
 
 ```bash
-DB_URL=jdbc:mysql://<DB_VM_PRIVATE_IP>:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+DB_URL=jdbc:mysql://<DB_VM_PRIVATE_IP>:8081/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
 DB_USER=root
 DB_PASS=<your-password>
 VITE_API_BASE_URL=http://<APP_VM_PUBLIC_IP>:8081
 ```
 
 Use the **public** IP (or DNS) for `VITE_API_BASE_URL` — that is what browsers
-use to reach the API.
+use to reach the API on the **app** VM (`:8081` there is Spring Boot, not MySQL).
 
 ### 4.2 Build and start
 
@@ -218,7 +237,7 @@ In Jenkins credentials or job environment, add:
 
 | Variable | Example |
 |----------|---------|
-| `DB_URL` | `jdbc:mysql://10.0.1.50:3306/txnmonitor?...` |
+| `DB_URL` | `jdbc:mysql://10.0.1.50:8081/txnmonitor?...` |
 | `DB_USER` | `root` or `txnmonitor` |
 | `DB_PASS` | (secret) |
 | `VITE_API_BASE_URL` | `http://<app-vm-ip>:8081` |
@@ -267,7 +286,7 @@ If something goes wrong:
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| `Communications link failure` | Firewall / bind-address | Open 3306 app→DB only; check `bind-address` |
+| `Communications link failure` | Firewall / bind-address / wrong port | Open **8081** app→DB only; confirm `port = 8081` and `DB_URL` has `:8081` |
 | `Access denied for user` | Wrong creds or host not allowed | `CREATE USER ...@'%'` or grant for app VM IP |
 | App starts but no tables | Empty DB, Flyway disabled | Check logs for Flyway; verify `spring.flyway.enabled=true` |
 | Alerts delayed | Async mode (expected) | Poll `GET /alerts`; check RabbitMQ queue depth at `:15672` |
@@ -279,8 +298,8 @@ If something goes wrong:
 ## Checklist
 
 - [ ] DB VM: MySQL 8 installed, `txnmonitor` DB created
-- [ ] Firewall: 3306 open only from app VM
-- [ ] App VM: `mysql -h <db-ip> ...` connectivity test passes
+- [ ] Firewall: MySQL **8081** open only from app VM
+- [ ] App VM: `mysql -h <db-ip> -P 8081 ...` connectivity test passes
 - [ ] Data migrated (or fresh Flyway run accepted)
 - [ ] `docker-compose.prod.yml` deployed with correct `DB_URL`
 - [ ] Seed script + UI smoke test pass

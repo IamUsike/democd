@@ -184,7 +184,7 @@ See **[`DB_VM_MIGRATION.md`](./DB_VM_MIGRATION.md)** for the full MySQL migratio
 
 Quick version — **app VM**:
 ```bash
-export DB_URL='jdbc:mysql://<DB_VM_IP>:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC'
+export DB_URL='jdbc:mysql://<DB_VM_IP>:8081/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC'
 export DB_PASS='<root-or-app-password>'
 export VITE_API_BASE_URL='http://<APP_VM_IP>:8081'
 

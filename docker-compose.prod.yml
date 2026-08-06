@@ -2,7 +2,7 @@
 # MySQL runs on a separate DB VM. Set DB_URL to the remote host.
 #
 # Usage:
-#   DB_URL=jdbc:mysql://<DB_VM_IP>:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
+#   DB_URL=jdbc:mysql://<DB_VM_IP>:8081/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC \
 #     docker compose -f docker-compose.prod.yml up -d
 
 version: '3.8'
