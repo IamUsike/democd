@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.example.txnmonitor.common.config.TxnMonitorProperties;
 import com.example.txnmonitor.transaction.TransactionRepository;
 
 /**
@@ -24,9 +25,11 @@ public class RuleEngineConfig {
 	public static final BigDecimal DEFAULT_DAILY_LIMIT             = new BigDecimal("50000");
 
 	private final RuleConfigRepository ruleConfigRepository;
+	private final TxnMonitorProperties txnMonitorProperties;
 
-	public RuleEngineConfig(RuleConfigRepository ruleConfigRepository) {
+	public RuleEngineConfig(RuleConfigRepository ruleConfigRepository, TxnMonitorProperties txnMonitorProperties) {
 		this.ruleConfigRepository = ruleConfigRepository;
+		this.txnMonitorProperties = txnMonitorProperties;
 	}
 
 	@Bean
@@ -64,6 +67,10 @@ public class RuleEngineConfig {
 
 	@Bean
 	RuleEvaluationContext ruleEvaluationContext(TransactionRepository transactionRepository) {
-		return new RepositoryRuleEvaluationContext(transactionRepository);
+		RuleEvaluationContext repositoryContext = new RepositoryRuleEvaluationContext(transactionRepository);
+		if (txnMonitorProperties.getRuleEvaluation().isEnabled()) {
+			return new CachingRuleEvaluationContext(repositoryContext);
+		}
+		return repositoryContext;
 	}
 }
