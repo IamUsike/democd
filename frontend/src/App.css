@@ -236,10 +236,42 @@
 }
 
 .kpi-card {
+  position: relative;
   background: var(--surface);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
-  padding: 0.9rem 1rem;
+  padding: 1.1rem 1rem 0.9rem;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--border);
+}
+
+.kpi-card-risk-info::before {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.kpi-card-risk-neutral::before {
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
+.kpi-card-risk-warning::before {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.kpi-card-risk-success::before {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.kpi-card-risk-critical::before {
+  background: linear-gradient(90deg, #ef4444, #f87171);
 }
 
 .kpi-card-interactive {

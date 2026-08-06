@@ -10,11 +10,11 @@ export function KpiStrip({ summary, loading }: KpiStripProps) {
   const navigate = useNavigate();
 
   const cards = [
-    { label: 'Total Transactions', value: summary.totalTransactions, path: '/transactions' },
-    { label: 'Total Alerts', value: summary.totalAlerts, path: '/alerts', filter: 'ALL' },
-    { label: 'Open Alerts', value: summary.openAlerts, path: '/alerts', filter: 'OPEN' },
-    { label: 'Closed Alerts', value: summary.closedAlerts, path: '/alerts', filter: 'CLOSED' },
-    { label: 'High Severity Alerts', value: summary.highSeverityAlerts, path: '/alerts', severity: 'HIGH' },
+    { label: 'Total Transactions', value: summary.totalTransactions, path: '/transactions', risk: 'info' },
+    { label: 'Total Alerts', value: summary.totalAlerts, path: '/alerts', filter: 'ALL', risk: 'neutral' },
+    { label: 'Open Alerts', value: summary.openAlerts, path: '/alerts', filter: 'OPEN', risk: 'warning' },
+    { label: 'Closed Alerts', value: summary.closedAlerts, path: '/alerts', filter: 'CLOSED', risk: 'success' },
+    { label: 'High Severity Alerts', value: summary.highSeverityAlerts, path: '/alerts', severity: 'HIGH', risk: 'critical' },
   ];
 
   const handleCardClick = (card: typeof cards[number]) => {
@@ -36,7 +36,7 @@ export function KpiStrip({ summary, loading }: KpiStripProps) {
         {cards.map((card) => (
           <article
             key={card.label}
-            className="kpi-card kpi-card-interactive"
+            className={`kpi-card kpi-card-interactive kpi-card-risk-${card.risk}`}
             onClick={() => handleCardClick(card)}
             role="button"
             tabIndex={0}
