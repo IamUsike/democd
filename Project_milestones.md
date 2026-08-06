@@ -5,10 +5,12 @@ starting work — keep "Current status" honest and current, not aspirational.
 
 ## Current status
 
-**Phase:** Phase 2 — additional rules **complete**; testing + login in progress
-**Last updated:** 05 August 2026
-**Currently working on:** shreya — end-to-end + rule testing (QA).
-sathwik — login page + superadmin user. Rameez — UI enhancements.
+**Phase:** Phase 2 — additional rules **complete**; QA load test + login + client UI asks in progress  
+**Last updated:** 06 August 2026  
+**Currently working on:**  
+- **shreya (A):** E2E / k6 load testing (QA-1), results write-up  
+- **sathwik (B):** login + superadmin; Actuator/deploy support *(slightly broader B + infra)*  
+- **Rameez (C):** severity colors + alert status filter/sort (client Ready)
 
 ---
 
@@ -62,8 +64,13 @@ evaluate-on-record.
 - [ ] Severity levels (HIGH/MEDIUM/LOW) surfaced in UI with color coding
 - [ ] Rules table / parameters + management UI (view; create/edit so
   operators can set thresholds — stretch to full authoring)
+- [ ] Rule explanations in UI (what each rule checks)
+- [ ] Failing reason on alerts (why the rule matched) visible in list/detail
+- [ ] Alert list filter + sort by status in UI
+- [ ] Dashboard graphs (trends / counts over time)
 - [ ] Additional team-authored custom rules as needed for the demo
-
+- [ ] QA: E2E + load test write-up (`docs/LOAD_TEST_GUIDE.md` / `load-test-results.md`)
+- [ ] Login page + superadmin (single-operator gate)
 
 
 ## Phase 3 — scale-out (MTTD at volume)
@@ -108,5 +115,6 @@ tables `transactions`, `alerts`, `alert_transactions`. Flows:
 [`docs/USER_STORIES.md`](docs/USER_STORIES.md). Live board:
 [`docs/KANBAN.md`](docs/KANBAN.md). Stand-ups:
 [`docs/STANDUP_LOG.md`](docs/STANDUP_LOG.md). Client meetings:
-[`docs/MEETING_NOTES.md`](docs/MEETING_NOTES.md). HLD/LLD diagrams live
+[`docs/MEETING_NOTES.md`](docs/MEETING_NOTES.md). Retrospectives:
+[`docs/SPRINT_RETROSPECTIVE.md`](docs/SPRINT_RETROSPECTIVE.md). HLD/LLD diagrams live
 wherever the team has put them (Miro/Figma/Drive link — *add link here*).

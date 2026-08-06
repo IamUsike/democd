@@ -8,9 +8,9 @@ Team: shreya (A), sathwik (B), Rameez (C).
 
 | Role | Name | Focus |
 |------|------|--------|
-| **A** | shreya | Ingest API, transactions, simulate/seed, Swagger, KPIs API |
-| **B** | sathwik | Rule engine, alerts, lifecycle, sync MTTD path |
-| **C** | Rameez | UI enhancements, lists/detail, KPI strip, E2E demo |
+| **A** | shreya | Ingest API, transactions, seed, Swagger, KPI API, QA / load test |
+| **B** | sathwik | Rule engine, alerts, lifecycle, sync MTTD path, deploy/CI *(slightly broader)* |
+| **C** | Rameez | UI shell, lists/detail, KPI strip, restyle, coverage, E2E demo UI |
 
 ---
 
@@ -57,7 +57,7 @@ clear trail from “money moved” to “risk reviewed.”
 
 | Phase | Story beat |
 |-------|------------|
-| **2** | Velocity / new payee / daily limit; operator can **tune** thresholds |
+| **2** | ~~Velocity / new payee / daily limit~~ (engine done); operator can **view/tune** thresholds; severity + failing reason on alerts; dashboard graphs |
 | **3** | Volume rises — queue + scaled rule workers; MTTD still low under load |
 | **4** | Encryption, masking of sensitive fields, full audit “who changed what” |
 
@@ -134,7 +134,9 @@ Formal product backlog with **TMD-*** IDs, FR refs, and sprint targets:
 
 ## 4. Kanban board
 
-➡️ **The live board has moved to its own file: [`KANBAN.md`](./KANBAN.md)**
+➡️ **Live board (Sprint 2):** [`KANBAN.md`](./KANBAN.md)  
+➡️ **Sprint 1 archive board:** same file, section *Board — Sprint 1*  
+➡️ **Retros:** [`SPRINT_RETROSPECTIVE.md`](./SPRINT_RETROSPECTIVE.md) (Sprint 1 close + Sprint 2 mid-retro 05 Aug)
 
 Update `KANBAN.md` daily as cards move. This file keeps the stable product narrative and user story definitions only.
 
@@ -157,14 +159,14 @@ Update `KANBAN.md` daily as cards move. This file keeps the stable product narra
 
 ## 6. Phase 2–4 backlog (parking lot)
 
-Keep on a second board or below the fold until Phase 1 E2E is Done.
-
 | Phase | Cards (owner) |
 |-------|----------------|
-| 2 | ~~Velocity / NewPayee / DailyLimit (sathwik)~~; rules table + UI (sathwik/Rameez); severity colors (Rameez) |
+| 2 | ~~Velocity / NewPayee / DailyLimit (sathwik)~~; rules table + UI + explanations (sathwik/Rameez); severity colors + status filter (Rameez); failing reason (sathwik/Rameez); dashboard graphs (Rameez/shreya); login gate (sathwik); QA load test (shreya) |
 | 3 | Queue (sathwik); extract engine (sathwik); internal alert API stability (shreya); cache (sathwik); read replica KPIs (shreya) |
 | 4 | TLS + secrets (shreya); encryption at rest (shreya); field masking UI (Rameez); audit history (sathwik) |
 
+Client confirmation of several Phase 2 UI items: [`MEETING_NOTES.md`](./MEETING_NOTES.md) (05 Aug).
+
 ---
 
-*Last updated: 05 August 2026 — Phase 2 rules complete; testing in progress.*
+*Last updated: 06 August 2026 — Phase 2 rules done; work split balanced across A/B/C (B slightly ahead); Sprint 1 board archived; QA + login + client Ready cards in flight.*

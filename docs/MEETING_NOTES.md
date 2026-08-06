@@ -39,13 +39,13 @@ Client / instructor feedback sessions. Add a new dated section after each meetin
 
 ### Follow-ups
 
-| Action | Owner | Target |
-|--------|-------|--------|
-| Capture above items on kanban / milestones as ready stories | Team | Next stand-up |
-| Prioritize severity + status filter/sort for next UI pass | Rameez | Sprint 2 |
-| Plan rules view/edit + explanations + failing reason on alert | sathwik + Rameez | Sprint 2 |
-| Sketch dashboard graph(s) (what series, which endpoint) | Rameez + shreya | Sprint 2 |
+| Action | Owner | Target | Status |
+|--------|-------|--------|--------|
+| Capture above items on kanban / milestones as ready stories | Team | Next stand-up | Done 06 Aug (`KANBAN.md` Ready + milestones) |
+| Prioritize severity + status filter/sort for next UI pass | Rameez | Sprint 2 | Ready |
+| Plan rules view/edit + explanations + failing reason on alert | sathwik + Rameez | Sprint 2 | Ready |
+| Sketch dashboard graph(s) (what series, which endpoint) | Rameez + shreya | Sprint 2 | Ready |
 
 ---
 
-*Last updated: 05 August 2026*
+*Last updated: 06 August 2026 — follow-ups reflected on kanban / milestones*

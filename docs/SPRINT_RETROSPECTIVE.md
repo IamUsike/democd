@@ -1,4 +1,146 @@
+# Sprint Retrospectives — Transaction Monitoring & Alerts Dashboard
+
+---
+
+# Sprint Retrospective — Sprint 2 (mid-sprint / day 2)
+
+**Project:** Transaction Monitoring & Alerts Dashboard  
+**Sprint dates:** 05 August 2026 – 11 August 2026  
+**Retrospective date:** 05 August 2026 (end of day — “yesterday” relative to 06 Aug)  
+**Format:** Start / Stop / Continue + Action Items  
+**Attendees:** sathwik, shreya, Rameez
+
+---
+
+## 1. Sprint Goal (are we on track?)
+
+**Sprint 2 goal (from Sprint 1 retro):**
+
+> *Merge the transaction API, implement the rule engine + Amount Threshold rule (with passing unit tests), create the Alert entity + lifecycle, and wire the ingest → evaluate → alert path end to end so a `POST /transactions` over the threshold creates an `OPEN` alert in the database.*
+
+**Verdict: Goal met — and exceeded — in the first two days.**
+
+By 04–05 Aug the team had not only closed the Sprint 2 “spine” goal but also finished the full Phase 1 MVP UI path, Phase 2 rules (Velocity, New Payee, Daily Limit), Docker/Jenkins deploy, and a client feedback session that added new Ready cards.
+
+---
+
+## 2. What we shipped (04–05 August)
+
+Balanced across roles — **sathwik slightly ahead** on rules/alerts + deploy; shreya on ingest/API/seed/Swagger/QA; Rameez on full operator UI + tests.
+
+| Date | Author | What was done |
+|------|--------|---------------|
+| 04 Aug | shreya | A-1–A-5 into `dev` (entity, POST/GET, seed, Swagger); KPI API support; paired on eval call-site |
+| 04 Aug | sathwik | B-1–B-5 (RuleEngine, AmountThreshold, alerts, lifecycle, GET); B-2 wiring with shreya; Docker/Jenkins PR #1; integration merge |
+| 04 Aug | Rameez | C-1–C-4 (shell, txn list, alerts UI, KPI strip) on live APIs; frontend branch into merge; E2E dry-run |
+| 05 Aug | sathwik | B-6–B-8 Phase 2 rules + tests; login spike started |
+| 05 Aug | Rameez | C-5 flat restyle; C-6 search/pause (PR #2); T-1/T-2 test coverage + docs |
+| 05 Aug | shreya | Docker env example; started QA-1 (E2E / rule testing → k6 plan) |
+| 05 Aug | ALL | Client meeting — rules UI, severity, graphs, failing reason, alert filter/sort |
+
+### Approximate split (Sprint 2 days 1–2)
+
+| Person | Focus | Share |
+|--------|--------|-------|
+| **sathwik** | Rules, alerts, deploy/CI, integration | ~slightly more |
+| **shreya** | Transactions API, seed, Swagger, KPIs API, QA | ~equal core |
+| **Rameez** | Operator UI (all C-*), coverage, ER carry | ~equal core |
+
+### Branches / integration
+| Branch | Status |
+|--------|--------|
+| `dev` | Primary integration — MVP + Phase 2 rules |
+| `transaction-api` | Merged (Sprint 1 action item closed) |
+| `feature/frontend` | Merged into `dev` with C-* screens |
+| `e2e_k6_testing` | QA / load-test workstream (Actuator, k6 scripts) |
+
+---
+
+## 3. Milestone status (end of 05 Aug)
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Phase 1 MVP (ingest → rules → alerts → UI → seed → E2E) | ✅ Done | Demo-ready; see `MVP_PRESENTATION.md` |
+| Phase 2 rules (Velocity / NewPayee / DailyLimit) | ✅ Done | Hardcoded params; config UI still open |
+| Severity in UI | ❌ Not started | Client re-confirmed 05 Aug |
+| Rules table / view / edit / explain | ❌ Not started | Client ask 05 Aug |
+| Login + superadmin | 🚧 In progress | sathwik |
+| QA E2E + load test (k6) | 🚧 In progress | shreya |
+| Dashboard graphs / failing reason / alert sort-filter UI | 🟢 Ready | From client meeting |
+
+---
+
+## 4. What went well ✅ (Continue)
+
+- **Unblocked fast.** Transaction API (shreya) merged early so rules (sathwik) and UI (Rameez) could finish the spine the same day.
+- **Role split held.** A / B / C ownership stayed clear — ingest vs detection vs operator UX — instead of one person owning the whole stack.
+- **MVP spine demoable.** Seed → alert → lifecycle works; team dry-ran E2E together (ALL-1).
+- **Phase 2 rules + UI polish in parallel.** sathwik on B-6–B-8 while Rameez shipped C-5/C-6 and coverage; shreya moved into QA without blocking either.
+- **PRs appearing** (Docker PR #1, search/pause PR #2) — better than Sprint 1’s zero-PR pattern.
+- **Docs + stand-ups exist.** Kanban, stand-up log, client notes — Agile hygiene sticking.
+- **Client feedback captured the same day** and mapped to Ready cards with clear owners.
+
+---
+
+## 5. What went wrong ❌ (Stop / watch)
+
+- **Integration day was dense.** Lots landed on 04 Aug — good velocity, but review depth was thinner than ideal; prefer smaller PRs going forward.
+- **WIP still fuzzy.** Login + QA + client UI asks can pile up; keep 1-card-in-progress honest.
+- **Config UI lagging detection.** Rules are hardcoded while the client wants view/edit/explain.
+- **QA vs deploy mismatch.** Load/E2E once hit a VM without the metrics branch — deploy before measuring.
+
+---
+
+## 6. What to try next 💡 (Start)
+
+- **Close QA-1 with evidence** — k6 Pass 1–3 + EXPLAIN + co-location note (`shreya`); Actuator redeploy with `sathwik`.
+- **Client UI wins next** — severity + status filter (`Rameez`), then rules view / failing reason (`sathwik` + `Rameez`).
+- **Finish login gate** (`sathwik`) without full multi-user auth.
+- **Keep pairing on hand-offs** — API contract (shreya) ↔ UI (Rameez) ↔ rules (sathwik).
+- **Keep Sprint 1 kanban archived**; only move cards on the Sprint 2 live board.
+
+---
+
+## 7. Action items (owner + due)
+
+| # | Action | Owner | Due |
+|---|--------|-------|-----|
+| 1 | Finish k6 Pass 1–3 + fill `load-test-results.md` (incl. co-location + EXPLAIN) | shreya | 06 Aug |
+| 2 | Redeploy branch with Actuator / `rule.evaluate` before final load numbers | shreya + sathwik | 06 Aug |
+| 3 | Login page + superadmin (single operator) | sathwik | 06–07 Aug |
+| 4 | Severity colors in alert UI | Rameez | 07 Aug |
+| 5 | Alert list filter/sort by status | Rameez | 07 Aug |
+| 6 | Plan rules view + explanations + failing reason (spike → stories) | sathwik + Rameez | 07 Aug |
+| 7 | Sketch dashboard graph series / endpoint | Rameez + shreya | 08 Aug |
+| 8 | Move client asks onto Ready (done in `KANBAN.md`) | Team | 06 Aug |
+
+---
+
+## 8. Proposed focus for rest of Sprint 2
+
+> *Prove the MVP under load (QA write-up), ship the login gate, and land the highest-leverage client asks: severity + alert status filter, then rules visibility/explanations.*
+
+---
+
+## 9. Velocity reference (updated)
+
+| Sprint | Stories completed | Points (approx) |
+|--------|-------------------|-----------------|
+| Sprint 1 | Skeleton + docs + A-* code (merge pending) | ~3 in shared `dev` |
+| Sprint 2 (04–05 Aug) | A-1–A-5, B-1–B-8, C-1–C-6, ALL-1, T-1/T-2, Docker, Jenkins | ~55+ |
+| └ shreya | A-1–A-5, KPI API, QA start, docker env | ~18 |
+| └ sathwik | B-1–B-8, B-2, Docker/Jenkins, integration | ~22 (slightly more) |
+| └ Rameez | C-1–C-6, T-1/T-2, E2E UI dry-run | ~18 |
+| Sprint 2 (remaining) | QA-1, login, severity, status filter, rules UI, graphs, failing reason | ~15–20 |
+
+---
+
+*Sprint 2 mid-retro recorded: 05 August 2026 · board refreshed 06 August 2026*
+
+---
+
 # Sprint Retrospective — Sprint 1
+
 **Project:** Transaction Monitoring & Alerts Dashboard  
 **Sprint dates:** 29 July 2026 – 4 August 2026  
 **Retrospective date:** 4 August 2026  
@@ -123,13 +265,12 @@ This is the "spine" of the whole system. Everything else (UI, Swagger, seed scri
 
 | Sprint | Stories completed (in `dev`/`main`) | Points |
 |--------|--------------------------------------|--------|
-| Sprint 1 | Skeleton (ALL) | 3 |
-| Sprint 1 | Transaction entity + repo (A-1) — *code done, not merged* | — |
-| Sprint 1 | POST/GET /transactions (A-2, A-3) — *code done, not merged* | — |
-| **Sprint 2 (actual — days 1-2)** | A-1–A-5, B-1–B-8, C-1–C-6, ALL-1, T-1, T-2, Docker/nginx, Jenkins | ~55+ pts |
-| **Sprint 2 (remaining)** | QA/testing (shreya), severity UI, rules config UI, login page | ~10 pts |
+| Sprint 1 | Skeleton (ALL / sathwik lead) | 3 |
+| Sprint 1 | Docs + ER (Rameez + shreya + sathwik) | 3 |
+| Sprint 1 | Transaction entity + API (A-1–A-3) — *shreya; merge pending* | — |
+| **Sprint 2 (actual — see mid-retro above)** | Split ~18 / ~22 / ~18 across shreya / sathwik / Rameez | ~55+ |
+| **Sprint 2 (remaining)** | QA (shreya), login (sathwik), client UI (Rameez+) | ~15–20 |
 
 ---
 
-*Last updated: 05 August 2026 — Sprint 2 velocity vastly exceeded target.*
-
+*Sprint 1 retro: 04 August 2026. Ownership narrative aligned with Sprint 2 mid-retro on 06 August 2026.*
