@@ -1,7 +1,10 @@
 package generator_test
 
 import (
+	"fmt"
 	"log/slog"
+	"math"
+	"strconv"
 	"testing"
 	"time"
 
@@ -87,8 +90,8 @@ func TestGenerate_Normal_AmountWithinNormalRange(t *testing.T) {
 	g := newGen(t)
 	for i := range 50 {
 		tx := g.Generate(generator.ModeNormal)
-		if tx.Amount < 10 || tx.Amount > 50_000 {
-			t.Errorf("trial %d: normal amount %f out of expected range [10, 50000]", i, tx.Amount)
+		if tx.Amount < 10 || tx.Amount > 5_000 {
+			t.Errorf("trial %d: normal amount %f out of expected range [10, 5000]", i, tx.Amount)
 		}
 	}
 }
@@ -114,8 +117,12 @@ func TestGenerate_Normal_AmountRoundedToTwoDecimals(t *testing.T) {
 	g := newGen(t)
 	for i := range 30 {
 		tx := g.Generate(generator.ModeNormal)
-		rounded := float64(int(tx.Amount*100)) / 100
-		if tx.Amount != rounded {
+		formatted := fmt.Sprintf("%.2f", tx.Amount)
+		parsed, err := strconv.ParseFloat(formatted, 64)
+		if err != nil {
+			t.Fatalf("trial %d: parse %.2f: %v", i, tx.Amount, err)
+		}
+		if math.Abs(tx.Amount-parsed) > 1e-9 {
 			t.Errorf("trial %d: amount %f is not rounded to 2 decimal places", i, tx.Amount)
 		}
 	}
@@ -145,8 +152,8 @@ func TestGenerateFraudSequence_HighAmount_ExceedsThreshold(t *testing.T) {
 	g := newGen(t)
 	for i := range 20 {
 		txns := g.GenerateFraudSequence(generator.FraudPatternHighAmount)
-		if txns[0].Amount <= 100_000 {
-			t.Errorf("trial %d: high-amount fraud amount %f must be > 100000", i, txns[0].Amount)
+		if txns[0].Amount <= 10_000 {
+			t.Errorf("trial %d: high-amount fraud amount %f must be > 10000", i, txns[0].Amount)
 		}
 	}
 }

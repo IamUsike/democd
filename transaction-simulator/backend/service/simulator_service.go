@@ -20,28 +20,34 @@ const (
 	defaultChannelBuffer    = 512
 )
 
-// TransactionGenerator is the minimal contract required from the existing
-// generator component.
+// TransactionGenerator is the minimal contract required from the generator.
 type TransactionGenerator interface {
-	Generate(mode generator.SimulationMode) model.Transaction
+	GenerateTimedSequence(mode generator.SimulationMode, opts generator.GenerateOptions) []generator.TimedTransaction
+	GenerateScenario(scenario generator.ScenarioID) []generator.TimedTransaction
 }
 
-// TransactionSender is the minimal contract required from the existing client
-// component.
+// TransactionSender is the minimal contract required from the client.
 type TransactionSender interface {
 	SendTransaction(tx model.Transaction) error
 }
 
-// SimulationRequest describes one simulation run.
+// SimulationRequest describes one simulation run (traffic or scenario).
 type SimulationRequest struct {
-	TPS      int                      `json:"tps"`
-	Duration int                      `json:"duration"`
-	Mode     generator.SimulationMode `json:"mode"`
+	Kind            generator.SimulationKind `json:"kind"`
+	TPS             int                      `json:"tps"`
+	Duration        int                      `json:"duration"`
+	Mode            generator.SimulationMode `json:"mode"`
+	Scenario        generator.ScenarioID     `json:"scenario"`
+	SourceType      *model.SourceType        `json:"sourceType"`
+	FraudMixPercent *int                     `json:"fraudMixPercent"`
 }
 
 // SimulationMetrics is a thread-safe snapshot of the current or latest run.
 type SimulationMetrics struct {
 	Running                bool   `json:"running"`
+	Kind                   string `json:"kind,omitempty"`
+	Scenario               string `json:"scenario,omitempty"`
+	Mode                   string `json:"mode,omitempty"`
 	TransactionsGenerated  uint64 `json:"transactionsGenerated"`
 	SuccessfulTransactions uint64 `json:"successfulTransactions"`
 	FailedTransactions     uint64 `json:"failedTransactions"`
@@ -64,8 +70,7 @@ type simulationRun struct {
 	stopOnce sync.Once
 }
 
-// SimulatorService controls transaction generation, paced sending, and
-// thread-safe metrics tracking.
+// SimulatorService controls transaction generation, paced sending, and metrics.
 type SimulatorService struct {
 	generator TransactionGenerator
 	sender    TransactionSender
@@ -76,15 +81,18 @@ type SimulatorService struct {
 	stateMu     sync.Mutex
 	run         *simulationRun
 
-	generated atomic.Uint64
+	generated  atomic.Uint64
 	successful atomic.Uint64
 	failed     atomic.Uint64
 	currentTPS atomic.Int64
 	running    atomic.Bool
+
+	activeKind     atomic.Value // string
+	activeScenario atomic.Value // string
+	activeMode     atomic.Value // string
 }
 
-// NewSimulatorService creates a simulation engine using the existing generator
-// and transaction client components.
+// NewSimulatorService creates a simulation engine.
 func NewSimulatorService(
 	transactionGenerator TransactionGenerator,
 	transactionClient TransactionSender,
@@ -134,16 +142,19 @@ func newSimulatorService(
 		cfg.metricsInterval = cfg.rateIntervalBase
 	}
 
-	return &SimulatorService{
+	svc := &SimulatorService{
 		generator: transactionGenerator,
 		sender:    transactionClient,
 		logger:    logger,
 		cfg:       cfg,
-	}, nil
+	}
+	svc.activeKind.Store("")
+	svc.activeScenario.Store("")
+	svc.activeMode.Store("")
+	return svc, nil
 }
 
-// NewWithComponents is a convenience constructor for the existing concrete
-// packages, while still keeping the service mockable in tests.
+// NewWithComponents is a convenience constructor for concrete packages.
 func NewWithComponents(
 	transactionGenerator *generator.Generator,
 	transactionClient *client.TransactionClient,
@@ -152,8 +163,9 @@ func NewWithComponents(
 	return NewSimulatorService(transactionGenerator, transactionClient, logger)
 }
 
-// Start begins a new simulation run.
+// Start begins a new simulation run (TRAFFIC or SCENARIO).
 func (s *SimulatorService) Start(request SimulationRequest) error {
+	request = normalizeRequest(request)
 	if err := s.validateRequest(request); err != nil {
 		return err
 	}
@@ -173,8 +185,135 @@ func (s *SimulatorService) Start(request SimulationRequest) error {
 	s.run = run
 	s.resetMetrics()
 	s.running.Store(true)
+	s.activeKind.Store(string(request.Kind))
+	s.activeScenario.Store(string(request.Scenario))
+	s.activeMode.Store(string(request.Mode))
 	s.stateMu.Unlock()
 
+	if request.Kind == generator.KindScenario {
+		go s.runScenario(ctx, run)
+	} else {
+		go s.runTraffic(ctx, run)
+	}
+
+	s.logger.Info("simulation started",
+		"kind", string(request.Kind),
+		"scenario", string(request.Scenario),
+		"tps", request.TPS,
+		"duration", request.Duration,
+		"mode", string(request.Mode),
+	)
+
+	return nil
+}
+
+// Stop requests a graceful shutdown of the current simulation run.
+func (s *SimulatorService) Stop() error {
+	s.stateMu.Lock()
+	run := s.run
+	s.stateMu.Unlock()
+
+	if run == nil {
+		return nil
+	}
+
+	run.stopOnce.Do(func() {
+		s.logger.Info("simulation stop requested",
+			"kind", string(run.request.Kind),
+			"scenario", string(run.request.Scenario),
+		)
+		run.cancel()
+	})
+
+	<-run.done
+	return nil
+}
+
+// Metrics returns a consistent snapshot of the current metrics.
+func (s *SimulatorService) Metrics() SimulationMetrics {
+	kind, _ := s.activeKind.Load().(string)
+	scenario, _ := s.activeScenario.Load().(string)
+	mode, _ := s.activeMode.Load().(string)
+	return SimulationMetrics{
+		Running:                s.running.Load(),
+		Kind:                   kind,
+		Scenario:               scenario,
+		Mode:                   mode,
+		TransactionsGenerated:  s.generated.Load(),
+		SuccessfulTransactions: s.successful.Load(),
+		FailedTransactions:     s.failed.Load(),
+		CurrentTPS:             int(s.currentTPS.Load()),
+	}
+}
+
+func normalizeRequest(request SimulationRequest) SimulationRequest {
+	if request.Kind == "" {
+		request.Kind = generator.KindTraffic
+	}
+	return request
+}
+
+func (s *SimulatorService) validateRequest(request SimulationRequest) error {
+	switch request.Kind {
+	case generator.KindScenario:
+		if request.Scenario == "" {
+			return errors.New("simulator service: scenario is required for SCENARIO kind")
+		}
+		if !generator.IsValidScenario(request.Scenario) {
+			return fmt.Errorf("simulator service: unsupported scenario %q", request.Scenario)
+		}
+		return nil
+	case generator.KindTraffic:
+		if request.TPS <= 0 {
+			return errors.New("simulator service: tps must be greater than 0")
+		}
+		if request.Duration <= 0 {
+			return errors.New("simulator service: duration must be greater than 0")
+		}
+		if request.Mode != generator.ModeNormal && request.Mode != generator.ModeFraud {
+			return fmt.Errorf("simulator service: unsupported simulation mode %q", request.Mode)
+		}
+		if request.FraudMixPercent != nil {
+			p := *request.FraudMixPercent
+			if p < 0 || p > 100 {
+				return errors.New("simulator service: fraudMixPercent must be between 0 and 100")
+			}
+		}
+		if request.SourceType != nil {
+			st := *request.SourceType
+			if st != model.SourceTypeBank && st != model.SourceTypeMerchant {
+				return fmt.Errorf("simulator service: unsupported sourceType %q", st)
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("simulator service: unsupported kind %q", request.Kind)
+	}
+}
+
+func (s *SimulatorService) runScenario(ctx *stoppableContext, run *simulationRun) {
+	defer s.finishRun(run)
+
+	s.generatorMu.Lock()
+	steps := s.generator.GenerateScenario(run.request.Scenario)
+	s.generatorMu.Unlock()
+
+	if len(steps) == 0 {
+		s.logger.Warn("scenario produced no transactions", "scenario", string(run.request.Scenario))
+		return
+	}
+
+	for _, step := range steps {
+		if !s.waitDelay(ctx, step.DelayBefore) {
+			return
+		}
+		s.generated.Add(1)
+		s.sendOne(ctx, 0, step.Transaction)
+	}
+}
+
+func (s *SimulatorService) runTraffic(ctx *stoppableContext, run *simulationRun) {
+	request := run.request
 	tokens := make(chan struct{}, s.cfg.generatorWorkers*2)
 	transactions := make(chan model.Transaction, s.cfg.channelBuffer)
 
@@ -185,7 +324,7 @@ func (s *SimulatorService) Start(request SimulationRequest) error {
 
 	for workerID := 0; workerID < s.cfg.generatorWorkers; workerID++ {
 		generatorWG.Add(1)
-		go s.runGeneratorWorker(ctx, request.Mode, workerID, tokens, transactions, &generatorWG)
+		go s.runGeneratorWorker(ctx, request, workerID, tokens, transactions, &generatorWG)
 	}
 
 	go func() {
@@ -200,68 +339,8 @@ func (s *SimulatorService) Start(request SimulationRequest) error {
 
 	go s.runMetricsUpdater(ctx, run.done)
 
-	go func(currentRun *simulationRun) {
-		senderWG.Wait()
-		s.finishRun(currentRun)
-	}(run)
-
-	s.logger.Info("simulation started",
-		"tps", request.TPS,
-		"duration", request.Duration,
-		"mode", string(request.Mode),
-		"generator_workers", s.cfg.generatorWorkers,
-		"sender_workers", s.cfg.senderWorkers,
-	)
-
-	return nil
-}
-
-// Stop requests a graceful shutdown of the current simulation run.
-// It is safe to call Stop multiple times.
-func (s *SimulatorService) Stop() error {
-	s.stateMu.Lock()
-	run := s.run
-	s.stateMu.Unlock()
-
-	if run == nil {
-		return nil
-	}
-
-	run.stopOnce.Do(func() {
-		s.logger.Info("simulation stop requested",
-			"tps", run.request.TPS,
-			"duration", run.request.Duration,
-			"mode", string(run.request.Mode),
-		)
-		run.cancel()
-	})
-
-	<-run.done
-	return nil
-}
-
-// Metrics returns a consistent snapshot of the current metrics.
-func (s *SimulatorService) Metrics() SimulationMetrics {
-	return SimulationMetrics{
-		Running:                s.running.Load(),
-		TransactionsGenerated:  s.generated.Load(),
-		SuccessfulTransactions: s.successful.Load(),
-		FailedTransactions:     s.failed.Load(),
-		CurrentTPS:             int(s.currentTPS.Load()),
-	}
-}
-
-func (s *SimulatorService) validateRequest(request SimulationRequest) error {
-	if request.TPS <= 0 {
-		return errors.New("simulator service: tps must be greater than 0")
-	}
-	if request.Duration <= 0 {
-		return errors.New("simulator service: duration must be greater than 0")
-	}
-	if request.Mode != generator.ModeNormal && request.Mode != generator.ModeFraud {
-		return fmt.Errorf("simulator service: unsupported simulation mode %q", request.Mode)
-	}
-	return nil
+	senderWG.Wait()
+	s.finishRun(run)
 }
 
 func (s *SimulatorService) runTokenProducer(ctx *stoppableContext, request SimulationRequest, tokens chan<- struct{}) {
@@ -292,13 +371,15 @@ func (s *SimulatorService) runTokenProducer(ctx *stoppableContext, request Simul
 
 func (s *SimulatorService) runGeneratorWorker(
 	ctx *stoppableContext,
-	mode generator.SimulationMode,
+	request SimulationRequest,
 	workerID int,
 	tokens <-chan struct{},
 	transactions chan<- model.Transaction,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
+
+	opts := generator.GenerateOptions{SourceType: request.SourceType}
 
 	for {
 		select {
@@ -309,24 +390,49 @@ func (s *SimulatorService) runGeneratorWorker(
 				return
 			}
 
+			mode := s.pickTrafficMode(request)
+
 			s.generatorMu.Lock()
-			tx := s.generator.Generate(mode)
+			steps := s.generator.GenerateTimedSequence(mode, opts)
 			s.generatorMu.Unlock()
 
-			s.generated.Add(1)
-			s.logger.Debug("transaction generated",
-				"worker", workerID,
-				"accountId", tx.AccountID,
-				"mode", string(mode),
-			)
+			for _, step := range steps {
+				if !s.waitDelay(ctx, step.DelayBefore) {
+					return
+				}
 
-			select {
-			case <-ctx.Done():
-				return
-			case transactions <- tx:
+				s.generated.Add(1)
+				s.logger.Debug("transaction generated",
+					"worker", workerID,
+					"accountId", step.Transaction.AccountID,
+					"mode", string(mode),
+				)
+
+				select {
+				case <-ctx.Done():
+					return
+				case transactions <- step.Transaction:
+				}
 			}
 		}
 	}
+}
+
+func (s *SimulatorService) pickTrafficMode(request SimulationRequest) generator.SimulationMode {
+	if request.Mode == generator.ModeFraud {
+		return generator.ModeFraud
+	}
+	if request.FraudMixPercent == nil || *request.FraudMixPercent <= 0 {
+		return generator.ModeNormal
+	}
+	s.generatorMu.Lock()
+	// Use a cheap time-based roll without needing the generator's RNG.
+	roll := int(time.Now().UnixNano()%100) + 1
+	s.generatorMu.Unlock()
+	if roll <= *request.FraudMixPercent {
+		return generator.ModeFraud
+	}
+	return generator.ModeNormal
 }
 
 func (s *SimulatorService) runSenderWorker(
@@ -345,23 +451,51 @@ func (s *SimulatorService) runSenderWorker(
 			if !ok {
 				return
 			}
-
-			if err := s.sender.SendTransaction(tx); err != nil {
-				s.failed.Add(1)
-				s.logger.Warn("transaction send failed",
-					"worker", workerID,
-					"accountId", tx.AccountID,
-					"error", err,
-				)
-				continue
-			}
-
-			s.successful.Add(1)
-			s.logger.Debug("transaction sent",
-				"worker", workerID,
-				"accountId", tx.AccountID,
-			)
+			s.sendOne(ctx, workerID, tx)
 		}
+	}
+}
+
+func (s *SimulatorService) sendOne(ctx *stoppableContext, workerID int, tx model.Transaction) {
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
+
+	if err := s.sender.SendTransaction(tx); err != nil {
+		s.failed.Add(1)
+		s.logger.Warn("transaction send failed",
+			"worker", workerID,
+			"accountId", tx.AccountID,
+			"error", err,
+		)
+		return
+	}
+
+	s.successful.Add(1)
+	s.logger.Debug("transaction sent",
+		"worker", workerID,
+		"accountId", tx.AccountID,
+	)
+}
+
+func (s *SimulatorService) waitDelay(ctx *stoppableContext, delay time.Duration) bool {
+	if delay <= 0 {
+		select {
+		case <-ctx.Done():
+			return false
+		default:
+			return true
+		}
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
 	}
 }
 
@@ -402,6 +536,8 @@ func (s *SimulatorService) finishRun(run *simulationRun) {
 
 	metrics := s.Metrics()
 	s.logger.Info("simulation finished",
+		"kind", metrics.Kind,
+		"scenario", metrics.Scenario,
 		"generated", metrics.TransactionsGenerated,
 		"successful", metrics.SuccessfulTransactions,
 		"failed", metrics.FailedTransactions,
@@ -438,4 +574,3 @@ func newStoppableContext() (*stoppableContext, func()) {
 func (c *stoppableContext) Done() <-chan struct{} {
 	return c.done
 }
-

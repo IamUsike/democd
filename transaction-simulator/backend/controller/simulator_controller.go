@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"transaction-simulator/generator"
+	"transaction-simulator/model"
 	"transaction-simulator/service"
 )
 
@@ -40,14 +42,21 @@ func NewSimulatorController(
 
 // startSimulationRequest is the JSON body for POST /api/simulator/start.
 type startSimulationRequest struct {
-	TPS      int    `json:"tps"`
-	Duration int    `json:"duration"`
-	Mode     string `json:"mode"`
+	Kind            string  `json:"kind"`
+	TPS             int     `json:"tps"`
+	Duration        int     `json:"duration"`
+	Mode            string  `json:"mode"`
+	Scenario        string  `json:"scenario"`
+	SourceType      *string `json:"sourceType"`
+	FraudMixPercent *int    `json:"fraudMixPercent"`
 }
 
 // statusResponse is the JSON body for GET /api/simulator/status.
 type statusResponse struct {
 	Running                bool   `json:"running"`
+	Kind                   string `json:"kind,omitempty"`
+	Scenario               string `json:"scenario,omitempty"`
+	Mode                   string `json:"mode,omitempty"`
 	TransactionsGenerated  uint64 `json:"transactionsGenerated"`
 	SuccessfulTransactions uint64 `json:"successfulTransactions"`
 	FailedTransactions     uint64 `json:"failedTransactions"`
@@ -61,26 +70,9 @@ type responseMessage struct {
 
 // ── Endpoints ────────────────────────────────────────────────────────────────
 
-// Start begins a new transaction simulation.
+// Start begins a new transaction simulation (TRAFFIC or SCENARIO).
 //
 // POST /api/simulator/start
-//
-// Request body:
-//
-//	{
-//	  "tps": 1000,
-//	  "duration": 300,
-//	  "mode": "FRAUD"
-//	}
-//
-// Success (200):
-//
-//	{
-//	  "message": "simulation started"
-//	}
-//
-// Bad request (400): Invalid or missing fields
-// Conflict (409): Simulation already running
 func (sc *SimulatorController) Start(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -91,43 +83,26 @@ func (sc *SimulatorController) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate request fields
-	if req.TPS <= 0 {
-		sc.logger.Warn("invalid start request: tps must be greater than 0", "tps", req.TPS)
-		http.Error(w, `{"error":"tps must be greater than 0"}`, http.StatusBadRequest)
-		return
-	}
-	if req.Duration <= 0 {
-		sc.logger.Warn("invalid start request: duration must be greater than 0", "duration", req.Duration)
-		http.Error(w, `{"error":"duration must be greater than 0"}`, http.StatusBadRequest)
-		return
-	}
-	if req.Mode == "" {
-		sc.logger.Warn("invalid start request: mode is required")
-		http.Error(w, `{"error":"mode is required"}`, http.StatusBadRequest)
+	simReq, errMsg := mapStartRequest(req)
+	if errMsg != "" {
+		sc.logger.Warn("invalid start request", "error", errMsg)
+		http.Error(w, `{"error":"`+errMsg+`"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Convert mode string to generator.SimulationMode
-	mode := generator.SimulationMode(req.Mode)
-	if mode != generator.ModeNormal && mode != generator.ModeFraud {
-		sc.logger.Warn("invalid start request: unsupported mode", "mode", req.Mode)
-		http.Error(w, `{"error":"unsupported mode"}`, http.StatusBadRequest)
-		return
-	}
-
-	// Call service
-	err := sc.svc.Start(service.SimulationRequest{
-		TPS:      req.TPS,
-		Duration: req.Duration,
-		Mode:     mode,
-	})
+	err := sc.svc.Start(simReq)
 	if err != nil {
-		// Check if simulation is already running
 		if err.Error() == "simulator service: simulation already running" {
 			sc.logger.Warn("start failed: simulation already running")
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(responseMessage{Message: "simulation already running"})
+			_ = json.NewEncoder(w).Encode(responseMessage{Message: "simulation already running"})
+			return
+		}
+		// Surface validation errors from the service as 400.
+		if strings.HasPrefix(err.Error(), "simulator service:") {
+			msg := strings.TrimPrefix(err.Error(), "simulator service: ")
+			sc.logger.Warn("start validation failed", "error", err)
+			http.Error(w, `{"error":"`+msg+`"}`, http.StatusBadRequest)
 			return
 		}
 		sc.logger.Error("start failed", "error", err)
@@ -136,20 +111,71 @@ func (sc *SimulatorController) Start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responseMessage{Message: "simulation started"})
+	_ = json.NewEncoder(w).Encode(responseMessage{Message: "simulation started"})
+}
+
+func mapStartRequest(req startSimulationRequest) (service.SimulationRequest, string) {
+	kind := generator.SimulationKind(strings.ToUpper(strings.TrimSpace(req.Kind)))
+	if kind == "" {
+		kind = generator.KindTraffic
+	}
+
+	out := service.SimulationRequest{
+		Kind:            kind,
+		TPS:             req.TPS,
+		Duration:        req.Duration,
+		FraudMixPercent: req.FraudMixPercent,
+	}
+
+	if req.SourceType != nil {
+		st := model.SourceType(strings.ToUpper(strings.TrimSpace(*req.SourceType)))
+		if st != model.SourceTypeBank && st != model.SourceTypeMerchant {
+			return service.SimulationRequest{}, "unsupported sourceType"
+		}
+		out.SourceType = &st
+	}
+
+	switch kind {
+	case generator.KindScenario:
+		scenario := generator.ScenarioID(strings.ToUpper(strings.TrimSpace(req.Scenario)))
+		if scenario == "" {
+			return service.SimulationRequest{}, "scenario is required"
+		}
+		if !generator.IsValidScenario(scenario) {
+			return service.SimulationRequest{}, "unsupported scenario"
+		}
+		out.Scenario = scenario
+		return out, ""
+
+	case generator.KindTraffic:
+		if req.TPS <= 0 {
+			return service.SimulationRequest{}, "tps must be greater than 0"
+		}
+		if req.Duration <= 0 {
+			return service.SimulationRequest{}, "duration must be greater than 0"
+		}
+		if req.Mode == "" {
+			return service.SimulationRequest{}, "mode is required"
+		}
+		mode := generator.SimulationMode(strings.ToUpper(strings.TrimSpace(req.Mode)))
+		if mode != generator.ModeNormal && mode != generator.ModeFraud {
+			return service.SimulationRequest{}, "unsupported mode"
+		}
+		out.Mode = mode
+		if req.FraudMixPercent != nil {
+			p := *req.FraudMixPercent
+			if p < 0 || p > 100 {
+				return service.SimulationRequest{}, "fraudMixPercent must be between 0 and 100"
+			}
+		}
+		return out, ""
+
+	default:
+		return service.SimulationRequest{}, "unsupported kind"
+	}
 }
 
 // Stop requests a graceful shutdown of the current simulation.
-//
-// POST /api/simulator/stop
-//
-// Success (200):
-//
-//	{
-//	  "message": "simulation stopped"
-//	}
-//
-// Error (500): Unexpected server error
 func (sc *SimulatorController) Stop(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -160,28 +186,19 @@ func (sc *SimulatorController) Stop(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(responseMessage{Message: "simulation stopped"})
+	_ = json.NewEncoder(w).Encode(responseMessage{Message: "simulation stopped"})
 }
 
 // Status returns the current or latest simulation metrics.
-//
-// GET /api/simulator/status
-//
-// Success (200):
-//
-//	{
-//	  "running": true,
-//	  "transactionsGenerated": 50000,
-//	  "successfulTransactions": 49950,
-//	  "failedTransactions": 50,
-//	  "currentTPS": 1000
-//	}
 func (sc *SimulatorController) Status(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	metrics := sc.svc.Metrics()
 	resp := statusResponse{
 		Running:                metrics.Running,
+		Kind:                   metrics.Kind,
+		Scenario:               metrics.Scenario,
+		Mode:                   metrics.Mode,
 		TransactionsGenerated:  metrics.TransactionsGenerated,
 		SuccessfulTransactions: metrics.SuccessfulTransactions,
 		FailedTransactions:     metrics.FailedTransactions,
@@ -189,6 +206,5 @@ func (sc *SimulatorController) Status(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
-

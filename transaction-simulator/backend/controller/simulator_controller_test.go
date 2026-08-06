@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"transaction-simulator/generator"
+	"transaction-simulator/model"
 	"transaction-simulator/service"
 )
 
@@ -83,6 +84,87 @@ func TestStart_ValidRequest_Success(t *testing.T) {
 	}
 	if mock.startRequest.Mode != generator.ModeFraud {
 		t.Fatalf("expected Mode FRAUD, got %s", mock.startRequest.Mode)
+	}
+	if mock.startRequest.Kind != generator.KindTraffic {
+		t.Fatalf("expected default Kind TRAFFIC, got %s", mock.startRequest.Kind)
+	}
+}
+
+func TestStart_ScenarioPack_Success(t *testing.T) {
+	mock := &mockSimulatorService{}
+	ctrl := NewSimulatorController(mock, discardLogger())
+
+	body := startSimulationRequest{
+		Kind:     "SCENARIO",
+		Scenario: "AMOUNT_THRESHOLD",
+	}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/api/simulator/start", bytes.NewReader(bodyBytes))
+	w := httptest.NewRecorder()
+
+	ctrl.Start(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%s", w.Code, w.Body.String())
+	}
+	if mock.startRequest.Kind != generator.KindScenario {
+		t.Fatalf("expected Kind SCENARIO, got %s", mock.startRequest.Kind)
+	}
+	if mock.startRequest.Scenario != generator.ScenarioAmountThreshold {
+		t.Fatalf("expected Scenario AMOUNT_THRESHOLD, got %s", mock.startRequest.Scenario)
+	}
+}
+
+func TestStart_ScenarioMissing_BadRequest(t *testing.T) {
+	mock := &mockSimulatorService{}
+	ctrl := NewSimulatorController(mock, discardLogger())
+
+	body := startSimulationRequest{Kind: "SCENARIO"}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/api/simulator/start", bytes.NewReader(bodyBytes))
+	w := httptest.NewRecorder()
+
+	ctrl.Start(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+	if mock.startCalled {
+		t.Fatal("expected Start not to be called")
+	}
+}
+
+func TestStart_TrafficWithSourceAndMix_Success(t *testing.T) {
+	mock := &mockSimulatorService{}
+	ctrl := NewSimulatorController(mock, discardLogger())
+
+	bank := "BANK"
+	mix := 15
+	body := startSimulationRequest{
+		Kind:            "TRAFFIC",
+		TPS:             50,
+		Duration:        10,
+		Mode:            "NORMAL",
+		SourceType:      &bank,
+		FraudMixPercent: &mix,
+	}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest("POST", "/api/simulator/start", bytes.NewReader(bodyBytes))
+	w := httptest.NewRecorder()
+
+	ctrl.Start(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%s", w.Code, w.Body.String())
+	}
+	if mock.startRequest.SourceType == nil || *mock.startRequest.SourceType != model.SourceTypeBank {
+		t.Fatalf("expected SourceType BANK, got %#v", mock.startRequest.SourceType)
+	}
+	if mock.startRequest.FraudMixPercent == nil || *mock.startRequest.FraudMixPercent != 15 {
+		t.Fatalf("expected fraudMixPercent 15, got %#v", mock.startRequest.FraudMixPercent)
 	}
 }
 
@@ -351,6 +433,9 @@ func TestStatus_ReturnsMetrics(t *testing.T) {
 	mock := &mockSimulatorService{
 		metricsResult: service.SimulationMetrics{
 			Running:                true,
+			Kind:                   "SCENARIO",
+			Scenario:               "VELOCITY",
+			Mode:                   "",
 			TransactionsGenerated:  50000,
 			SuccessfulTransactions: 49950,
 			FailedTransactions:     50,
@@ -373,6 +458,12 @@ func TestStatus_ReturnsMetrics(t *testing.T) {
 
 	if resp.Running != true {
 		t.Fatalf("expected Running true, got %v", resp.Running)
+	}
+	if resp.Kind != "SCENARIO" {
+		t.Fatalf("expected Kind SCENARIO, got %q", resp.Kind)
+	}
+	if resp.Scenario != "VELOCITY" {
+		t.Fatalf("expected Scenario VELOCITY, got %q", resp.Scenario)
 	}
 	if resp.TransactionsGenerated != 50000 {
 		t.Fatalf("expected TransactionsGenerated 50000, got %d", resp.TransactionsGenerated)
