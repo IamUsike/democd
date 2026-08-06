@@ -1,74 +1,150 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAlertById, getAlerts, updateAlertStatus } from '../api/alertsClient';
-import type { Alert, AlertStatus } from '../types/alert';
+import type { Alert, AlertFilters, AlertStatus } from '../types/alert';
+import { useDebouncedValue } from './useDebouncedValue';
 
 export const ALL_STATUSES = ['ALL', 'OPEN', 'ACKNOWLEDGED', 'INVESTIGATING', 'CLOSED', 'DISMISSED'] as const;
-export type StatusFilter = typeof ALL_STATUSES[number];
+export type StatusFilter = (typeof ALL_STATUSES)[number];
 
-export function useAlerts() {
-  const [alerts, setAlerts]                   = useState<Alert[]>([]);
+const DEFAULT_SIZE = 50;
+
+export function useAlerts(initialFilters: AlertFilters = {}) {
+  const [filters, setFilters] = useState<AlertFilters>({
+    status: '',
+    severity: '',
+    sourceType: '',
+    sourceId: '',
+    accountId: '',
+    q: '',
+    sort: 'createdAt,desc',
+    page: 0,
+    size: DEFAULT_SIZE,
+    ...initialFilters,
+  });
+  const debouncedQ = useDebouncedValue(filters.q ?? '', 300);
+
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
   const [selectedAlertId, setSelectedAlertId] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter]       = useState<StatusFilter>('ALL');
-  const [loading, setLoading]                 = useState(true);
-  const [warning, setWarning]                 = useState<string | null>(null);
-  const [updating, setUpdating]               = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
 
-  /* Re-fetch whenever the status filter changes */
+  const queryFilters = useMemo(
+    () => ({
+      sourceType: filters.sourceType || undefined,
+      sourceId: filters.sourceId?.trim() || undefined,
+      status: filters.status || undefined,
+      severity: filters.severity || undefined,
+      accountId: filters.accountId?.trim() || undefined,
+      q: debouncedQ.trim() || undefined,
+      sort: filters.sort || 'createdAt,desc',
+      page: filters.page ?? 0,
+      size: filters.size ?? DEFAULT_SIZE,
+    }),
+    [
+      filters.sourceType,
+      filters.sourceId,
+      filters.status,
+      filters.severity,
+      filters.accountId,
+      filters.sort,
+      filters.page,
+      filters.size,
+      debouncedQ,
+    ],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       setLoading(true);
       setWarning(null);
-      setSelectedAlertId(null);
       try {
-        const items = await getAlerts(statusFilter === 'ALL' ? undefined : statusFilter);
-        if (!cancelled) {
-          setAlerts(items);
-          setSelectedAlertId(items[0]?.alertId ?? null);
+        const page = await getAlerts(queryFilters);
+        if (cancelled) return;
+        setAlerts(page.items);
+        setTotalCount(page.totalCount);
+        setHasNext(page.hasNext);
+        if (page.items.length > 0) {
+          setSelectedAlertId((prev) => {
+            if (prev != null && page.items.some((a) => a.alertId === prev)) {
+              return prev;
+            }
+            return page.items[0].alertId;
+          });
+        } else {
+          setSelectedAlertId(null);
+          setSelectedAlert(null);
         }
       } catch {
-        if (!cancelled) {
-          setAlerts([]);
-          setSelectedAlertId(null);
-          setWarning('Unable to load alerts from the API.');
-        }
+        if (cancelled) return;
+        setAlerts([]);
+        setTotalCount(0);
+        setHasNext(false);
+        setSelectedAlertId(null);
+        setSelectedAlert(null);
+        setWarning('Unable to load alerts from the API.');
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    load();
-    return () => { cancelled = true; };
-  }, [statusFilter]);
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [queryFilters]);
 
-  const selectedAlert = useMemo(
-    () => alerts.find((a) => a.alertId === selectedAlertId) ?? null,
-    [alerts, selectedAlertId],
-  );
-
-  /** Select an alert and hydrate its detail fields from the API. */
-  const selectAlert = useCallback(async (alertId: number) => {
-    setSelectedAlertId(alertId);
-    try {
-      const detail = await getAlertById(alertId);
-      setAlerts((prev) =>
-        prev.map((a) => (a.alertId === alertId ? { ...a, ...detail } : a)),
-      );
-    } catch {
-      setWarning('Unable to load alert detail from the API.');
+  useEffect(() => {
+    if (selectedAlertId == null) {
+      setSelectedAlert(null);
+      return;
     }
+
+    let cancelled = false;
+
+    async function loadDetail() {
+      setDetailLoading(true);
+      try {
+        const detail = await getAlertById(selectedAlertId!);
+        if (cancelled) return;
+        setSelectedAlert(detail);
+        setAlerts((prev) =>
+          prev.map((alert) => (alert.alertId === detail.alertId ? { ...alert, ...detail } : alert)),
+        );
+      } catch {
+        if (!cancelled) {
+          setWarning('Unable to load alert detail from the API.');
+        }
+      } finally {
+        if (!cancelled) setDetailLoading(false);
+      }
+    }
+
+    void loadDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAlertId]);
+
+  const selectAlert = useCallback((alertId: number) => {
+    setSelectedAlertId(alertId);
   }, []);
 
-  /** Transition an alert's lifecycle status. */
   const changeStatus = useCallback(
     async (alertId: number, nextStatus: AlertStatus, notes?: string) => {
       setUpdating(true);
       setWarning(null);
       try {
         const updated = await updateAlertStatus(alertId, { status: nextStatus, notes });
+        setSelectedAlert((prev) => (prev?.alertId === alertId ? { ...prev, ...updated } : prev));
         setAlerts((prev) =>
-          prev.map((a) => (a.alertId === alertId ? { ...a, ...updated } : a)),
+          prev.map((alert) => (alert.alertId === alertId ? { ...alert, ...updated } : alert)),
         );
       } catch {
         setWarning('Unable to update alert status via the API.');
@@ -79,15 +155,23 @@ export function useAlerts() {
     [],
   );
 
+  const setPage = useCallback((page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+  }, []);
+
   return {
     alerts,
     selectedAlert,
     selectedAlertId,
-    statusFilter,
-    setStatusFilter,
     loading,
+    detailLoading,
     warning,
     updating,
+    filters,
+    totalCount,
+    hasNext,
+    setFilters,
+    setPage,
     selectAlert,
     changeStatus,
   };
