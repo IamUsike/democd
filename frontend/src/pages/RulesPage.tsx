@@ -53,10 +53,15 @@ function RuleCard({
     setDailyLimit(rule.dailyLimit != null ? String(rule.dailyLimit) : '');
   }, [rule]);
 
-  /* Toggle auto-saves immediately for a switch-like feel */
-  function handleToggle(next: boolean) {
+  /* Toggle auto-saves; revert local state if the API call fails */
+  async function handleToggle(next: boolean) {
+    const previous = enabled;
     setEnabled(next);
-    onSave(rule.ruleType, { enabled: next });
+    try {
+      await onSave(rule.ruleType, { enabled: next });
+    } catch {
+      setEnabled(previous);
+    }
   }
 
   /* BUG 3 FIX — validate inputs before sending */
