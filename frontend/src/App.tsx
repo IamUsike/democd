@@ -4,6 +4,7 @@ import { AppShell } from './layout/AppShell';
 import { AlertsPage } from './pages/AlertsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
+import { RulesPage } from './pages/RulesPage';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/rules" element={<RulesPage />} />
       </Route>
     </Routes>
   );

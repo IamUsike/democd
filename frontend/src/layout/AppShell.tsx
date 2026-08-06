@@ -4,6 +4,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/transactions', label: 'Transactions' },
   { to: '/alerts', label: 'Alerts' },
+  { to: '/rules', label: 'Rules' },
 ];
 
 export function AppShell() {

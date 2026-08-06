@@ -2,6 +2,7 @@ package com.example.txnmonitor.common;
 
 import com.example.txnmonitor.common.exception.AlertNotFoundException;
 import com.example.txnmonitor.common.exception.InvalidAlertTransitionException;
+import com.example.txnmonitor.common.exception.RuleNotFoundException;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TransactionNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleTransactionNotFoundException(
             TransactionNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse errorResponse = buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(RuleNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleRuleNotFoundException(
+            RuleNotFoundException ex,
             HttpServletRequest request
     ) {
         ApiErrorResponse errorResponse = buildErrorResponse(
