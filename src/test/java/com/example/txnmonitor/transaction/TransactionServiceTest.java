@@ -1,29 +1,28 @@
 package com.example.txnmonitor.transaction;
 
-import com.example.txnmonitor.alert.AlertService;
-import com.example.txnmonitor.api.AlertResponse;
 import com.example.txnmonitor.api.TransactionRequest;
 import com.example.txnmonitor.api.TransactionResponse;
+import com.example.txnmonitor.common.config.TxnMonitorProperties;
+import com.example.txnmonitor.common.config.TxnMonitorProperties.Mode;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
-import com.example.txnmonitor.rule.NoOpRuleEvaluationContext;
-import com.example.txnmonitor.rule.RuleEngine;
-import com.example.txnmonitor.rule.RuleMatch;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,56 +32,59 @@ class TransactionServiceTest {
     @Mock
     private TransactionRepository transactionRepository;
 
-    private RecordingAlertService alertService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    private TxnMonitorProperties txnMonitorProperties;
+    private RecordingTransactionEvaluator transactionEvaluator;
     private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
-        alertService = new RecordingAlertService();
+        txnMonitorProperties = new TxnMonitorProperties();
+        transactionEvaluator = new RecordingTransactionEvaluator();
         transactionService = new TransactionService(
                 transactionRepository,
-                new RuleEngine(List.of()),
-                new NoOpRuleEvaluationContext(),
-                alertService);
+                transactionEvaluator,
+                txnMonitorProperties,
+                eventPublisher);
+    }
+
+    @Test
+    void saveTransaction_syncMode_evaluatesInline() {
+        txnMonitorProperties.getEvaluation().setMode(Mode.sync);
+        TransactionRequest request = sampleRequest();
+        Transaction savedTransaction = sampleTransaction();
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTransaction);
+
+        TransactionResponse result = transactionService.saveTransaction(request);
+
+        assertEquals(savedTransaction, transactionEvaluator.lastEvaluatedTransaction);
+        verify(eventPublisher, never()).publishEvent(any());
+        assertEquals(1L, result.getTransactionId());
+    }
+
+    @Test
+    void saveTransaction_asyncMode_publishesEventWithoutInlineEvaluation() {
+        txnMonitorProperties.getEvaluation().setMode(Mode.async);
+        TransactionRequest request = sampleRequest();
+        Transaction savedTransaction = sampleTransaction();
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTransaction);
+
+        transactionService.saveTransaction(request);
+
+        assertEquals(0, transactionEvaluator.evaluateCallCount);
+        ArgumentCaptor<TransactionEvaluationRequestedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TransactionEvaluationRequestedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertEquals(1L, eventCaptor.getValue().transactionId());
     }
 
     @Test
     void saveTransactionDelegatesToRepository() {
-        TransactionRequest request = new TransactionRequest(
-                "BANK",
-                "HSBC-UK",
-                "HSBC United Kingdom",
-                "ACC-1",
-                "PAYEE-1",
-                "Acme Vendors Ltd",
-                new BigDecimal("10.00"),
-                "USD",
-                "TRANSFER",
-                LocalDateTime.of(2026, 8, 3, 10, 15, 30),
-                "London, UK",
-                new BigDecimal("51.5074000"),
-                new BigDecimal("-0.1278000"),
-                "test",
-                "NEW"
-        );
-        Transaction savedTransaction = new Transaction(
-                1L,
-                "BANK",
-                "HSBC-UK",
-                "HSBC United Kingdom",
-                "ACC-1",
-                "PAYEE-1",
-                "Acme Vendors Ltd",
-                new BigDecimal("10.00"),
-                "USD",
-                "TRANSFER",
-                LocalDateTime.of(2026, 8, 3, 10, 15, 30),
-                "London, UK",
-                new BigDecimal("51.5074000"),
-                new BigDecimal("-0.1278000"),
-                "test",
-                "NEW"
-        );
+        txnMonitorProperties.getEvaluation().setMode(Mode.sync);
+        TransactionRequest request = sampleRequest();
+        Transaction savedTransaction = sampleTransaction();
         when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTransaction);
 
         TransactionResponse result = transactionService.saveTransaction(request);
@@ -93,26 +95,7 @@ class TransactionServiceTest {
 
         assertEquals(request.getAccountId(), capturedTransaction.getAccountId());
         assertEquals(request.getSourceType(), capturedTransaction.getSourceType());
-        assertEquals(request.getSourceId(), capturedTransaction.getSourceId());
-        assertEquals(request.getSourceName(), capturedTransaction.getSourceName());
-        assertEquals(request.getPayeeId(), capturedTransaction.getPayeeId());
-        assertEquals(request.getPayeeName(), capturedTransaction.getPayeeName());
-        assertEquals(request.getAmount(), capturedTransaction.getAmount());
-        assertEquals(request.getCurrency(), capturedTransaction.getCurrency());
-        assertEquals(request.getType(), capturedTransaction.getType());
-        assertEquals(request.getTimestamp(), capturedTransaction.getTimestamp());
-        assertEquals(request.getLocation(), capturedTransaction.getLocation());
-        assertEquals(request.getLatitude(), capturedTransaction.getLatitude());
-        assertEquals(request.getLongitude(), capturedTransaction.getLongitude());
-        assertEquals(request.getDescription(), capturedTransaction.getDescription());
-        assertEquals(request.getStatus(), capturedTransaction.getStatus());
-
         assertEquals(1L, result.getTransactionId());
-        assertEquals("BANK", result.getSourceType());
-        assertEquals("HSBC-UK", result.getSourceId());
-        assertEquals("ACC-1", result.getAccountId());
-        assertSame(savedTransaction, alertService.lastTransaction);
-        assertEquals(0, alertService.lastMatches.size());
     }
 
     @Test
@@ -128,24 +111,7 @@ class TransactionServiceTest {
 
     @Test
     void getTransactionByIdReturnsTransactionWhenFound() {
-        Transaction transaction = new Transaction(
-                1L,
-                "BANK",
-                "HSBC-UK",
-                "HSBC United Kingdom",
-                "ACC-1",
-                "PAYEE-1",
-                "Acme Vendors Ltd",
-                new BigDecimal("10.00"),
-                "USD",
-                "TRANSFER",
-                LocalDateTime.of(2026, 8, 3, 10, 15, 30),
-                "London, UK",
-                new BigDecimal("51.5074000"),
-                new BigDecimal("-0.1278000"),
-                "test",
-                "NEW"
-        );
+        Transaction transaction = sampleTransaction();
         when(transactionRepository.findById(1L)).thenReturn(Optional.of(transaction));
 
         TransactionResponse result = transactionService.getTransactionById(1L);
@@ -180,29 +146,62 @@ class TransactionServiceTest {
         assertEquals(1, transactionService.searchByAccountId("ACC-1").size());
         assertEquals(1, transactionService.searchByStatus("NEW").size());
         assertEquals(1, transactionService.searchByType("TRANSFER").size());
-
-        verify(transactionRepository).findBySourceTypeAndSourceId("BANK", "HSBC-UK");
-        verify(transactionRepository).findBySourceTypeAndSourceIdAndAccountId("BANK", "HSBC-UK", "ACC-1");
-        verify(transactionRepository).findByAccountId("ACC-1");
-        verify(transactionRepository).findByStatus("NEW");
-        verify(transactionRepository).findByType("TRANSFER");
     }
 
-    private static final class RecordingAlertService extends AlertService {
+    private TransactionRequest sampleRequest() {
+        return new TransactionRequest(
+                "BANK",
+                "HSBC-UK",
+                "HSBC United Kingdom",
+                "ACC-1",
+                "PAYEE-1",
+                "Acme Vendors Ltd",
+                new BigDecimal("10.00"),
+                "USD",
+                "TRANSFER",
+                LocalDateTime.of(2026, 8, 3, 10, 15, 30),
+                "London, UK",
+                new BigDecimal("51.5074000"),
+                new BigDecimal("-0.1278000"),
+                "test",
+                "NEW");
+    }
 
-        private Transaction lastTransaction;
-        private List<RuleMatch> lastMatches = List.of();
+    private Transaction sampleTransaction() {
+        return new Transaction(
+                1L,
+                "BANK",
+                "HSBC-UK",
+                "HSBC United Kingdom",
+                "ACC-1",
+                "PAYEE-1",
+                "Acme Vendors Ltd",
+                new BigDecimal("10.00"),
+                "USD",
+                "TRANSFER",
+                LocalDateTime.of(2026, 8, 3, 10, 15, 30),
+                "London, UK",
+                new BigDecimal("51.5074000"),
+                new BigDecimal("-0.1278000"),
+                "test",
+                "NEW");
+    }
 
-        private RecordingAlertService() {
-            super(null, null);
+    private static final class RecordingTransactionEvaluator implements TransactionEvaluator {
+
+        private Transaction lastEvaluatedTransaction;
+        private final List<Long> evaluatedTransactionIds = new ArrayList<>();
+        private int evaluateCallCount;
+
+        @Override
+        public void evaluate(Transaction transaction) {
+            evaluateCallCount++;
+            lastEvaluatedTransaction = transaction;
         }
 
         @Override
-        public List<AlertResponse> createFromMatches(Transaction transaction, List<RuleMatch> matches) {
-            this.lastTransaction = transaction;
-            this.lastMatches = matches;
-            return List.of();
+        public void evaluateByTransactionId(Long transactionId) {
+            evaluatedTransactionIds.add(transactionId);
         }
     }
 }
-

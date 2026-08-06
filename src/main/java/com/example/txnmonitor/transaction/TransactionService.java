@@ -1,14 +1,12 @@
 package com.example.txnmonitor.transaction;
 
-import com.example.txnmonitor.alert.AlertService;
 import com.example.txnmonitor.api.TransactionRequest;
 import com.example.txnmonitor.api.TransactionResponse;
+import com.example.txnmonitor.common.config.TxnMonitorProperties;
 import com.example.txnmonitor.common.exception.TransactionNotFoundException;
-import com.example.txnmonitor.rule.RuleEngine;
-import com.example.txnmonitor.rule.RuleEvaluationContext;
-import com.example.txnmonitor.rule.RuleMatch;
-import com.example.txnmonitor.rule.TransactionSnapshot;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -17,27 +15,29 @@ import java.util.Objects;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
-    private final RuleEngine ruleEngine;
-    private final RuleEvaluationContext ruleEvaluationContext;
-    private final AlertService alertService;
+	private final TransactionEvaluator transactionEvaluator;
+    private final TxnMonitorProperties txnMonitorProperties;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TransactionService(
             TransactionRepository transactionRepository,
-            RuleEngine ruleEngine,
-            RuleEvaluationContext ruleEvaluationContext,
-            AlertService alertService) {
+            TransactionEvaluator transactionEvaluator,
+            TxnMonitorProperties txnMonitorProperties,
+            ApplicationEventPublisher eventPublisher) {
         this.transactionRepository = transactionRepository;
-        this.ruleEngine = ruleEngine;
-        this.ruleEvaluationContext = ruleEvaluationContext;
-        this.alertService = alertService;
+        this.transactionEvaluator = transactionEvaluator;
+        this.txnMonitorProperties = txnMonitorProperties;
+        this.eventPublisher = eventPublisher;
     }
 
+    @Transactional
     public TransactionResponse saveTransaction(TransactionRequest request) {
         Transaction savedTransaction = transactionRepository.save(toEntity(request));
-        List<RuleMatch> matches = ruleEngine.evaluate(
-                toSnapshot(savedTransaction),
-                ruleEvaluationContext);
-        alertService.createFromMatches(savedTransaction, matches);
+        if (txnMonitorProperties.isAsyncEvaluation()) {
+            eventPublisher.publishEvent(new TransactionEvaluationRequestedEvent(savedTransaction.getTransactionId()));
+        } else {
+            transactionEvaluator.evaluate(savedTransaction);
+        }
         return toResponse(savedTransaction);
     }
 
@@ -109,16 +109,6 @@ public class TransactionService {
         return transaction;
     }
 
-    private TransactionSnapshot toSnapshot(Transaction transaction) {
-        return new TransactionSnapshot(
-                transaction.getTransactionId(),
-                transaction.getAmount(),
-                transaction.getAccountId(),
-                transaction.getPayeeId(),
-                transaction.getTimestamp(),
-                transaction.getType());
-    }
-
     private TransactionResponse toResponse(Transaction transaction) {
         return new TransactionResponse(
                 transaction.getTransactionId(),
@@ -144,4 +134,3 @@ public class TransactionService {
         return Objects.nonNull(value) && !value.isBlank();
     }
 }
-
