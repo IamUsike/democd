@@ -5,6 +5,7 @@
 **Duration:** **10 minutes** (+ questions)  
 **Date context:** August 2026 · Sprint 2 wrap
 
+**Deck:** [`FINAL-PRESENTATION.pptx`](FINAL-PRESENTATION.pptx) (5 slides, HSBC-style)  
 **Companion docs:** [`docs/load-test-results.md`](docs/load-test-results.md) · [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) · [`Project_milestones.md`](Project_milestones.md)
 
 ---

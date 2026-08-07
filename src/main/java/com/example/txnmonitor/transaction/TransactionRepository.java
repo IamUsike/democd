@@ -15,9 +15,18 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     List<Transaction> findByAccountId(String accountId);
 
+    List<Transaction> findByPayeeId(String payeeId);
+
+    List<Transaction> findByAccountIdAndPayeeId(String accountId, String payeeId);
+
     List<Transaction> findBySourceTypeAndSourceId(String sourceType, String sourceId);
 
     List<Transaction> findBySourceTypeAndSourceIdAndAccountId(String sourceType, String sourceId, String accountId);
+
+    List<Transaction> findByTimestampBetween(LocalDateTime start, LocalDateTime end);
+
+    List<Transaction> findBySourceTypeAndSourceIdAndTimestampBetween(
+            String sourceType, String sourceId, LocalDateTime start, LocalDateTime end);
 
     List<Transaction> findByStatus(String status);
 
