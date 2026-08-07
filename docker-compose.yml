@@ -7,14 +7,22 @@ services:
     restart: always
 
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      # Defaults match .env.example so a missing .env does not crash MySQL
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-n3u3da!}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-txnmonitor}
 
     ports:
       - "3306:3306"
 
     volumes:
-      - mysql-data:/var/lib/data
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
     networks:
       - springboot-network
@@ -22,18 +30,20 @@ services:
   springboot-app:
     build: .
     container_name: springboot-app
+    restart: always
 
     ports:
       - "8081:8081"
 
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_URL: ${DB_URL}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
+      DB_URL: ${DB_URL:-jdbc:mysql://mysql:3306/txnmonitor?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      DB_USER: ${DB_USER:-root}
+      DB_PASS: ${DB_PASS:-n3u3da!}
 
     networks:
       - springboot-network
@@ -42,7 +52,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8081}
     container_name: txnmonitor-frontend
     restart: always
 

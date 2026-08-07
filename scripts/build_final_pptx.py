@@ -1,95 +1,726 @@
 #!/usr/bin/env python3
-"""Build 5-slide professional PPT matching runtime_rebels template style."""
+"""Build the six-slide client deck for the Transaction Monitoring & Alerts project.
+
+Visual language follows the HSBC-style template in runtime_rebels.pptx.pdf:
+deep-red brand panel bookends, generous whitespace, hairline-bordered cards.
+Every figure quoted here is traceable to the repo or to docs/load-test-results.md.
+
+Run: .pptx-venv/bin/python scripts/build_final_pptx.py
+"""
+
+from pathlib import Path
 
 from pptx import Presentation
-from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
-from pptx.enum.shapes import MSO_SHAPE
-from pptx.oxml.ns import nsmap
-from pptx.oxml import parse_xml
-from lxml import etree
-import copy
+from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
+from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
+from pptx.oxml.ns import qn
+from pptx.util import Inches, Pt
 
-# Brand colors from template
-RED_DARK = RGBColor(0x73, 0x00, 0x14)  # #730014
-RED_ACCENT = RGBColor(0xC4, 0x1E, 0x3A)  # #C41E3A
-CHARCOAL = RGBColor(0x2B, 0x2B, 0x2B)
-GRAY = RGBColor(0x5A, 0x5A, 0x5A)
-GRAY_LIGHT = RGBColor(0xF2, 0xF2, 0xF2)
-GRAY_CARD = RGBColor(0xEB, 0xEB, 0xEB)
+# ── Palette ───────────────────────────────────────────────────────────────
+# RED_DEEP matches the background baked into hsbc.png so the logo sits
+# invisibly on the brand panel.
+RED_DEEP = RGBColor(0x73, 0x00, 0x14)
+RED = RGBColor(0xC4, 0x1E, 0x3A)
+RED_MID = RGBColor(0x9B, 0x0F, 0x28)
+INK = RGBColor(0x14, 0x18, 0x1D)
+BODY = RGBColor(0x39, 0x41, 0x4C)
+MUTED = RGBColor(0x7C, 0x86, 0x95)
+HAIRLINE = RGBColor(0xD9, 0xDE, 0xE4)
+MIST = RGBColor(0xF4, 0xF6, 0xF8)
+CARD = RGBColor(0xEA, 0xEE, 0xF2)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
-GREEN_OK = RGBColor(0x1B, 0x7A, 0x3D)
-AMBER = RGBColor(0xB8, 0x5C, 0x00)
+GREEN = RGBColor(0x1B, 0x7A, 0x3D)
+AMBER = RGBColor(0xB0, 0x59, 0x0A)
+
+TEAM = "Agilish"
+MEMBERS = "shreya  ·  sathwik  ·  Rameez"
+PROJECT = "Transaction Monitoring & Alerts"
+TOTAL_SLIDES = 6
 
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
+MARGIN = 0.6
+CONTENT_W = 12.133
 
-ASSETS = "/tmp/rr_assets/crops"
-OUT = "/home/wofo/Downloads/Projects/democd/FINAL-PRESENTATION.pptx"
+REPO = Path(__file__).resolve().parent.parent
+ASSETS = REPO / "scripts" / "assets"
+OUT = str(REPO / "FINAL-PRESENTATION.pptx")
 
 
-def set_run(run, size, bold=False, color=CHARCOAL, font="Arial"):
+def asset(name):
+    path = ASSETS / name
+    return str(path) if path.exists() else None
+
+
+# ── Primitives ────────────────────────────────────────────────────────────
+def style_run(run, size, bold=False, color=INK, spacing=None, font="Arial"):
     run.font.size = Pt(size)
     run.font.bold = bold
     run.font.color.rgb = color
     run.font.name = font
+    if spacing:
+        run.font._rPr.set("spc", str(int(spacing * 100)))
 
 
-def add_textbox(slide, left, top, width, height, text, size=18, bold=False,
-                color=CHARCOAL, align=PP_ALIGN.LEFT, font="Arial"):
-    box = slide.shapes.add_textbox(left, top, width, height)
-    tf = box.text_frame
-    tf.word_wrap = True
-    p = tf.paragraphs[0]
-    p.alignment = align
-    run = p.add_run()
-    run.text = text
-    set_run(run, size, bold, color, font)
+def text(slide, x, y, w, h, body, size=12, bold=False, color=BODY,
+         align=PP_ALIGN.LEFT, spacing=None, line_spacing=None):
+    """Add a word-wrapped textbox. `body` may contain newlines."""
+    box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+    frame = box.text_frame
+    frame.word_wrap = True
+    frame.margin_left = 0
+    frame.margin_right = 0
+    frame.margin_top = 0
+    frame.margin_bottom = 0
+    for index, line in enumerate(body.split("\n")):
+        para = frame.paragraphs[0] if index == 0 else frame.add_paragraph()
+        para.alignment = align
+        para.space_before = Pt(0)
+        para.space_after = Pt(0)
+        if line_spacing:
+            para.line_spacing = line_spacing
+        run = para.add_run()
+        run.text = line
+        style_run(run, size, bold, color, spacing)
     return box
 
 
-def add_para(tf, text, size=14, bold=False, color=CHARCOAL, space_before=6,
-             space_after=2, align=PP_ALIGN.LEFT):
-    p = tf.add_paragraph()
-    p.alignment = align
-    p.space_before = Pt(space_before)
-    p.space_after = Pt(space_after)
-    run = p.add_run()
-    run.text = text
-    set_run(run, size, bold, color)
-    return p
+def shape(slide, kind, x, y, w, h, fill=None, line=None, line_w=0.75, dash=None):
+    item = slide.shapes.add_shape(kind, Inches(x), Inches(y), Inches(w), Inches(h))
+    if fill is None:
+        item.fill.background()
+    else:
+        item.fill.solid()
+        item.fill.fore_color.rgb = fill
+    if line is None:
+        item.line.fill.background()
+    else:
+        item.line.color.rgb = line
+        item.line.width = Pt(line_w)
+        if dash:
+            item.line.dash_style = dash
+    item.shadow.inherit = False
+    return item
 
 
-def rect(slide, left, top, width, height, fill):
-    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = fill
-    shape.line.fill.background()
-    return shape
+def rect(slide, x, y, w, h, fill=None, line=None, line_w=0.75, dash=None):
+    return shape(slide, MSO_SHAPE.RECTANGLE, x, y, w, h, fill, line, line_w, dash)
 
 
-def rounded_rect(slide, left, top, width, height, fill):
-    shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = fill
-    shape.line.fill.background()
-    return shape
+def panel(slide, x, y, w, h, fill=MIST, line=HAIRLINE, radius=0.06):
+    """A soft card. Rounded corners are set via the shape's adjustment value."""
+    item = shape(slide, MSO_SHAPE.ROUNDED_RECTANGLE, x, y, w, h, fill, line)
+    try:
+        item.adjustments[0] = radius / min(w, h) if min(w, h) else 0.1
+    except Exception:
+        pass
+    return item
 
 
-def chevron(slide, left, top, width, height, fill):
-    shape = slide.shapes.add_shape(MSO_SHAPE.CHEVRON, left, top, width, height)
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = fill
-    shape.line.fill.background()
-    return shape
+def hairline(slide, x, y, w, color=HAIRLINE):
+    return rect(slide, x, y, w, 0.012, fill=color)
 
 
-def slide_number(slide, n, total=5):
-    add_textbox(
-        slide, Inches(12.4), Inches(7.1), Inches(0.7), Inches(0.3),
-        f"{n}/{total}", size=10, color=GRAY, align=PP_ALIGN.RIGHT,
+def accent_rule(slide, x, y, w=1.15, color=RED, thickness=0.038):
+    return rect(slide, x, y, w, thickness, fill=color)
+
+
+def arrow(slide, x1, y1, x2, y2, color=RED, width=1.25, dash=None):
+    line = slide.shapes.add_connector(
+        MSO_CONNECTOR.STRAIGHT, Inches(x1), Inches(y1), Inches(x2), Inches(y2)
     )
+    line.line.color.rgb = color
+    line.line.width = Pt(width)
+    if dash:
+        line.line.dash_style = dash
+    ln = line._element.spPr.get_or_add_ln()
+    ln.append(ln.makeelement(qn("a:tailEnd"), {"type": "triangle", "w": "med", "len": "med"}))
+    return line
+
+
+def centered(item, lines):
+    """Fill an autoshape with vertically centred lines: (text, size, bold, color)."""
+    frame = item.text_frame
+    frame.clear()
+    frame.word_wrap = True
+    frame.margin_left = Inches(0.08)
+    frame.margin_right = Inches(0.08)
+    frame.margin_top = 0
+    frame.margin_bottom = 0
+    frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    for index, (body, size, bold, color) in enumerate(lines):
+        para = frame.paragraphs[0] if index == 0 else frame.add_paragraph()
+        para.alignment = PP_ALIGN.CENTER
+        para.space_before = Pt(2 if index else 0)
+        para.space_after = Pt(0)
+        run = para.add_run()
+        run.text = body
+        style_run(run, size, bold, color)
+
+
+def dot_field(slide, x, y, cols, rows, step=0.17, size=0.075):
+    """Faint diamond grid echoing the template's brand pattern."""
+    for row in range(rows):
+        for col in range(cols):
+            if (row + col) % 2:
+                continue
+            dot = shape(
+                slide, MSO_SHAPE.DIAMOND,
+                x + col * step, y + row * step, size, size, fill=RED,
+            )
+            fade = 0.30 - 0.022 * (row + col)
+            set_alpha(dot, max(0.06, fade))
+
+
+def set_alpha(item, alpha):
+    fill = item._element.spPr.find(qn("a:solidFill"))
+    if fill is None:
+        return
+    color = fill.find(qn("a:srgbClr"))
+    if color is None:
+        return
+    color.append(color.makeelement(qn("a:alpha"), {"val": str(int(alpha * 100000))}))
+
+
+def header(slide, eyebrow, title, subtitle=None, title_size=29):
+    text(slide, MARGIN, 0.44, 8.0, 0.24, eyebrow, size=9.5, bold=True,
+         color=RED, spacing=1.6)
+    text(slide, MARGIN, 0.70, 11.6, 0.5, title, size=title_size, bold=True, color=INK)
+    accent_rule(slide, MARGIN, 1.24)
+    if subtitle:
+        text(slide, MARGIN, 1.40, 11.4, 0.3, subtitle, size=11.5, color=MUTED)
+
+
+def footer(slide, number):
+    hairline(slide, MARGIN, 6.99, CONTENT_W)
+    text(slide, MARGIN, 7.08, 8.0, 0.24, f"{TEAM}  ·  {PROJECT}", size=9, color=MUTED)
+    text(slide, 11.0, 7.08, 1.73, 0.24, f"{number} / {TOTAL_SLIDES}", size=9,
+         color=MUTED, align=PP_ALIGN.RIGHT)
+
+
+def stat_band(slide, y, cells, height=0.95):
+    """Full-width row of big numbers separated by hairlines."""
+    panel(slide, MARGIN, y, CONTENT_W, height, fill=MIST)
+    cell_w = CONTENT_W / len(cells)
+    for index, (value, label) in enumerate(cells):
+        cx = MARGIN + index * cell_w
+        if index:
+            rect(slide, cx, y + 0.16, 0.008, height - 0.32, fill=HAIRLINE)
+        text(slide, cx + 0.28, y + 0.16, cell_w - 0.5, 0.4, value, size=23,
+             bold=True, color=RED_DEEP)
+        text(slide, cx + 0.28, y + 0.60, cell_w - 0.4, 0.24, label, size=10,
+             color=MUTED)
+
+
+# ── Slide 1 — title ───────────────────────────────────────────────────────
+def slide_title(prs, blank):
+    s = prs.slides.add_slide(blank)
+    rect(s, 0, 0, 4.95, 7.5, fill=RED_DEEP)
+    dot_field(s, 3.45, 4.50, cols=8, rows=12)
+    rect(s, 4.95, 0, 0.055, 7.5, fill=RED)
+
+    text(s, 0.55, 0.62, 3.9, 0.24, "CLIENT REVIEW  ·  AUGUST 2026", size=9.5,
+         bold=True, color=RGBColor(0xE8, 0xA6, 0xB2), spacing=1.6)
+    text(s, 0.55, 1.05, 4.0, 2.3, "TRANSACTION\nMONITORING\n& ALERTS",
+         size=31, bold=True, color=WHITE, line_spacing=1.14)
+    accent_rule(s, 0.55, 2.95, w=1.5, color=WHITE, thickness=0.03)
+    text(s, 0.55, 3.20, 3.85, 0.9,
+         "Catch the risky payment while it is still\nin flight — then give one operator a\nclear path to close it.",
+         size=12.5, color=RGBColor(0xF2, 0xD6, 0xDB), line_spacing=1.3)
+
+    text(s, 0.55, 4.92, 3.9, 0.22, "PRESENTED BY TEAM", size=9, bold=True,
+         color=RGBColor(0xD8, 0x92, 0xA0), spacing=1.4)
+    text(s, 0.55, 5.16, 3.9, 0.5, TEAM, size=27, bold=True, color=WHITE)
+    text(s, 0.55, 5.78, 3.9, 0.22, "TEAM MEMBERS", size=9, bold=True,
+         color=RGBColor(0xD8, 0x92, 0xA0), spacing=1.4)
+    text(s, 0.55, 6.02, 3.9, 0.26, MEMBERS, size=12.5, color=WHITE)
+
+    if asset("hsbc.png"):
+        s.shapes.add_picture(asset("hsbc.png"), Inches(0.55), Inches(6.68),
+                             height=Inches(0.4))
+    else:
+        text(s, 0.55, 6.72, 2.0, 0.3, "HSBC", size=13, bold=True, color=WHITE)
+
+    if asset("plaza.png"):
+        s.shapes.add_picture(asset("plaza.png"), Inches(8.55), 0,
+                             width=Inches(4.783), height=Inches(7.5))
+    else:
+        rect(s, 8.55, 0, 4.783, 7.5, fill=CARD)
+
+    if asset("how_we_lead.png"):
+        s.shapes.add_picture(asset("how_we_lead.png"), Inches(5.74),
+                             Inches(2.05), height=Inches(1.85))
+
+    text(s, 5.55, 4.55, 2.85, 0.22, "THE OPERATOR LOOP", size=9, bold=True,
+         color=RED, spacing=1.4)
+    loop = ["Ingest", "Evaluate", "Alert", "Investigate", "Close"]
+    ly = 4.86
+    for index, step in enumerate(loop):
+        rect(s, 5.55, ly + 0.02, 0.075, 0.16, fill=RED if index < 3 else HAIRLINE)
+        text(s, 5.78, ly, 2.6, 0.22, step, size=11.5,
+             bold=index < 3, color=INK if index < 3 else MUTED)
+        ly += 0.33
+
+    return s
+
+
+# ── Slide 2 — problem & solution ──────────────────────────────────────────
+def slide_problem(prs, blank):
+    s = prs.slides.add_slide(blank)
+    header(
+        s, "THE BRIEF",
+        "Payments do not wait for a night-time batch",
+        "Banks and merchants push transactions continuously. Risk has to surface while the money is moving.",
+    )
+
+    text(s, MARGIN, 1.92, 5.4, 0.26, "What makes it hard", size=15, bold=True,
+         color=RED_DEEP)
+    problems = [
+        ("01", "Volume never pauses",
+         "Two simulated feeds plus a load harness can push hundreds of transactions a second into one API."),
+        ("02", "Manual triage does not scale",
+         "Amount spikes are the easy case. Velocity bursts, first-time payees and creeping daily totals hide in the noise."),
+        ("03", "Detection alone is not an answer",
+         "An operator needs one queue, one audit trail, and a status that cannot be skipped or reversed by accident."),
+    ]
+    y = 2.34
+    for tag, title, body in problems:
+        text(s, MARGIN, y, 0.5, 0.3, tag, size=16, bold=True, color=RED)
+        text(s, MARGIN + 0.62, y + 0.02, 4.75, 0.26, title, size=13, bold=True,
+             color=INK)
+        text(s, MARGIN + 0.62, y + 0.32, 4.75, 0.66, body, size=11, color=MUTED,
+             line_spacing=1.28)
+        y += 1.12
+
+    text(s, 6.95, 1.92, 5.8, 0.26, "What we delivered", size=15, bold=True,
+         color=RED_DEEP)
+    text(s, 6.95, 2.26, 5.78, 0.58,
+         "One Spring Boot deployable and one operator dashboard: ingest, evaluate against four rules in the same request, then work the alert to a close.",
+         size=12, bold=True, color=INK, line_spacing=1.3)
+
+    cards = [
+        ("Four rules, live-configurable",
+         "Thresholds are edited in the UI and stored in the database — no redeploy."),
+        ("Soft multi-source tenancy",
+         "One schema; every row carries source_type, source_id and source_name."),
+        ("Measured, not assumed",
+         "Three k6 passes, EXPLAIN on every hot query, timers on the engine itself."),
+    ]
+    cy = 3.06
+    for title, body in cards:
+        panel(s, 6.95, cy, 5.78, 0.80, fill=MIST)
+        rect(s, 6.95, cy, 0.055, 0.80, fill=RED)
+        text(s, 7.18, cy + 0.14, 5.4, 0.24, title, size=12, bold=True, color=INK)
+        text(s, 7.18, cy + 0.42, 5.4, 0.3, body, size=10.5, color=MUTED,
+             line_spacing=1.2)
+        cy += 0.90
+
+    stat_band(s, 5.86, [
+        ("4", "detection rules, all runtime-configurable"),
+        ("5", "alert states with validated transitions"),
+        ("14", "REST endpoints under /api/v1"),
+        ("89", "unit tests across 17 classes"),
+    ])
+    footer(s, 2)
+    return s
+
+
+# ── Slide 3 — architecture ────────────────────────────────────────────────
+def slide_architecture(prs, blank):
+    s = prs.slides.add_slide(blank)
+    header(
+        s, "ARCHITECTURE",
+        "A modular monolith with one seam that matters",
+        "One deployable, clean package boundaries — and a rule engine kept behind an interface so it can leave later.",
+    )
+
+    col_a_x, col_a_w = MARGIN, 2.15
+    vm_x, vm_w = 3.62, 5.93
+    col_c_x, col_c_w = 9.95, 2.78
+
+    # Column A — clients
+    text(s, col_a_x, 1.86, col_a_w, 0.22, "CLIENTS & FEEDS", size=9, bold=True,
+         color=MUTED, spacing=1.3)
+    sources = [
+        ("Operator browser", "Loads the dashboard,\ndrives the alert lifecycle"),
+        ("Feed simulators", "Go service, scenario packs\nPOST /api/v1/transactions"),
+        ("k6 load harness", "Ramp, mixed and soak\nprofiles up to 200 VUs"),
+    ]
+    sy = 2.15
+    source_centres = []
+    for title, body in sources:
+        panel(s, col_a_x, sy, col_a_w, 0.95, fill=WHITE, line=HAIRLINE)
+        text(s, col_a_x + 0.16, sy + 0.15, col_a_w - 0.32, 0.22, title,
+             size=11, bold=True, color=INK)
+        text(s, col_a_x + 0.16, sy + 0.42, col_a_w - 0.28, 0.44, body,
+             size=8.8, color=MUTED, line_spacing=1.2)
+        source_centres.append(sy + 0.475)
+        sy += 1.10
+
+    # Column B — the application VM
+    panel(s, vm_x, 1.98, vm_w, 3.42, fill=MIST)
+    text(s, vm_x + 0.18, 2.10, 4.6, 0.22, "APPLICATION VM  ·  DOCKER COMPOSE",
+         size=9, bold=True, color=RED_DEEP, spacing=1.3)
+
+    nginx = panel(s, vm_x + 0.18, 2.42, vm_w - 0.36, 0.56, fill=WHITE)
+    centered(nginx, [("nginx  +  React 19 SPA   ·   :8082", 11, True, INK)])
+
+    api_y = 3.22
+    panel(s, vm_x + 0.18, api_y, vm_w - 0.36, 1.98, fill=WHITE)
+    text(s, vm_x + 0.36, api_y + 0.12, 4.4, 0.22,
+         "SPRING BOOT 3.4.4  ·  JAVA 21  ·  :8081", size=9, bold=True,
+         color=RED_DEEP, spacing=1.3)
+
+    modules = [
+        ("api", "controllers + DTOs", False),
+        ("transaction", "record, query, filters", False),
+        ("rule", "RuleEngine + 4 rules", True),
+        ("alert", "lifecycle + transitions", False),
+    ]
+    chip_w = (vm_w - 0.36 - 0.36 - 0.22) / 2
+    for index, (name, body, highlight) in enumerate(modules):
+        cx = vm_x + 0.36 + (index % 2) * (chip_w + 0.22)
+        cy = api_y + 0.42 + (index // 2) * 0.72
+        panel(s, cx, cy, chip_w, 0.62,
+              fill=WHITE if highlight else MIST,
+              line=RED if highlight else HAIRLINE)
+        text(s, cx + 0.14, cy + 0.11, chip_w - 0.28, 0.22, name, size=10.5,
+             bold=True, color=RED if highlight else INK)
+        text(s, cx + 0.14, cy + 0.34, chip_w - 0.24, 0.22, body, size=8.8,
+             color=MUTED)
+
+    text(s, vm_x + 0.36, api_y + 1.80, chip_w + 1.4, 0.2,
+         "extractable later — same interface, new deployable", size=8,
+         bold=True, color=RED)
+
+    # Column C — data
+    text(s, col_c_x, 1.86, col_c_w, 0.22, "DATA", size=9, bold=True,
+         color=MUTED, spacing=1.3)
+    panel(s, col_c_x, 2.15, col_c_w, 1.95, fill=WHITE)
+    text(s, col_c_x + 0.16, 2.30, col_c_w - 0.32, 0.22, "MySQL 8  ·  :3306",
+         size=11, bold=True, color=INK)
+    text(s, col_c_x + 0.16, 2.56, col_c_w - 0.32, 0.2,
+         "reached over JPA + HikariCP", size=8.8, color=MUTED)
+    tables = ["transactions", "alerts", "alert_transactions", "rule_configs"]
+    ty = 2.86
+    for table in tables:
+        rect(s, col_c_x + 0.16, ty + 0.055, 0.06, 0.06, fill=RED)
+        text(s, col_c_x + 0.32, ty, col_c_w - 0.48, 0.2, table, size=9.5,
+             color=BODY)
+        ty += 0.27
+
+    panel(s, col_c_x, 4.25, col_c_w, 1.15, fill=MIST)
+    text(s, col_c_x + 0.16, 4.40, col_c_w - 0.32, 0.22, "7 named indexes",
+         size=11, bold=True, color=INK)
+    text(s, col_c_x + 0.16, 4.66, col_c_w - 0.3, 0.6,
+         "Account+time, account+payee and\nsource+time paths confirmed with\nEXPLAIN before blaming the schema.",
+         size=8.8, color=MUTED, line_spacing=1.18)
+
+    # Wiring
+    arrow(s, col_a_x + col_a_w, source_centres[0], vm_x + 0.14, 2.70)
+    arrow(s, col_a_x + col_a_w, source_centres[1], vm_x + 0.14, source_centres[1])
+    arrow(s, col_a_x + col_a_w, source_centres[2], vm_x + 0.14, source_centres[2])
+    arrow(s, vm_x + 0.9, 2.98, vm_x + 0.9, api_y - 0.02, color=MUTED, width=1.0)
+    text(s, vm_x + 1.02, 3.02, 1.6, 0.2, "REST /api/v1", size=8, color=MUTED)
+    arrow(s, vm_x + vm_w - 0.14, 3.6, col_c_x + 0.04, 3.6)
+
+    # Synchronous request path
+    text(s, MARGIN, 5.62, 7.0, 0.22, "SYNCHRONOUS DETECTION PATH", size=9,
+         bold=True, color=RED, spacing=1.4)
+    steps = [
+        "POST /transactions",
+        "Persist transaction",
+        "RuleEngine.evaluate()",
+        "Create OPEN alert(s)",
+        "201 Created",
+    ]
+    pill_w = (CONTENT_W - 4 * 0.34) / 5
+    for index, label in enumerate(steps):
+        px = MARGIN + index * (pill_w + 0.34)
+        pill = panel(s, px, 5.90, pill_w, 0.52,
+                     fill=RED_DEEP if index == 2 else MIST,
+                     line=RED_DEEP if index == 2 else HAIRLINE)
+        centered(pill, [(f"{index + 1}   {label}", 10.5, True,
+                         WHITE if index == 2 else INK)])
+        if index < 4:
+            arrow(s, px + pill_w + 0.06, 6.16, px + pill_w + 0.30, 6.16,
+                  color=MUTED, width=1.0)
+
+    text(s, MARGIN, 6.56, CONTENT_W, 0.34,
+         "Detection finishes before the API answers, so time-to-detect is bounded by the request itself. "
+         "No queue in this path yet — that is the deliberate next change, not a rewrite.",
+         size=10.5, color=MUTED, line_spacing=1.2)
+    footer(s, 3)
+    return s
+
+
+# ── Slide 4 — detection & lifecycle ───────────────────────────────────────
+def slide_detection(prs, blank):
+    s = prs.slides.add_slide(blank)
+    header(
+        s, "DETECTION & LIFECYCLE",
+        "Four rules, five states, one audit trail",
+        "Adding a rule type means adding one class. The engine and the Rule interface never change.",
+    )
+
+    text(s, MARGIN, 1.92, 5.9, 0.26, "The rule set", size=15, bold=True,
+         color=RED_DEEP)
+    rules = [
+        ("Amount Threshold", "Single transaction above a ceiling",
+         "> 10,000", "MEDIUM"),
+        ("Velocity", "Too many transactions in a rolling window",
+         "> 5 in 10 min", "LOW"),
+        ("New Payee", "First time this account pays this payee",
+         "0 prior rows", "LOW"),
+        ("Daily Limit", "Cumulative debits for the calendar day",
+         "> 50,000", "MEDIUM"),
+    ]
+    card_w = (5.95 - 0.25) / 2
+    for index, (name, what, default, severity) in enumerate(rules):
+        cx = MARGIN + (index % 2) * (card_w + 0.25)
+        cy = 2.32 + (index // 2) * 1.30
+        panel(s, cx, cy, card_w, 1.16, fill=MIST)
+        text(s, cx + 0.18, cy + 0.14, card_w - 0.36, 0.24, name, size=12,
+             bold=True, color=INK)
+        text(s, cx + 0.18, cy + 0.41, card_w - 0.32, 0.42, what, size=9.5,
+             color=MUTED, line_spacing=1.2)
+        text(s, cx + 0.18, cy + 0.85, 1.6, 0.22, default, size=10.5, bold=True,
+             color=RED)
+        text(s, cx + card_w - 1.05, cy + 0.85, 0.87, 0.22, severity, size=8.5,
+             bold=True, color=MUTED, align=PP_ALIGN.RIGHT)
+
+    text(s, MARGIN, 5.02, 5.9, 0.44,
+         "Every default lives in rule_configs and is editable from the Rules screen — "
+         "no redeploy to retune a threshold.",
+         size=10.5, color=MUTED, line_spacing=1.22)
+
+    # Lifecycle
+    text(s, 6.95, 1.92, 5.8, 0.26, "Alert lifecycle", size=15, bold=True,
+         color=RED_DEEP)
+    states = [("OPEN", RED_DEEP), ("ACKNOWLEDGED", RED_MID),
+              ("INVESTIGATING", RED), ("CLOSED", GREEN)]
+    state_w = (5.78 - 3 * 0.20) / 4
+    centres = []
+    for index, (name, color) in enumerate(states):
+        sx = 6.95 + index * (state_w + 0.20)
+        pill = panel(s, sx, 2.34, state_w, 0.5, fill=color, line=color)
+        centered(pill, [(name, 8.5, True, WHITE)])
+        centres.append(sx + state_w / 2)
+        if index < 3:
+            arrow(s, sx + state_w + 0.02, 2.59, sx + state_w + 0.17, 2.59,
+                  color=MUTED, width=1.0)
+
+    dismissed = panel(s, centres[1] + 0.10, 3.34, 1.9, 0.5, fill=WHITE,
+                      line=AMBER)
+    centered(dismissed, [("DISMISSED", 8.5, True, AMBER)])
+    arrow(s, centres[1], 2.86, centres[1] + 0.35, 3.32, color=AMBER, width=1.0)
+    arrow(s, centres[2], 2.86, centres[1] + 1.72, 3.32, color=AMBER, width=1.0)
+
+    text(s, 6.95, 3.98, 5.78, 0.44,
+         "CLOSED and DISMISSED are terminal. Anything else raises InvalidAlertTransitionException — "
+         "checked in the service, not the controller.",
+         size=10, color=MUTED, line_spacing=1.22)
+
+    panel(s, 6.95, 4.56, 5.78, 0.9, fill=MIST)
+    rect(s, 6.95, 4.56, 0.055, 0.9, fill=RED)
+    text(s, 7.18, 4.70, 5.4, 0.22, "When two rules fire on one transaction",
+         size=11, bold=True, color=INK)
+    text(s, 7.18, 4.96, 5.4, 0.4,
+         "One alert, both reasons listed, severity escalated to HIGH.",
+         size=10, color=MUTED)
+
+    # Quality bar
+    panel(s, MARGIN, 5.72, CONTENT_W, 1.06, fill=WHITE, line=HAIRLINE)
+    text(s, MARGIN + 0.28, 5.88, 6.0, 0.22, "How we kept it honest", size=11.5,
+         bold=True, color=RED_DEEP)
+    proofs = [
+        ("Test first", "Failing test before every rule and every illegal transition"),
+        ("Coverage", "89 unit tests across 17 classes, H2 for repository tests"),
+        ("Contract", "OpenAPI published at /swagger-ui.html"),
+        ("Pipeline", "Jenkins rebuilds the whole Compose stack on push to dev"),
+    ]
+    proof_w = (CONTENT_W - 0.56) / 4
+    for index, (label, body) in enumerate(proofs):
+        px = MARGIN + 0.28 + index * proof_w
+        text(s, px, 6.20, proof_w - 0.2, 0.2, label, size=9, bold=True,
+             color=RED, spacing=1.2)
+        text(s, px, 6.42, proof_w - 0.22, 0.34, body, size=9, color=MUTED,
+             line_spacing=1.18)
+
+    footer(s, 4)
+    return s
+
+
+# ── Slide 5 — performance & the blocker ───────────────────────────────────
+def slide_performance(prs, blank):
+    s = prs.slides.add_slide(blank)
+    header(
+        s, "EVIDENCE",
+        "We pushed it until it hurt, then found out why",
+        "k6 from a Windows client against the Linux app VM — JVM and MySQL sharing roughly 2 vCPU and 3.7 GiB.",
+    )
+
+    metrics = [
+        ("PASS 1  ·  WRITE RAMP", "234", "requests/sec",
+         "200 VUs  ·  p95 763 ms  ·  0% failed", GREEN),
+        ("PASS 2  ·  MIXED 80/20", "242", "requests/sec",
+         "150 VUs  ·  p95 623 ms  ·  0% failed", GREEN),
+        ("PASS 3  ·  10-MINUTE SOAK", "214", "requests/sec",
+         "140 VUs  ·  p95 1.13 s  ·  0.09% failed", AMBER),
+    ]
+    card_w = (CONTENT_W - 2 * 0.26) / 3
+    for index, (label, value, unit, detail, accent) in enumerate(metrics):
+        cx = MARGIN + index * (card_w + 0.26)
+        panel(s, cx, 1.86, card_w, 1.42, fill=MIST)
+        rect(s, cx, 1.86, card_w, 0.05, fill=accent)
+        text(s, cx + 0.24, 2.04, card_w - 0.4, 0.2, label, size=8.5, bold=True,
+             color=MUTED, spacing=1.2)
+        text(s, cx + 0.24, 2.28, 1.5, 0.5, value, size=30, bold=True, color=INK)
+        text(s, cx + 1.35, 2.50, 1.6, 0.24, unit, size=10.5, color=MUTED)
+        text(s, cx + 0.24, 2.90, card_w - 0.4, 0.24, detail, size=9.5,
+             color=BODY)
+
+    base_y = 5.62
+    max_h = 1.62
+
+    text(s, MARGIN, 3.52, 4.4, 0.22, "p95 LATENCY BY PASS  (ms)", size=9,
+         bold=True, color=RED, spacing=1.3)
+    for index, (label, value) in enumerate([("Pass 1", 763), ("Pass 2", 623),
+                                            ("Pass 3", 1130)]):
+        h = max_h * value / 1200
+        bx = MARGIN + 0.1 + index * 1.42
+        rect(s, bx, base_y - h, 0.95, h, fill=AMBER if value > 1000 else RED_DEEP)
+        text(s, bx - 0.2, base_y - h - 0.26, 1.35, 0.22, f"{value:,}", size=10,
+             bold=True, color=INK, align=PP_ALIGN.CENTER)
+        text(s, bx - 0.2, base_y + 0.07, 1.35, 0.2, label, size=9, color=MUTED,
+             align=PP_ALIGN.CENTER)
+    hairline(s, MARGIN, base_y, 4.35)
+
+    text(s, 5.25, 3.52, 4.1, 0.22, "rule.evaluate MEAN  (ms)", size=9,
+         bold=True, color=RED, spacing=1.3)
+    evals = [("after P1", 57), ("after P2", 53), ("mid soak", 91),
+             ("end soak", 126)]
+    for index, (label, value) in enumerate(evals):
+        h = max_h * value / 140
+        bx = 5.35 + index * 1.02
+        rect(s, bx, base_y - h, 0.68, h, fill=RED if index < 2 else AMBER)
+        text(s, bx - 0.16, base_y - h - 0.26, 1.0, 0.22, str(value), size=10,
+             bold=True, color=INK, align=PP_ALIGN.CENTER)
+        text(s, bx - 0.16, base_y + 0.07, 1.0, 0.2, label, size=8.5,
+             color=MUTED, align=PP_ALIGN.CENTER)
+    hairline(s, 5.25, base_y, 4.05)
+
+    text(s, MARGIN, 6.04, 8.7, 0.62,
+         "On the short passes p95 sat at 600–800 ms while rule evaluation averaged 53–57 ms — "
+         "so the latency was never in the rule engine. Under soak both curves climbed together, "
+         "which is what CPU contention looks like, not a missing index.",
+         size=10.5, color=BODY, line_spacing=1.24)
+
+    # The blocker
+    panel(s, 9.55, 3.44, 3.18, 3.28, fill=MIST)
+    rect(s, 9.55, 3.44, 3.18, 0.05, fill=RED_DEEP)
+    text(s, 9.77, 3.62, 2.8, 0.22, "THE BLOCKER", size=9, bold=True,
+         color=RED_DEEP, spacing=1.4)
+    text(s, 9.77, 3.86, 2.8, 0.44, "Moving MySQL to its own VM", size=12.5,
+         bold=True, color=INK, line_spacing=1.16)
+    text(s, 9.77, 4.34, 2.82, 0.34,
+         "The soak said co-location was the cost. The fix would not connect:",
+         size=9.5, color=MUTED, line_spacing=1.2)
+
+    checks = [
+        ("Windows → Linux", True),
+        ("Linux A → Linux B", False),
+        ("nc listener ← Windows", True),
+        ("nc listener ← Linux A", False),
+    ]
+    cy = 4.86
+    for label, ok in checks:
+        text(s, 9.77, cy, 2.3, 0.2, label, size=9, color=BODY)
+        text(s, 11.95, cy, 0.6, 0.2, "works" if ok else "fails", size=9,
+             bold=True, color=GREEN if ok else RED, align=PP_ALIGN.RIGHT)
+        cy += 0.26
+    hairline(s, 9.77, cy + 0.04, 2.78)
+    text(s, 9.77, cy + 0.18, 2.82, 0.5,
+         "Plain nc fails the same way, so this is a security-group or routing rule — not Spring, not Docker.",
+         size=9, color=MUTED, line_spacing=1.2)
+
+    footer(s, 5)
+    return s
+
+
+# ── Slide 6 — how we worked + close ───────────────────────────────────────
+def slide_close(prs, blank):
+    s = prs.slides.add_slide(blank)
+    rect(s, 8.40, 0, 4.933, 7.5, fill=RED_DEEP)
+    dot_field(s, 11.35, 5.30, cols=8, rows=11)
+    rect(s, 8.40, 0, 0.055, 7.5, fill=RED)
+
+    text(s, MARGIN, 0.44, 7.0, 0.24, "HOW WE WORKED", size=9.5, bold=True,
+         color=RED, spacing=1.6)
+    text(s, MARGIN, 0.70, 7.4, 0.5, "Agile, with receipts", size=29, bold=True,
+         color=INK)
+    accent_rule(s, MARGIN, 1.24)
+
+    practices = [
+        ("MVP before anything clever",
+         "Transactions, then the synchronous Amount rule, then the full alert lifecycle, then the UI. The other three rules waited until that path worked end to end."),
+        ("Two sprints, daily stand-ups",
+         "29 July to 11 August 2026. The stand-up log and three retrospectives are checked into docs/ alongside the code."),
+        ("Kanban with a WIP limit of one",
+         "A card moves to Review when the PR opens and to Done on merge plus a milestone tick — so status is never a guess."),
+        ("Plans written before code",
+         "Thirteen short design notes in .cursor/plans/, one per non-trivial feature."),
+    ]
+    y = 1.58
+    for title, body in practices:
+        rect(s, MARGIN, y + 0.05, 0.055, 0.2, fill=RED)
+        text(s, MARGIN + 0.22, y, 7.3, 0.24, title, size=12.5, bold=True,
+             color=INK)
+        text(s, MARGIN + 0.22, y + 0.28, 7.25, 0.56, body, size=10.5,
+             color=MUTED, line_spacing=1.24)
+        y += 1.02
+
+    hairline(s, MARGIN, 5.62, 7.52)
+    text(s, MARGIN, 5.76, 7.4, 0.24, "WHAT WE DO NEXT", size=9.5, bold=True,
+         color=RED, spacing=1.6)
+    nexts = [
+        "Unblock Linux-to-Linux networking, then move MySQL onto its own host.",
+        "Put a queue between ingest and evaluation and scale the rule workers.",
+        "Re-run the 140 VU soak and publish the before-and-after side by side.",
+    ]
+    ny = 6.04
+    for index, item in enumerate(nexts, start=1):
+        text(s, MARGIN, ny, 0.3, 0.22, str(index), size=10.5, bold=True,
+             color=RED)
+        text(s, MARGIN + 0.28, ny, 7.2, 0.22, item, size=10.5, color=BODY)
+        ny += 0.29
+
+    text(s, 8.95, 2.35, 4.0, 0.7, "THANK YOU", size=38, bold=True, color=WHITE)
+    accent_rule(s, 8.95, 3.16, w=1.5, color=WHITE, thickness=0.03)
+    text(s, 8.95, 3.42, 3.95, 0.66,
+         "Happy to go deeper on the architecture, the k6 numbers, or the firewall finding.",
+         size=12, color=RGBColor(0xF2, 0xD6, 0xDB), line_spacing=1.3)
+
+    text(s, 8.95, 4.60, 3.9, 0.22, "TEAM", size=9, bold=True,
+         color=RGBColor(0xD8, 0x92, 0xA0), spacing=1.4)
+    text(s, 8.95, 4.84, 3.9, 0.44, TEAM, size=25, bold=True, color=WHITE)
+    text(s, 8.95, 5.36, 3.9, 0.24, MEMBERS, size=12, color=WHITE)
+    text(s, 8.95, 5.78, 3.9, 0.24, "room107_Agileish  ·  branch dev", size=10,
+         color=RGBColor(0xD8, 0x92, 0xA0))
+
+    if asset("hsbc.png"):
+        s.shapes.add_picture(asset("hsbc.png"), Inches(8.95), Inches(6.68),
+                             height=Inches(0.4))
+    else:
+        text(s, 8.95, 6.72, 2.0, 0.3, "HSBC", size=13, bold=True, color=WHITE)
+
+    hairline(s, MARGIN, 6.99, 7.52)
+    text(s, MARGIN, 7.08, 6.0, 0.24, f"{TEAM}  ·  {PROJECT}", size=9,
+         color=MUTED)
+    text(s, 6.52, 7.08, 1.6, 0.24, f"{TOTAL_SLIDES} / {TOTAL_SLIDES}", size=9,
+         color=MUTED, align=PP_ALIGN.RIGHT)
+    return s
 
 
 def build():
@@ -98,362 +729,19 @@ def build():
     prs.slide_height = SLIDE_H
     blank = prs.slide_layouts[6]
 
-    # ─── SLIDE 1: Title ───────────────────────────────────────────────
-    s1 = prs.slides.add_slide(blank)
-    rect(s1, 0, 0, Inches(4.6), SLIDE_H, RED_DARK)
-    rect(s1, Inches(4.6), 0, Inches(8.733), SLIDE_H, WHITE)
+    prs.core_properties.title = PROJECT
+    prs.core_properties.author = f"Team {TEAM}"
+    prs.core_properties.subject = "Client review — August 2026"
 
-    # Diamond accents on red/white boundary
-    for i, y in enumerate([0.8, 1.5, 2.2, 2.9, 3.6, 4.3, 5.0, 5.7]):
-        d = s1.shapes.add_shape(
-            MSO_SHAPE.DIAMOND, Inches(4.35), Inches(y), Inches(0.28), Inches(0.28)
-        )
-        d.fill.solid()
-        d.fill.fore_color.rgb = RED_ACCENT if i % 2 == 0 else RGBColor(0x90, 0x20, 0x30)
-        d.line.fill.background()
-
-    add_textbox(
-        s1, Inches(0.35), Inches(0.55), Inches(4.0), Inches(2.2),
-        "TRANSACTION\nMONITORING\n& ALERTS",
-        size=32, bold=True, color=WHITE,
-    )
-    add_textbox(
-        s1, Inches(0.35), Inches(4.55), Inches(4.0), Inches(0.4),
-        "Presented by Team:", size=12, color=WHITE,
-    )
-    add_textbox(
-        s1, Inches(0.35), Inches(4.9), Inches(4.0), Inches(0.4),
-        "RunTime_Rebels", size=20, bold=True, color=WHITE,
-    )
-    add_textbox(
-        s1, Inches(0.35), Inches(5.45), Inches(4.0), Inches(0.8),
-        "Team Members:\nshreya  ·  sathwik  ·  Rameez",
-        size=13, color=WHITE,
-    )
-
-    try:
-        s1.shapes.add_picture(
-            f"{ASSETS}/hsbc.png", Inches(0.3), Inches(6.7), height=Inches(0.45)
-        )
-    except Exception:
-        add_textbox(s1, Inches(0.35), Inches(6.75), Inches(2), Inches(0.35),
-                    "HSBC", size=14, bold=True, color=WHITE)
-
-    try:
-        s1.shapes.add_picture(
-            f"{ASSETS}/how_we_lead.png",
-            Inches(5.3), Inches(1.8), height=Inches(3.2),
-        )
-    except Exception:
-        pass
-
-    try:
-        # Diamond-ish photo on right
-        pic = s1.shapes.add_picture(
-            f"{ASSETS}/plaza.png",
-            Inches(9.0), Inches(0.9), width=Inches(3.8), height=Inches(5.5),
-        )
-    except Exception:
-        pass
-
-    add_textbox(
-        s1, Inches(5.2), Inches(6.5), Inches(4.5), Inches(0.5),
-        "Detect  →  Alert  →  Investigate  →  Close",
-        size=14, bold=True, color=RED_DARK,
-    )
-    slide_number(s1, 1)
-
-    # ─── SLIDE 2: Problem & Solution ──────────────────────────────────
-    s2 = prs.slides.add_slide(blank)
-    rect(s2, 0, 0, SLIDE_W, SLIDE_H, WHITE)
-    add_textbox(
-        s2, Inches(0.5), Inches(0.3), Inches(10), Inches(0.6),
-        "The Problem & The Solution", size=32, bold=True, color=CHARCOAL,
-    )
-
-    # Left: Problem
-    add_textbox(
-        s2, Inches(0.5), Inches(1.15), Inches(5.5), Inches(0.4),
-        "The Problem", size=20, bold=True, color=RED_ACCENT,
-    )
-    problems = [
-        ("High-volume payment traffic",
-         "Banks and merchants push transactions continuously. Risk must be spotted as money moves — not hours later."),
-        ("Manual triage does not scale",
-         "Without automated rules, operators miss velocity spikes, new payees, and daily-limit breaches."),
-        ("Need a full alert lifecycle",
-         "Detection alone is not enough — OPEN → ACKNOWLEDGED → INVESTIGATING → CLOSED / DISMISSED with a clear trail."),
-    ]
-    y = 1.65
-    for title, body in problems:
-        add_textbox(s2, Inches(0.5), Inches(y), Inches(5.8), Inches(0.35),
-                    title, size=15, bold=True, color=CHARCOAL)
-        add_textbox(s2, Inches(0.5), Inches(y + 0.32), Inches(5.8), Inches(0.7),
-                    body, size=12, color=GRAY)
-        y += 1.15
-
-    # Right: Solution card column
-    add_textbox(
-        s2, Inches(7.0), Inches(1.15), Inches(5.5), Inches(0.4),
-        "The Solution", size=20, bold=True, color=RED_ACCENT,
-    )
-    add_textbox(
-        s2, Inches(7.0), Inches(1.6), Inches(5.6), Inches(0.85),
-        "One operator dashboard — ingest simulated bank & merchant feeds, evaluate four rules synchronously, and triage alerts end-to-end.",
-        size=13, bold=True, color=CHARCOAL,
-    )
-
-    cards = [
-        ("Four detection rules", "Amount · Velocity · New Payee · Daily Limit — configurable in UI"),
-        ("Soft multi-source tenancy", "sourceType / sourceId / sourceName on every row — one DB, many feeds"),
-        ("Proven under load", "k6 Pass 1–3 documented — indexes verified, bottleneck identified"),
-    ]
-    cy = 2.6
-    for title, body in cards:
-        card = rounded_rect(s2, Inches(7.0), Inches(cy), Inches(5.6), Inches(1.15), GRAY_CARD)
-        add_textbox(s2, Inches(7.2), Inches(cy + 0.18), Inches(5.2), Inches(0.35),
-                    title, size=14, bold=True, color=CHARCOAL)
-        add_textbox(s2, Inches(7.2), Inches(cy + 0.55), Inches(5.2), Inches(0.5),
-                    body, size=12, color=GRAY)
-        cy += 1.3
-
-    slide_number(s2, 2)
-
-    # ─── SLIDE 3: Technical Design ────────────────────────────────────
-    s3 = prs.slides.add_slide(blank)
-    rect(s3, 0, 0, SLIDE_W, SLIDE_H, WHITE)
-    add_textbox(
-        s3, Inches(0.5), Inches(0.25), Inches(10), Inches(0.5),
-        "TECHNICAL DESIGN", size=30, bold=True, color=CHARCOAL,
-    )
-    add_textbox(
-        s3, Inches(0.5), Inches(0.75), Inches(12), Inches(0.35),
-        "Modular monolith on branch  dev  — clean packages; rule engine extractable later",
-        size=13, color=GRAY,
-    )
-
-    # Chevrons
-    layers = [
-        (0.4, "FRONTEND", "React · Vite\nDark Obsidian UI\n:8082 nginx"),
-        (4.5, "BACKEND", "Spring Boot\nTxn · Rule · Alert\n:8081 REST"),
-        (8.6, "DATABASE", "MySQL\nFlyway migrations\nSoft tenancy"),
-    ]
-    for left, title, body in layers:
-        ch = chevron(s3, Inches(left), Inches(1.3), Inches(3.9), Inches(1.85), RED_DARK)
-        tf = ch.text_frame
-        tf.clear()
-        tf.word_wrap = True
-        p = tf.paragraphs[0]
-        p.alignment = PP_ALIGN.CENTER
-        r = p.add_run()
-        r.text = title
-        set_run(r, 16, True, WHITE)
-        for line in body.split("\n"):
-            add_para(tf, line, size=11, color=WHITE, space_before=2, align=PP_ALIGN.CENTER)
-
-    # Flow labels
-    add_textbox(s3, Inches(3.7), Inches(3.2), Inches(1.5), Inches(0.3),
-                "REST APIs →", size=11, bold=True, color=RED_ACCENT, align=PP_ALIGN.CENTER)
-    add_textbox(s3, Inches(7.85), Inches(3.2), Inches(1.5), Inches(0.3),
-                "Persistence →", size=11, bold=True, color=RED_ACCENT, align=PP_ALIGN.CENTER)
-
-    # Sync path box
-    rounded_rect(s3, Inches(0.4), Inches(3.65), Inches(8.2), Inches(1.55), GRAY_LIGHT)
-    add_textbox(s3, Inches(0.6), Inches(3.75), Inches(7.8), Inches(0.3),
-                "Request path (MVP MTTD) — evaluate in the same request",
-                size=13, bold=True, color=RED_DARK)
-    add_textbox(
-        s3, Inches(0.6), Inches(4.15), Inches(7.8), Inches(0.9),
-        "POST /transactions  →  persist txn  →  RuleEngine.evaluate()  →  "
-        "if match: create OPEN alert(s)  →  201 Created\n"
-        "Packages: api · transaction · rule · alert · common",
-        size=12, color=CHARCOAL,
-    )
-
-    # Side stack
-    rounded_rect(s3, Inches(8.9), Inches(3.65), Inches(3.9), Inches(1.55), GRAY_CARD)
-    add_textbox(s3, Inches(9.1), Inches(3.75), Inches(3.5), Inches(0.3),
-                "DevOps & QA", size=13, bold=True, color=RED_DARK)
-    add_textbox(
-        s3, Inches(9.1), Inches(4.15), Inches(3.5), Inches(0.9),
-        "Docker Compose · Jenkins\nSwagger / OpenAPI · k6\nActuator  rule.evaluate",
-        size=12, color=CHARCOAL,
-    )
-
-    # Data decisions
-    add_textbox(s3, Inches(0.4), Inches(5.4), Inches(12), Inches(0.3),
-                "Data model decisions", size=14, bold=True, color=CHARCOAL)
-    decisions = [
-        ("Soft tenancy", "source_* on every row"),
-        ("No Account/Payee tables", "IDs + names on txn"),
-        ("alert_transactions", "junction for links"),
-        ("KPIs = aggregations", "not stored columns"),
-    ]
-    dx = 0.4
-    for title, body in decisions:
-        rounded_rect(s3, Inches(dx), Inches(5.8), Inches(3.0), Inches(1.15), GRAY_LIGHT)
-        add_textbox(s3, Inches(dx + 0.15), Inches(5.95), Inches(2.7), Inches(0.35),
-                    title, size=12, bold=True, color=RED_DARK)
-        add_textbox(s3, Inches(dx + 0.15), Inches(6.35), Inches(2.7), Inches(0.45),
-                    body, size=11, color=GRAY)
-        dx += 3.2
-
-    slide_number(s3, 3)
-
-    # ─── SLIDE 4: Performance & Challenge ─────────────────────────────
-    s4 = prs.slides.add_slide(blank)
-    rect(s4, 0, 0, SLIDE_W, SLIDE_H, WHITE)
-    add_textbox(
-        s4, Inches(0.45), Inches(0.22), Inches(12), Inches(0.45),
-        "Performance Evidence & Ops Challenge", size=28, bold=True, color=CHARCOAL,
-    )
-    add_textbox(
-        s4, Inches(0.45), Inches(0.7), Inches(12), Inches(0.3),
-        "k6 (Windows) → Linux API  :8081   ·   JVM + MySQL co-located (~2 vCPU / 3.7 GiB)",
-        size=12, color=GRAY,
-    )
-
-    # Metric cards
-    metrics = [
-        ("Pass 1 — Write ramp", "234 RPS", "p95 763 ms", "0% fail", GREEN_OK),
-        ("Pass 2 — Mixed 80/20", "242 RPS", "p95 623 ms", "0% fail", GREEN_OK),
-        ("Pass 3 — Soak 10m", "214 RPS", "p95 1.13 s", "0.09% fail", AMBER),
-    ]
-    mx = 0.45
-    for title, rps, p95, fail, accent in metrics:
-        rounded_rect(s4, Inches(mx), Inches(1.15), Inches(4.0), Inches(1.7), GRAY_LIGHT)
-        bar = rect(s4, Inches(mx), Inches(1.15), Inches(0.12), Inches(1.7), accent)
-        add_textbox(s4, Inches(mx + 0.3), Inches(1.25), Inches(3.5), Inches(0.3),
-                    title, size=12, bold=True, color=GRAY)
-        add_textbox(s4, Inches(mx + 0.3), Inches(1.55), Inches(3.5), Inches(0.4),
-                    rps, size=26, bold=True, color=CHARCOAL)
-        add_textbox(s4, Inches(mx + 0.3), Inches(2.05), Inches(3.5), Inches(0.55),
-                    f"{p95}\n{fail}", size=13, color=CHARCOAL)
-        mx += 4.2
-
-    # Bar chart: p95
-    add_textbox(s4, Inches(0.45), Inches(3.05), Inches(6), Inches(0.3),
-                "p95 latency by pass (ms)", size=13, bold=True, color=CHARCOAL)
-    chart_base_y = 5.35
-    chart_max_h = 1.9
-    bars = [("P1", 763, 1200), ("P2", 623, 1200), ("P3", 1130, 1200)]
-    bx = 0.7
-    for label, val, vmax in bars:
-        h = chart_max_h * (val / vmax)
-        top = chart_base_y - h
-        color = AMBER if val > 1000 else RED_DARK
-        rect(s4, Inches(bx), Inches(top), Inches(1.1), Inches(h), color)
-        add_textbox(s4, Inches(bx - 0.15), Inches(top - 0.28), Inches(1.4), Inches(0.28),
-                    str(val), size=11, bold=True, color=CHARCOAL, align=PP_ALIGN.CENTER)
-        add_textbox(s4, Inches(bx - 0.15), Inches(chart_base_y + 0.05), Inches(1.4), Inches(0.28),
-                    label, size=11, bold=True, color=GRAY, align=PP_ALIGN.CENTER)
-        bx += 1.7
-
-    # rule.evaluate trend
-    add_textbox(s4, Inches(5.5), Inches(3.05), Inches(3.5), Inches(0.3),
-                "rule.evaluate mean (ms)", size=13, bold=True, color=CHARCOAL)
-    evals = [("P1–P2", 55), ("Mid soak", 91), ("End soak", 126)]
-    ex = 5.7
-    for label, val in evals:
-        h = 1.7 * (val / 140)
-        top = chart_base_y - h
-        rect(s4, Inches(ex), Inches(top), Inches(0.85), Inches(h), RED_ACCENT)
-        add_textbox(s4, Inches(ex - 0.2), Inches(top - 0.28), Inches(1.25), Inches(0.28),
-                    str(val), size=11, bold=True, color=CHARCOAL, align=PP_ALIGN.CENTER)
-        add_textbox(s4, Inches(ex - 0.25), Inches(chart_base_y + 0.05), Inches(1.35), Inches(0.35),
-                    label, size=9, color=GRAY, align=PP_ALIGN.CENTER)
-        ex += 1.2
-
-    # Firewall challenge card
-    rounded_rect(s4, Inches(9.0), Inches(3.05), Inches(3.9), Inches(3.9), GRAY_LIGHT)
-    add_textbox(s4, Inches(9.2), Inches(3.2), Inches(3.5), Inches(0.35),
-                "Phase 3 blocker", size=14, bold=True, color=RED_DARK)
-    add_textbox(
-        s4, Inches(9.2), Inches(3.6), Inches(3.5), Inches(1.5),
-        "Planned: MySQL on a separate VM after soak showed co-location contention.\n\n"
-        "Blocked: Linux → Linux TCP failed — even plain nc. Windows → Linux worked (curl + nc).",
-        size=11, color=CHARCOAL,
-    )
-    add_textbox(
-        s4, Inches(9.2), Inches(5.2), Inches(3.5), Inches(1.4),
-        "Inference: security group / firewall / routing — not an app bug.\n\n"
-        "Indexes OK (EXPLAIN). Bottleneck = shared box. Next: unblock network → split DB → async queue → re-soak.",
-        size=11, color=GRAY,
-    )
-
-    slide_number(s4, 4)
-
-    # ─── SLIDE 5: Thank You + Agile ───────────────────────────────────
-    s5 = prs.slides.add_slide(blank)
-    rect(s5, 0, 0, Inches(8.5), SLIDE_H, GRAY_LIGHT)
-    rect(s5, Inches(8.5), 0, Inches(4.833), SLIDE_H, WHITE)
-
-    add_textbox(
-        s5, Inches(0.6), Inches(0.8), Inches(7.5), Inches(0.7),
-        "THANK YOU", size=48, bold=True, color=CHARCOAL,
-    )
-    add_textbox(
-        s5, Inches(0.6), Inches(1.6), Inches(7.5), Inches(0.4),
-        "Questions welcome — architecture, k6 numbers, or the firewall finding.",
-        size=14, color=GRAY,
-    )
-
-    add_textbox(
-        s5, Inches(0.6), Inches(2.3), Inches(7.5), Inches(0.35),
-        "How we worked (Agile)", size=16, bold=True, color=RED_DARK,
-    )
-    agile = [
-        "MVP-first build order — Phase 2 rules only after E2E worked",
-        "Role split (A/B/C) with shared API contracts before UI",
-        "Kanban + honest milestones · stand-ups · retros",
-        "TDD on rules & alert transitions · evidence over vibes (k6 + EXPLAIN)",
-    ]
-    ay = 2.75
-    for item in agile:
-        add_textbox(s5, Inches(0.6), Inches(ay), Inches(7.5), Inches(0.4),
-                    f"•  {item}", size=12, color=CHARCOAL)
-        ay += 0.45
-
-    add_textbox(
-        s5, Inches(0.6), Inches(4.8), Inches(7.5), Inches(0.35),
-        "If we had more time", size=14, bold=True, color=RED_DARK,
-    )
-    add_textbox(
-        s5, Inches(0.6), Inches(5.2), Inches(7.5), Inches(0.9),
-        "Unblock Linux↔Linux → MySQL on own VM → async queue + rule workers → "
-        "re-run Pass 3 soak → finish simulator polish & hardening.",
-        size=12, color=CHARCOAL,
-    )
-    add_textbox(
-        s5, Inches(0.6), Inches(6.4), Inches(7.5), Inches(0.4),
-        "RunTime_Rebels  ·  shreya  ·  sathwik  ·  Rameez",
-        size=13, bold=True, color=RED_DARK,
-    )
-
-    try:
-        # Right photo with triangular crop feel via full image
-        s5.shapes.add_picture(
-            f"{ASSETS}/office.png",
-            Inches(8.7), Inches(0.4), width=Inches(4.3), height=Inches(6.7),
-        )
-    except Exception:
-        # Chevron accent if no photo
-        chevron(s5, Inches(9.5), Inches(1.5), Inches(3.2), Inches(4.5), RED_DARK)
-
-    # Diagonal accent bar
-    tri = s5.shapes.add_shape(
-        MSO_SHAPE.RIGHT_TRIANGLE, Inches(8.3), 0, Inches(0.45), SLIDE_H
-    )
-    tri.fill.solid()
-    tri.fill.fore_color.rgb = RED_DARK
-    tri.line.fill.background()
-    # Flip triangle to point right visually - rotate
-    tri.rotation = 180
-
-    slide_number(s5, 5)
+    slide_title(prs, blank)
+    slide_problem(prs, blank)
+    slide_architecture(prs, blank)
+    slide_detection(prs, blank)
+    slide_performance(prs, blank)
+    slide_close(prs, blank)
 
     prs.save(OUT)
-    print(f"Wrote {OUT}")
+    print(f"Wrote {OUT} ({len(prs.slides.__iter__.__self__._sldIdLst)} slides)")
 
 
 if __name__ == "__main__":

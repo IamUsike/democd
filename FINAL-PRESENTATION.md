@@ -1,11 +1,13 @@
 # Final Presentation — Transaction Monitoring & Alerts
 
-**Team:** shreya · sathwik · Rameez  
+**Team:** Agilish — shreya · sathwik · Rameez  
 **Branch / source of truth:** `dev`  
 **Duration:** **10 minutes** (+ questions)  
 **Date context:** August 2026 · Sprint 2 wrap
 
-**Deck:** [`FINAL-PRESENTATION.pptx`](FINAL-PRESENTATION.pptx) (5 slides, HSBC-style)  
+**Deck:** [`FINAL-PRESENTATION.pptx`](FINAL-PRESENTATION.pptx) (6 slides, HSBC-style)  
+Rebuild it with `.pptx-venv/bin/python scripts/build_final_pptx.py`; preview
+without PowerPoint via `scripts/preview_pptx.py`.  
 **Companion docs:** [`docs/load-test-results.md`](docs/load-test-results.md) · [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) · [`Project_milestones.md`](Project_milestones.md)
 
 ---
@@ -132,9 +134,15 @@ sequenceDiagram
 | **No Account / Payee master tables** | Opaque IDs + display names on the txn; rules query those columns |
 | **`alert_transactions` junction** | One txn can drive one or many linked alerts; velocity can attach multiple txns later |
 | **KPIs are aggregations** | Not stored columns — dashboard queries / API |
-| **Flyway only** | No `ddl-auto: update` |
+| **Versioned migrations checked in** | `V1`–`V5` under `db/migration` |
 
-**Core tables:** `transactions` · `alerts` · `alert_transactions` (+ rules parameters as Phase 2 matured)
+**Core tables:** `transactions` · `alerts` · `alert_transactions` · `rule_configs`
+
+> **Careful if asked about migrations:** the `V1`–`V5` Flyway scripts are the
+> reviewed schema and Flyway runs in the test profile, but
+> `application.properties` currently ships `spring.flyway.enabled=false` with
+> `ddl-auto=update`. Say that honestly — flipping Flyway on at runtime is a
+> known tidy-up, not a claim to make on stage.
 
 ### Package layout (`dev`)
 
@@ -292,16 +300,19 @@ We could not reliably connect **Linux app VM → Linux DB/app peer** the way we 
 
 ---
 
-## Slide / screen checklist (optional PowerPoint)
+## Deck map — what is on each of the 6 slides
 
-1. Title + team names  
-2. Problem / story one-liner  
-3. Architecture diagram (modular monolith + sync evaluate)  
-4. Data model decisions (one slide)  
-5. Live demo (share screen)  
-6. **Load graphs** (tables + bar charts above)  
-7. Co-location → planned DB VM → firewall evidence table  
-8. Agile + next steps + thank you  
+| # | Slide | Talk-track section | Who |
+|---|-------|--------------------|-----|
+| 1 | Title — **Agilish**, project, operator loop | §1 Team + problem | All |
+| 2 | *Payments do not wait for a night-time batch* — problem, what shipped, headline numbers (4 rules / 5 states / 14 endpoints / 89 tests) | §1–2 | One speaker |
+| 3 | **Architecture diagram** — clients → app VM (nginx, Spring Boot, 4 packages) → MySQL, plus the 5-step synchronous detection path | §3 | Backend owner |
+| 4 | Detection & lifecycle — the 4 rules with defaults, the state machine, how we tested | §3 (cont.) | Backend owner |
+| 5 | Evidence — 3 k6 passes, p95 and `rule.evaluate` charts, the firewall blocker | §5–6 | QA / Ops |
+| 6 | Agile with receipts + what's next + thank you | §7 | All |
+
+**Live demo (§4) sits between slides 4 and 5** — share the screen, then come
+back to slide 5 for the numbers.
 
 ---
 
