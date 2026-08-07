@@ -33,8 +33,8 @@ WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 GREEN = RGBColor(0x1B, 0x7A, 0x3D)
 AMBER = RGBColor(0xB0, 0x59, 0x0A)
 
-TEAM = "Agilish"
-MEMBERS = "shreya  ·  sathwik  ·  Rameez"
+TEAM = "AGILE-ish"
+MEMBERS = "Shreya  ·  Sathwik  ·  Rameez"
 PROJECT = "Transaction Monitoring & Alerts"
 TOTAL_SLIDES = 6
 
@@ -645,6 +645,74 @@ def slide_performance(prs, blank):
          "Plain nc fails the same way, so this is a security-group or routing rule — not Spring, not Docker.",
          size=9, color=MUTED, line_spacing=1.2)
 
+    footer(s, 4)
+    return s
+
+
+# ── Slide 5 — future scopes ───────────────────────────────────────────────
+def slide_future(prs, blank):
+    s = prs.slides.add_slide(blank)
+    header(
+        s, "FUTURE SCOPES",
+        "The seams are in place — here is what goes through them",
+        "Every item below is a deployment change, not a rewrite. The interfaces on the architecture slide were designed for this.",
+    )
+
+    scopes = [
+        ("01", "MySQL on its own VM",
+         "Clear the Linux-to-Linux security-group rule the soak exposed, move the database off the app box, and re-run the 140 VU soak to publish the before-and-after."),
+        ("02", "Async queue between ingest and evaluation",
+         "Accept the transaction, answer 201, and evaluate from a queue — detection leaves the request path, so p95 stays flat as volume grows."),
+        ("03", "Rule engine as its own deployable",
+         "The rule package already sits behind one interface. Extract it, run N workers against the queue, and scale detection independently of the API."),
+        ("04", "API keys for ingest validation",
+         "Issue a key per bank and merchant feed so /api/v1/transactions authenticates its callers — soft tenancy gets a hard edge."),
+        ("05", "Hardening for real money",
+         "TLS end to end, masking of account and payee fields in the UI, and credentials out of source into a secrets manager."),
+    ]
+    y = 1.90
+    for tag, title, body in scopes:
+        text(s, MARGIN, y, 0.5, 0.3, tag, size=15, bold=True, color=RED)
+        text(s, MARGIN + 0.60, y + 0.02, 6.9, 0.24, title, size=12.5,
+             bold=True, color=INK)
+        text(s, MARGIN + 0.60, y + 0.30, 6.9, 0.56, body, size=10.5,
+             color=MUTED, line_spacing=1.24)
+        y += 0.99
+
+    # Target architecture — the seam carried over from the architecture slide.
+    panel_x, panel_w = 8.35, 4.38
+    panel(s, panel_x, 1.90, panel_w, 4.72, fill=MIST)
+    text(s, panel_x + 0.22, 2.04, panel_w - 0.44, 0.22,
+         "TARGET SHAPE  ·  FROM THE ARCHITECTURE SLIDE", size=8.5, bold=True,
+         color=RED_DEEP, spacing=1.2)
+
+    box_x = panel_x + 0.25
+    box_w = panel_w - 0.50
+    mid_x = panel_x + panel_w / 2
+    stages = [
+        ("Spring Boot API  ·  :8081", "accepts, persists, answers 201",
+         WHITE, HAIRLINE, INK, MUTED),
+        ("MESSAGE QUEUE", "ingest decoupled from detection",
+         RED_DEEP, RED_DEEP, WHITE, RGBColor(0xF2, 0xD6, 0xDB)),
+        ("Rule workers  ×  N", "extracted RuleEngine, scaled horizontally",
+         WHITE, RED, RED, MUTED),
+        ("MySQL 8  ·  own VM", "co-location contention gone",
+         WHITE, HAIRLINE, INK, MUTED),
+    ]
+    by = 2.36
+    for index, (title, body, fill, line, tcol, bcol) in enumerate(stages):
+        pill = panel(s, box_x, by, box_w, 0.64, fill=fill, line=line)
+        centered(pill, [(title, 10.5, True, tcol), (body, 8.5, False, bcol)])
+        if index < 3:
+            arrow(s, mid_x, by + 0.66, mid_x, by + 0.86, color=MUTED, width=1.0)
+        by += 0.88
+
+    text(s, box_x, by + 0.02, box_w, 0.72,
+         "Same Rule interface as today — extraction is the seam highlighted "
+         "on the architecture slide, and the monolith keeps an internal "
+         "alert-creation endpoint.",
+         size=9, color=MUTED, line_spacing=1.22)
+
     footer(s, 5)
     return s
 
@@ -671,6 +739,8 @@ def slide_close(prs, blank):
          "A card moves to Review when the PR opens and to Done on merge plus a milestone tick — so status is never a guess."),
         ("Plans written before code",
          "Thirteen short design notes in .cursor/plans/, one per non-trivial feature."),
+        ("Test-first on the risky parts",
+         "A failing test before every rule and every illegal lifecycle transition — 89 unit tests across 17 classes, contract published at /swagger-ui.html."),
     ]
     y = 1.58
     for title, body in practices:
@@ -679,22 +749,7 @@ def slide_close(prs, blank):
              color=INK)
         text(s, MARGIN + 0.22, y + 0.28, 7.25, 0.56, body, size=10.5,
              color=MUTED, line_spacing=1.24)
-        y += 1.02
-
-    hairline(s, MARGIN, 5.62, 7.52)
-    text(s, MARGIN, 5.76, 7.4, 0.24, "WHAT WE DO NEXT", size=9.5, bold=True,
-         color=RED, spacing=1.6)
-    nexts = [
-        "Unblock Linux-to-Linux networking, then move MySQL onto its own host.",
-        "Put a queue between ingest and evaluation and scale the rule workers.",
-        "Re-run the 140 VU soak and publish the before-and-after side by side.",
-    ]
-    ny = 6.04
-    for index, item in enumerate(nexts, start=1):
-        text(s, MARGIN, ny, 0.3, 0.22, str(index), size=10.5, bold=True,
-             color=RED)
-        text(s, MARGIN + 0.28, ny, 7.2, 0.22, item, size=10.5, color=BODY)
-        ny += 0.29
+        y += 1.05
 
     text(s, 8.95, 2.35, 4.0, 0.7, "THANK YOU", size=38, bold=True, color=WHITE)
     accent_rule(s, 8.95, 3.16, w=1.5, color=WHITE, thickness=0.03)
@@ -736,8 +791,8 @@ def build():
     slide_title(prs, blank)
     slide_problem(prs, blank)
     slide_architecture(prs, blank)
-    slide_detection(prs, blank)
     slide_performance(prs, blank)
+    slide_future(prs, blank)
     slide_close(prs, blank)
 
     prs.save(OUT)
