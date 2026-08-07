@@ -6,9 +6,9 @@ starting work — keep "Current status" honest and current, not aspirational.
 ## Current status
 
 **Phase:** Sprint 2 wrap — client UI asks + load evidence **largely done**; Phase 3 infra in progress; **alert/traffic simulator shipped**  
-**Last updated:** 06 August 2026 (EOD)  
+**Last updated:** 07 August 2026  
 **Currently working on:**  
-- **shreya (A):** support final unit tests (simulator ✅)  
+- **shreya (A):** simulator quiet NORMAL + failed status clarity ✅  
 - **sathwik (B):** queue + DB VM migration; confirm login gate  
 - **Rameez (C):** presentation dry-run; any residual UI polish  
 
@@ -82,7 +82,10 @@ evaluate-on-record.
 - [x] Alert / traffic simulator for live demo (shreya)  
   — standalone Go+React under `transaction-simulator/`; scenario packs  
   (Amount / Velocity / New Payee / Daily Limit / soft tenancy / MVP seed)  
-  + fixed FRAUD multi-txn continuous traffic; plan `.cursor/plans/013-alert-traffic-simulator.md`
+  + quiet NORMAL continuous traffic (`ACC-QUIET-*` + Flyway V6 history)  
+  + paced FRAUD multi-txn traffic + `failedPercent` for `status: FAILED`;  
+  plans `.cursor/plans/013-alert-traffic-simulator.md`,  
+  `.cursor/plans/014-simulator-quiet-traffic-failed.md`
 - [ ] Final unit-test sweep
 - [x] Presentation talk track (`docs/PRESENTATION_SCRIPT.md`)
 

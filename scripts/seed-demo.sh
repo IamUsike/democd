@@ -27,8 +27,8 @@ post_txn "{
   \"sourceId\": \"HSBC-UK\",
   \"sourceName\": \"HSBC United Kingdom\",
   \"accountId\": \"ACC-1001\",
-  \"payeeId\": \"PAYEE-2001\",
-  \"payeeName\": \"Acme Vendors Ltd\",
+  \"payeeId\": \"PAYEE10001\",
+  \"payeeName\": \"Amazon\",
   \"amount\": 2500.00,
   \"currency\": \"INR\",
   \"type\": \"TRANSFER\",
@@ -36,31 +36,31 @@ post_txn "{
   \"location\": \"London, UK\",
   \"description\": \"Normal vendor payment\",
   \"status\": \"COMPLETED\"
-}" "BANK normal amount (no alert)"
+}" "BANK normal amount (no alert when V6 history seed present)"
 
 post_txn "{
   \"sourceType\": \"MERCHANT\",
   \"sourceId\": \"ACME-POS\",
   \"sourceName\": \"ACME Point of Sale\",
   \"accountId\": \"ACC-2002\",
-  \"payeeId\": \"PAYEE-3001\",
-  \"payeeName\": \"Corner Shop\",
+  \"payeeId\": \"PAYEE10002\",
+  \"payeeName\": \"Netflix\",
   \"amount\": 149.99,
   \"currency\": \"INR\",
-  \"type\": \"DEBIT\",
+  \"type\": \"TRANSFER\",
   \"timestamp\": \"${TS}\",
   \"location\": \"Mumbai, IN\",
   \"description\": \"POS purchase\",
   \"status\": \"COMPLETED\"
-}" "MERCHANT normal amount (no alert)"
+}" "MERCHANT normal amount (no alert when V6 history seed present)"
 
 post_txn "{
   \"sourceType\": \"BANK\",
   \"sourceId\": \"HSBC-UK\",
   \"sourceName\": \"HSBC United Kingdom\",
   \"accountId\": \"ACC-1001\",
-  \"payeeId\": \"PAYEE-9999\",
-  \"payeeName\": \"Suspicious Wire LLC\",
+  \"payeeId\": \"PAYEE10001\",
+  \"payeeName\": \"Amazon\",
   \"amount\": 25000.00,
   \"currency\": \"INR\",
   \"type\": \"TRANSFER\",
@@ -68,7 +68,7 @@ post_txn "{
   \"location\": \"London, UK\",
   \"description\": \"Over-threshold spike for demo\",
   \"status\": \"COMPLETED\"
-}" "BANK over-threshold (creates OPEN alert)"
+}" "BANK over-threshold (creates OPEN AMOUNT_THRESHOLD alert)"
 
 echo
 echo "Done. Check:"

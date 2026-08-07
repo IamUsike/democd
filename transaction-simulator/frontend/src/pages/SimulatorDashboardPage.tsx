@@ -273,7 +273,11 @@ export function SimulatorDashboardPage(): JSX.Element {
 
         <section className="panel panel-pad" aria-label="Continuous traffic">
           <h2 className="panel-title">Continuous traffic</h2>
-          <p className="panel-hint">NORMAL stays quiet. FRAUD posts full multi-txn patterns.</p>
+          <p className="panel-hint">
+            NORMAL uses a quiet account pool (stays under default amount / velocity / daily
+            limit). Set <strong>Failed txn %</strong> to post some with <code>status: FAILED</code>.
+            FRAUD posts full multi-txn patterns (paced at TPS).
+          </p>
 
           <div className="form-grid">
             <div className="field">
@@ -374,7 +378,7 @@ export function SimulatorDashboardPage(): JSX.Element {
             </div>
 
             <div className="field">
-              <label htmlFor="failed-pct-input">Failed txn % (status FAILED)</label>
+              <label htmlFor="failed-pct-input">Failed txn % (set status FAILED)</label>
               <input
                 id="failed-pct-input"
                 type="number"
@@ -390,6 +394,10 @@ export function SimulatorDashboardPage(): JSX.Element {
                   setSuccessMessage("");
                 }}
               />
+              <p className="panel-hint" style={{ marginTop: "0.35rem", marginBottom: 0 }}>
+                e.g. <code>10</code> ≈ one in ten posts carry <code>status: FAILED</code> (for list
+                filters / KPIs). This is not the OK/failed HTTP counter above.
+              </p>
               {validationErrors.failedPercent ? (
                 <p className="field-error">{validationErrors.failedPercent}</p>
               ) : null}

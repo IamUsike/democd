@@ -26,14 +26,20 @@ const RULES = [
 const PACKS = [
   { id: "AMOUNT_THRESHOLD", tip: "One high-value transfer — fires Amount." },
   { id: "VELOCITY", tip: "Six quick posts on one account — fires Velocity." },
-  { id: "NEW_PAYEE", tip: "Fresh payee id — fires New Payee." },
+  { id: "NEW_PAYEE", tip: "Fresh payee id every run — fires New Payee anytime." },
   { id: "DAILY_LIMIT", tip: "Burst summing past 50k under the amount threshold — fires Daily Limit." },
   {
     id: "MULTI_RULE",
     tip: "Pick ≥2 rules on the Simulator page; the pack builds a sequence that should trip all of them."
   },
-  { id: "SOFT_TENANCY_MIX", tip: "BANK + MERCHANT normals — no alert; good for source filters." },
-  { id: "MVP_SEED", tip: "Classic 3-txn demo path (2 quiet + 1 over threshold)." }
+  {
+    id: "SOFT_TENANCY_MIX",
+    tip: "BANK + MERCHANT normals on seeded account↔payee pairs — no alert; good for source filters."
+  },
+  {
+    id: "MVP_SEED",
+    tip: "Classic 3-txn demo (2 quiet + 1 over threshold) — Amount only when quiet history seed is applied."
+  }
 ] as const;
 
 export function AboutPage(): JSX.Element {
@@ -97,26 +103,33 @@ export function AboutPage(): JSX.Element {
               <strong>TPS / duration</strong> — how fast and how long to emit traffic.
             </li>
             <li>
-              <strong>Mode NORMAL</strong> — amounts stay under the default amount threshold (~10k)
-              so the stream stays quiet unless you add fraud mix.
+              <strong>Mode NORMAL</strong> — quiet continuous traffic: rotates a large{" "}
+              <code>ACC-QUIET-*</code> pool sized for default velocity (5 / 10 min), amounts under
+              ~10k, <code>TRANSFER</code> type (daily limit only counts DEBIT). Requires Flyway{" "}
+              <code>V6</code> quiet-history seed so NEW_PAYEE stays quiet too. Cap TPS around 50
+              (pool max 7200 accounts).
             </li>
             <li>
               <strong>Mode FRAUD</strong> — every emission is a rule-aligned fraud pattern (full
-              multi-txn sequences for velocity / daily limit / etc.). Fraud mix % is ignored.
+              multi-txn sequences for velocity / daily limit / etc.). Each POST consumes one TPS
+              token so fraud mix does not amplify HTTP rate. Fraud mix % is ignored when mode is
+              FRAUD.
             </li>
             <li>
               <strong>Fraud mix %</strong> — only applies when mode is <code>NORMAL</code>. Each
               emission has roughly that percent chance of being generated as a FRAUD pattern
-              instead of a normal quiet txn. Example: <code>10</code> ≈ one in ten posts looks
+              instead of a quiet normal txn. Example: <code>10</code> ≈ one in ten posts looks
               suspicious. This is <em>not</em> “% of alerts that fail” and not HTTP error
               injection — load/error rates stay in k6.
             </li>
             <li>
               <strong>Failed txn %</strong> — chance each continuous-traffic transaction is posted
-              with <code>status: FAILED</code> instead of <code>COMPLETED</code>. Useful for
-              transaction-list filters and KPIs by status. Scenario packs always stay{" "}
-              <code>COMPLETED</code> so rule demos remain reliable. Note: the monitoring API still
-              evaluates rules on FAILED txns the same way.
+              with <code>status: FAILED</code> instead of <code>COMPLETED</code>. Use this to
+              exercise transaction-list filters and KPIs by status (e.g. set <code>15</code> for
+              ~15% failed). Scenario packs always stay <code>COMPLETED</code> so rule demos remain
+              reliable. The metrics strip <strong>OK / failed</strong> counts HTTP success vs
+              POST errors — not this status field. Note: the monitoring API still evaluates rules
+              on FAILED txns the same way.
             </li>
             <li>
               <strong>Source filter</strong> — force <code>BANK</code> or <code>MERCHANT</code> on

@@ -107,12 +107,21 @@ type GenerateOptions struct {
 	SourceType *model.SourceType
 	// Pattern, when set, forces a specific fraud pattern (FRAUD mode only).
 	Pattern *FraudPattern
+	// QuietTPS sizes the NORMAL quiet account pool so default velocity
+	// (5 txns / 10 min) is not tripped at this emit rate. Ignored for FRAUD.
+	QuietTPS int
 }
 
 // Default thresholds mirrored from the monitoring monolith RuleEngineConfig.
 const (
 	defaultAmountThreshold = 10_000.0
 	normalAmountMax        = 5_000.0
+
+	// Quiet NORMAL stays under default VelocityRule (fires when count > 5 in 10 min).
+	defaultVelocityMaxInWindow = 5
+	defaultVelocityWindowSec   = 10 * 60
+	// Must match Flyway V6 quiet-history seed size (ACC-QUIET-00000 ..).
+	quietAccountPoolMax = 7200
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -287,15 +296,36 @@ func NormalizeMultiRules(rules []RuleType) ([]RuleType, error) {
 // Generator
 // ─────────────────────────────────────────────────────────────────────────────
 
+// QuietAccountCount returns how many distinct ACC-QUIET-* accounts NORMAL
+// traffic should rotate through so a sustained `tps` stays at or under the
+// default velocity ceiling (5 txns / 10 minutes per account).
+func QuietAccountCount(tps int) int {
+	if tps < 1 {
+		tps = 1
+	}
+	n := (tps * defaultVelocityWindowSec) / defaultVelocityMaxInWindow
+	if (tps*defaultVelocityWindowSec)%defaultVelocityMaxInWindow != 0 {
+		n++
+	}
+	if n < 50 {
+		n = 50
+	}
+	if n > quietAccountPoolMax {
+		n = quietAccountPoolMax
+	}
+	return n
+}
+
 // Generator produces model.Transaction values for simulation purposes.
 //
 // It is NOT safe for concurrent use. Create one Generator per goroutine, or
 // protect shared access with a mutex.
 type Generator struct {
-	r      *rand.Rand
-	logger *slog.Logger
-	now    func() time.Time
-	seq    uint64 // uniqueness for new-payee IDs
+	r        *rand.Rand
+	logger   *slog.Logger
+	now      func() time.Time
+	seq      uint64 // uniqueness for new-payee IDs
+	quietSeq uint64 // round-robin index for quiet NORMAL accounts
 }
 
 // New returns a Generator seeded with seed.
@@ -346,10 +376,11 @@ func (g *Generator) GenerateTimedSequence(mode SimulationMode, opts GenerateOpti
 		raw := g.GenerateFraudSequence(pattern)
 		return withDelaysForPattern(pattern, raw)
 	default:
-		tx := g.generateNormal(opts)
-		g.logger.Debug("generated normal transaction",
+		tx := g.generateQuietNormal(opts)
+		g.logger.Debug("generated quiet normal transaction",
 			"accountId", tx.AccountID,
 			"amount", tx.Amount,
+			"quietTps", opts.QuietTPS,
 		)
 		return []TimedTransaction{{Transaction: tx}}
 	}
@@ -571,18 +602,39 @@ func (g *Generator) scenarioDailyLimit() []TimedTransaction {
 }
 
 func (g *Generator) scenarioSoftTenancyMix() []TimedTransaction {
-	bank := model.SourceTypeBank
-	merchant := model.SourceTypeMerchant
-	bankTx := g.generateNormal(GenerateOptions{SourceType: &bank})
-	bankTx.AccountID = "ACC-SCENARIO-TEN-BANK"
-	bankTx.Amount = g.roundedAmount(100, 2_000)
-	bankTx.Description = ptrOf("Scenario SOFT_TENANCY_MIX — BANK normal")
-
-	merchTx := g.generateNormal(GenerateOptions{SourceType: &merchant})
-	merchTx.AccountID = "ACC-SCENARIO-TEN-MERCH"
-	merchTx.Amount = g.roundedAmount(50, 500)
-	merchTx.Description = ptrOf("Scenario SOFT_TENANCY_MIX — MERCHANT normal")
-
+	ts := g.now()
+	// Fixed account↔payee pairs match Flyway V6 seed history so NEW_PAYEE
+	// does not fire; separate accounts so a single run cannot trip velocity.
+	bankTx := model.Transaction{
+		SourceType:  model.SourceTypeBank,
+		SourceID:    "HSBC-UK",
+		SourceName:  "HSBC United Kingdom",
+		AccountID:   "ACC-SCENARIO-TEN-BANK",
+		PayeeID:     "PAYEE10001",
+		PayeeName:   ptrOf("Amazon"),
+		Amount:      250.00,
+		Currency:    "USD",
+		Type:        model.TransactionTypeTransfer,
+		Timestamp:   model.LocalDateTime{Time: ts},
+		Location:    ptrOf("London"),
+		Description: ptrOf("Scenario SOFT_TENANCY_MIX — BANK normal"),
+		Status:      model.TransactionStatusCompleted,
+	}
+	merchTx := model.Transaction{
+		SourceType:  model.SourceTypeMerchant,
+		SourceID:    "ACME-POS",
+		SourceName:  "ACME Payments",
+		AccountID:   "ACC-SCENARIO-TEN-MERCH",
+		PayeeID:     "PAYEE10002",
+		PayeeName:   ptrOf("Netflix"),
+		Amount:      49.99,
+		Currency:    "USD",
+		Type:        model.TransactionTypeTransfer,
+		Timestamp:   model.LocalDateTime{Time: ts},
+		Location:    ptrOf("Mumbai"),
+		Description: ptrOf("Scenario SOFT_TENANCY_MIX — MERCHANT normal"),
+		Status:      model.TransactionStatusCompleted,
+	}
 	return []TimedTransaction{
 		{Transaction: bankTx},
 		{Transaction: merchTx, DelayBefore: 50 * time.Millisecond},
@@ -591,13 +643,15 @@ func (g *Generator) scenarioSoftTenancyMix() []TimedTransaction {
 
 func (g *Generator) scenarioMVPSeed() []TimedTransaction {
 	ts := g.now()
+	// Quiet legs reuse V6-seeded account↔payee pairs (no NEW_PAYEE).
+	// Over-threshold reuses the same bank payee so only AMOUNT_THRESHOLD fires.
 	bankNormal := model.Transaction{
 		SourceType:  model.SourceTypeBank,
 		SourceID:    "HSBC-UK",
 		SourceName:  "HSBC United Kingdom",
 		AccountID:   "ACC-1001",
-		PayeeID:     "PAYEE-2001",
-		PayeeName:   ptrOf("Acme Vendors Ltd"),
+		PayeeID:     "PAYEE10001",
+		PayeeName:   ptrOf("Amazon"),
 		Amount:      2500.00,
 		Currency:    "INR",
 		Type:        model.TransactionTypeTransfer,
@@ -611,11 +665,11 @@ func (g *Generator) scenarioMVPSeed() []TimedTransaction {
 		SourceID:    "ACME-POS",
 		SourceName:  "ACME Point of Sale",
 		AccountID:   "ACC-2002",
-		PayeeID:     "PAYEE-3001",
-		PayeeName:   ptrOf("Corner Shop"),
+		PayeeID:     "PAYEE10002",
+		PayeeName:   ptrOf("Netflix"),
 		Amount:      149.99,
 		Currency:    "INR",
-		Type:        model.TransactionTypeDebit,
+		Type:        model.TransactionTypeTransfer,
 		Timestamp:   model.LocalDateTime{Time: ts},
 		Location:    ptrOf("Mumbai, IN"),
 		Description: ptrOf("POS purchase"),
@@ -626,8 +680,8 @@ func (g *Generator) scenarioMVPSeed() []TimedTransaction {
 		SourceID:    "HSBC-UK",
 		SourceName:  "HSBC United Kingdom",
 		AccountID:   "ACC-1001",
-		PayeeID:     "PAYEE-9999",
-		PayeeName:   ptrOf("Suspicious Wire LLC"),
+		PayeeID:     "PAYEE10001",
+		PayeeName:   ptrOf("Amazon"),
 		Amount:      25000.00,
 		Currency:    "INR",
 		Type:        model.TransactionTypeTransfer,
@@ -667,6 +721,38 @@ func (g *Generator) generateNormal(opts GenerateOptions) model.Transaction {
 		Latitude:    ptrOf(loc.Latitude),
 		Longitude:   ptrOf(loc.Longitude),
 		Description: ptrOf(pick(g.r, knownDescriptions)),
+		Status:      model.TransactionStatusCompleted,
+	}
+}
+
+// generateQuietNormal builds continuous NORMAL traffic that stays under default
+// amount / velocity / daily-limit rules when V6 quiet-history seed is present:
+// large ACC-QUIET-* pool, stable payee per account, TRANSFER (daily limit is DEBIT-only).
+func (g *Generator) generateQuietNormal(opts GenerateOptions) model.Transaction {
+	src := g.pickSource(opts)
+	loc := pick(g.r, knownLocations)
+
+	n := QuietAccountCount(opts.QuietTPS)
+	idx := int(g.quietSeq % uint64(n))
+	g.quietSeq++
+
+	p := knownPayees[idx%len(knownPayees)]
+
+	return model.Transaction{
+		SourceType:  src.SourceType,
+		SourceID:    src.SourceID,
+		SourceName:  src.SourceName,
+		AccountID:   fmt.Sprintf("ACC-QUIET-%05d", idx),
+		PayeeID:     p.ID,
+		PayeeName:   ptrOf(p.Name),
+		Amount:      g.roundedAmount(10, normalAmountMax),
+		Currency:    pick(g.r, knownCurrencies),
+		Type:        model.TransactionTypeTransfer,
+		Timestamp:   model.LocalDateTime{Time: g.now()},
+		Location:    ptrOf(loc.Name),
+		Latitude:    ptrOf(loc.Latitude),
+		Longitude:   ptrOf(loc.Longitude),
+		Description: ptrOf("Quiet normal traffic"),
 		Status:      model.TransactionStatusCompleted,
 	}
 }

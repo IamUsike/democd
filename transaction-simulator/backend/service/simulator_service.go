@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -83,6 +84,9 @@ type SimulatorService struct {
 	stateMu     sync.Mutex
 	run         *simulationRun
 
+	rngMu sync.Mutex
+	rng   *rand.Rand
+
 	generated  atomic.Uint64
 	successful atomic.Uint64
 	failed     atomic.Uint64
@@ -149,6 +153,7 @@ func newSimulatorService(
 		sender:    transactionClient,
 		logger:    logger,
 		cfg:       cfg,
+		rng:       rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 	}
 	svc.activeKind.Store("")
 	svc.activeScenario.Store("")
@@ -403,7 +408,10 @@ func (s *SimulatorService) runGeneratorWorker(
 ) {
 	defer wg.Done()
 
-	opts := generator.GenerateOptions{SourceType: request.SourceType}
+	opts := generator.GenerateOptions{
+		SourceType: request.SourceType,
+		QuietTPS:   request.TPS,
+	}
 
 	for {
 		select {
@@ -420,7 +428,20 @@ func (s *SimulatorService) runGeneratorWorker(
 			steps := s.generator.GenerateTimedSequence(mode, opts)
 			s.generatorMu.Unlock()
 
-			for _, step := range steps {
+			for i, step := range steps {
+				// Multi-leg fraud patterns must consume one TPS token per HTTP
+				// post so fraud mix does not amplify request rate past TPS.
+				if i > 0 {
+					select {
+					case <-ctx.Done():
+						return
+					case _, ok := <-tokens:
+						if !ok {
+							return
+						}
+					}
+				}
+
 				if !s.waitDelay(ctx, step.DelayBefore) {
 					return
 				}
@@ -453,11 +474,7 @@ func (s *SimulatorService) pickTrafficMode(request SimulationRequest) generator.
 	if request.FraudMixPercent == nil || *request.FraudMixPercent <= 0 {
 		return generator.ModeNormal
 	}
-	s.generatorMu.Lock()
-	// Use a cheap time-based roll without needing the generator's RNG.
-	roll := int(time.Now().UnixNano()%100) + 1
-	s.generatorMu.Unlock()
-	if roll <= *request.FraudMixPercent {
+	if s.rollPercent(*request.FraudMixPercent) {
 		return generator.ModeFraud
 	}
 	return generator.ModeNormal
@@ -469,10 +486,22 @@ func (s *SimulatorService) applyFailedStatus(tx *model.Transaction, failedPercen
 	if tx == nil || failedPercent == nil || *failedPercent <= 0 {
 		return
 	}
-	roll := int(time.Now().UnixNano()%100) + 1
-	if roll <= *failedPercent {
+	if s.rollPercent(*failedPercent) {
 		tx.Status = model.TransactionStatusFailed
 	}
+}
+
+// rollPercent returns true with roughly percent probability (0–100).
+func (s *SimulatorService) rollPercent(percent int) bool {
+	if percent <= 0 {
+		return false
+	}
+	if percent >= 100 {
+		return true
+	}
+	s.rngMu.Lock()
+	defer s.rngMu.Unlock()
+	return s.rng.Intn(100) < percent
 }
 
 func (s *SimulatorService) runSenderWorker(

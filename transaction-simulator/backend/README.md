@@ -173,9 +173,14 @@ curl -sS -X POST http://localhost:8090/api/simulator/start \
 ```
 
 - `kind` omitted → `TRAFFIC` (backward compatible with `{tps,duration,mode}`).
-- `NORMAL` amounts stay under the default amount threshold (~10k) so quiet traffic does not spam alerts.
-- `FRAUD` emits **full** multi-txn sequences (velocity, daily limit, new payee, high amount) — not just the first leg.
-- `failedPercent` — roughly that % of continuous-traffic txns are posted with `status: FAILED` (scenario packs stay `COMPLETED`).
+- `NORMAL` uses a quiet `ACC-QUIET-*` pool sized for default velocity (5/10 min),
+  amounts under ~10k, and `TRANSFER` type. Apply Flyway `V6` quiet-history seed so
+  NEW_PAYEE stays quiet. Keep TPS ≤ ~50 (pool max 7200).
+- `FRAUD` emits **full** multi-txn sequences (velocity, daily limit, new payee, high amount);
+  each POST consumes one TPS token so fraud mix does not amplify HTTP rate.
+- `failedPercent` — roughly that % of continuous-traffic txns are posted with
+  `status: FAILED` (scenario packs stay `COMPLETED`). Metrics `failedTransactions`
+  still means HTTP POST failures, not this status.
 - Impossible travel is **not** selected for random FRAUD traffic (no matching rule in the monolith).
 
 ### Start — demo scenario pack

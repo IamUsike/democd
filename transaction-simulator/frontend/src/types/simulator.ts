@@ -71,7 +71,7 @@ export const SCENARIO_PACKS: ScenarioPackMeta[] = [
   {
     id: "NEW_PAYEE",
     label: "New payee",
-    expected: "OPEN alert — NEW_PAYEE"
+    expected: "OPEN alert — NEW_PAYEE (fresh payee id every run)"
   },
   {
     id: "DAILY_LIMIT",
@@ -86,11 +86,11 @@ export const SCENARIO_PACKS: ScenarioPackMeta[] = [
   {
     id: "SOFT_TENANCY_MIX",
     label: "Soft tenancy mix",
-    expected: "No alert — BANK + MERCHANT normals"
+    expected: "No alert — BANK + MERCHANT (seeded pairs)"
   },
   {
     id: "MVP_SEED",
     label: "MVP seed path",
-    expected: "OPEN alert — AMOUNT_THRESHOLD (3 txns)"
+    expected: "OPEN alert — AMOUNT_THRESHOLD only (3 txns)"
   }
 ];

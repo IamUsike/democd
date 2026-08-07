@@ -436,6 +436,83 @@ func TestGenerate_DifferentSeeds_ProduceDifferentSequences(t *testing.T) {
 	}
 }
 
+func TestQuietAccountCount_ScalesWithTPS(t *testing.T) {
+	if got := generator.QuietAccountCount(1); got < 50 {
+		t.Fatalf("tps=1: want at least 50 accounts, got %d", got)
+	}
+	at50 := generator.QuietAccountCount(50)
+	if at50 < 6000 {
+		t.Fatalf("tps=50: want >= 6000 accounts for default velocity, got %d", at50)
+	}
+	if at50 > 7200 {
+		t.Fatalf("tps=50: want <= 7200 pool max, got %d", at50)
+	}
+	if generator.QuietAccountCount(500) != 7200 {
+		t.Fatalf("tps=500: want capped at 7200, got %d", generator.QuietAccountCount(500))
+	}
+}
+
+func TestGenerateTimedSequence_Normal_UsesQuietPool(t *testing.T) {
+	g := newGen(t)
+	steps := g.GenerateTimedSequence(generator.ModeNormal, generator.GenerateOptions{QuietTPS: 50})
+	if len(steps) != 1 {
+		t.Fatalf("want 1 step, got %d", len(steps))
+	}
+	tx := steps[0].Transaction
+	if tx.Type != model.TransactionTypeTransfer {
+		t.Fatalf("quiet normal should be TRANSFER, got %s", tx.Type)
+	}
+	if tx.Amount > 5_000 {
+		t.Fatalf("quiet normal amount %f exceeds threshold band", tx.Amount)
+	}
+	if len(tx.AccountID) < 10 || tx.AccountID[:9] != "ACC-QUIET" {
+		t.Fatalf("want ACC-QUIET-* account, got %q", tx.AccountID)
+	}
+}
+
+func TestGenerateScenario_SoftTenancy_FixedPairs(t *testing.T) {
+	g := newGen(t)
+	steps := g.GenerateScenario(generator.ScenarioSoftTenancyMix, nil)
+	if len(steps) != 2 {
+		t.Fatalf("want 2 steps, got %d", len(steps))
+	}
+	if steps[0].Transaction.AccountID != "ACC-SCENARIO-TEN-BANK" || steps[0].Transaction.PayeeID != "PAYEE10001" {
+		t.Fatalf("bank leg mismatch: %+v", steps[0].Transaction)
+	}
+	if steps[1].Transaction.AccountID != "ACC-SCENARIO-TEN-MERCH" || steps[1].Transaction.PayeeID != "PAYEE10002" {
+		t.Fatalf("merchant leg mismatch: %+v", steps[1].Transaction)
+	}
+}
+
+func TestGenerateScenario_MVPSeed_AmountOnlyShape(t *testing.T) {
+	g := newGen(t)
+	steps := g.GenerateScenario(generator.ScenarioMVPSeed, nil)
+	if len(steps) != 3 {
+		t.Fatalf("want 3 steps, got %d", len(steps))
+	}
+	if steps[0].Transaction.Amount >= 10_000 || steps[1].Transaction.Amount >= 10_000 {
+		t.Fatal("first two MVP legs should stay under amount threshold")
+	}
+	if steps[2].Transaction.Amount < 10_000 {
+		t.Fatal("third MVP leg should exceed amount threshold")
+	}
+	if steps[0].Transaction.PayeeID != steps[2].Transaction.PayeeID {
+		t.Fatal("over-threshold leg should reuse bank payee so NEW_PAYEE does not also fire")
+	}
+}
+
+func TestGenerateScenario_NewPayee_AlwaysFresh(t *testing.T) {
+	g := newGen(t)
+	a := g.GenerateScenario(generator.ScenarioNewPayee, nil)
+	b := g.GenerateScenario(generator.ScenarioNewPayee, nil)
+	if len(a) != 1 || len(b) != 1 {
+		t.Fatal("NEW_PAYEE scenario should emit one txn")
+	}
+	if a[0].Transaction.PayeeID == b[0].Transaction.PayeeID {
+		t.Fatalf("expected distinct payee ids, both %q", a[0].Transaction.PayeeID)
+	}
+}
+
 // ─── Mode constants ───────────────────────────────────────────────────────────
 
 func TestSimulationModeConstants(t *testing.T) {
