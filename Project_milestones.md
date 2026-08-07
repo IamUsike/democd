@@ -8,7 +8,7 @@ starting work — keep "Current status" honest and current, not aspirational.
 **Phase:** Sprint 2 wrap — client UI asks + load evidence **largely done**; Phase 3 infra in progress; **alert/traffic simulator shipped**  
 **Last updated:** 07 August 2026  
 **Currently working on:**  
-- **shreya (A):** simulator quiet NORMAL + failed status clarity ✅  
+- **shreya (A):** simulator quiet traffic; rule_configs empty-UI seeder ✅  
 - **sathwik (B):** queue + DB VM migration; confirm login gate  
 - **Rameez (C):** presentation dry-run; any residual UI polish  
 

@@ -258,7 +258,11 @@ export function RulesPage() {
       {loading ? (
         <p className="state-message">Loading rules…</p>
       ) : rules.length === 0 ? (
-        <p className="state-message muted">No rules configured.</p>
+        <p className="state-message muted">
+          No rules configured. Restart the API so the rule seeder can populate{' '}
+          <code>rule_configs</code> (Flyway is disabled in local{' '}
+          <code>ddl-auto=update</code> mode).
+        </p>
       ) : (
         <div className="rules-grid">
           {rules.map((rule) => (

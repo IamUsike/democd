@@ -138,11 +138,12 @@ sequenceDiagram
 
 **Core tables:** `transactions` · `alerts` · `alert_transactions` · `rule_configs`
 
-> **Careful if asked about migrations:** the `V1`–`V5` Flyway scripts are the
+> **Careful if asked about migrations:** the `V1`–`V6` Flyway scripts are the
 > reviewed schema and Flyway runs in the test profile, but
 > `application.properties` currently ships `spring.flyway.enabled=false` with
 > `ddl-auto=update`. Say that honestly — flipping Flyway on at runtime is a
-> known tidy-up, not a claim to make on stage.
+> known tidy-up, not a claim to make on stage. Default rule rows are ensured at
+> startup by `RuleConfigSeeder` when the table is empty.
 
 ### Package layout (`dev`)
 
